@@ -41,7 +41,7 @@ struct CommandLineOptions {
         , scale(0.0)
         , tileSize(0)
         , useAntiAliasing(false)
-        , includeCollision(false)
+        , ignoreVisibility(false)
     {}
 
     bool showHelp;
@@ -51,7 +51,8 @@ struct CommandLineOptions {
     qreal scale;
     int tileSize;
     bool useAntiAliasing;
-    bool includeCollision;
+    bool ignoreVisibility;
+    QStringList layersToHide;
 };
 
 } // anonymous namespace
@@ -70,7 +71,10 @@ static void showHelp()
             "  -t --tilesize SIZE      : The requested size in pixels at which a tile is rendered\n"
             "                            Overrides the --scale option\n"
             "  -a --anti-aliasing      : Smooth the output image using anti-aliasing\n"
-            "  -c --include-collision  : Include the layer named \"collision\" in the output image\n";
+            "  -i --ignore-visibility  : Ignore the visiblity flag of a layer, and include invisible\n"
+            "                            layers in the output (default behavior is to omit invisible layers)\n"
+            "  -l --hide-layer         : Lets you specify a layer to omit from the output image\n"
+            "                            This option can be repeated to hide multiple layers\n";
 }
 
 static void showVersion()
@@ -116,12 +120,20 @@ static void parseCommandLineArguments(CommandLineOptions &options)
                     options.showHelp = true;
                 }
             }
+        } else if (arg == QLatin1String("--hide-layer")
+                || arg == QLatin1String("-l")) {
+            i++;
+            if (i >= arguments.size()) {
+                options.showHelp = true;
+            } else {
+                options.layersToHide.append(arguments.at(i));
+            }
         } else if (arg == QLatin1String("--anti-aliasing")
                 || arg == QLatin1String("-a")) {
             options.useAntiAliasing = true;
-        } else if (arg == QLatin1String("--include-collision")
-                || arg == QLatin1String("-c")) {
-            options.includeCollision = true;
+        } else if (arg == QLatin1String("--ignore-visibility")
+                || arg == QLatin1String("-i")) {
+            options.ignoreVisibility = true;
         } else if (arg.isEmpty()) {
             options.showHelp = true;
         } else if (arg.at(0) == QLatin1Char('-')) {
@@ -164,7 +176,9 @@ int main(int argc, char *argv[])
 
     TmxRasterizer w;
     w.setAntiAliasing(options.useAntiAliasing);
-    w.setIncludeCollision(options.includeCollision);
+    w.setIgnoreVisibility(options.ignoreVisibility);
+    w.setLayersToHide(options.layersToHide);
+
 
     if (options.tileSize > 0) {
         w.setTileSize(options.tileSize);
@@ -174,3 +188,4 @@ int main(int argc, char *argv[])
 
     return w.render(options.fileToOpen, options.fileToSave);
 }
+
