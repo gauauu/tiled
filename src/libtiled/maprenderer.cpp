@@ -40,6 +40,7 @@
 #include <QPaintEngine>
 #include <QPainter>
 #include <QVector2D>
+#include <cmath>
 
 #include "qtcompat_p.h"
 
@@ -352,7 +353,14 @@ void CellRenderer::render(const Cell &cell, const QPointF &screenPos, const QSiz
     fragment.scaleX = flippedHorizontally ? -1 : 1;
     fragment.scaleY = flippedVertically ? -1 : 1;
     fragment.rotation = 0;
-    fragment.opacity = 1;
+
+
+    if (std::fmod(pos.y(),256) > .01) {
+      fragment.opacity = 1;
+    } else {
+      fragment.height = fragment.height / 2;
+      fragment.opacity = .70;
+    }
 
     // Correct the position if the origin is BottomLeft.
     if (origin == BottomLeft)
