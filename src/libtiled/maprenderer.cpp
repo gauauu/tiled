@@ -35,6 +35,7 @@
 #include <QPaintEngine>
 #include <QPainter>
 #include <QVector2D>
+#include <cmath>
 
 using namespace Tiled;
 
@@ -127,7 +128,14 @@ void CellRenderer::render(const Cell &cell, const QPointF &pos, Origin origin)
     fragment.scaleX = cell.flippedHorizontally ? -1 : 1;
     fragment.scaleY = cell.flippedVertically ? -1 : 1;
     fragment.rotation = 0;
-    fragment.opacity = 1;
+
+
+    if (std::fmod(pos.y(),256) > .01) {
+      fragment.opacity = 1;
+    } else {
+      fragment.height = fragment.height / 2;
+      fragment.opacity = .70;
+    }
 
     if (origin == BottomCenter)
         fragment.x -= sizeHalf.x();
