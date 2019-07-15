@@ -117,9 +117,9 @@ void FileSystemWatcher::filesChangedTimeout()
 {
     emit filesChanged(mChangedFiles.toList());
 
-	  // If the file was replaced, the watcher is automatically removed and needs
-	  // to be re-added to keep watching it for changes. This happens commonly
-	  // with applications that do atomic saving.
+    // If the file was replaced, the watcher is automatically removed and needs
+    // to be re-added to keep watching it for changes. This happens commonly
+    // with applications that do atomic saving.
     QSetIterator<QString> changedFilesIterator(mChangedFiles);
     while (changedFilesIterator.hasNext()) {
         QString path = changedFilesIterator.next();
