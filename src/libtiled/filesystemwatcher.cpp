@@ -117,19 +117,18 @@ void FileSystemWatcher::filesChangedTimeout()
 {
     emit filesChanged(mChangedFiles.toList());
 
-	// If the file was replaced, the watcher is automatically removed and needs
-	// to be re-added to keep watching it for changes. This happens commonly
-	// with applications that do atomic saving.
-	QSet<QString>::iterator i = mChangedFiles.begin();
-	while (i != mChangedFiles.end()) {
-		if (!mWatcher->files().contains(*i))
-			if (QFile::exists(*i))
-				mWatcher->addPath(*i);
+	  // If the file was replaced, the watcher is automatically removed and needs
+	  // to be re-added to keep watching it for changes. This happens commonly
+	  // with applications that do atomic saving.
+    QSetIterator<QString> changedFilesIterator(mChangedFiles);
+    while (changedFilesIterator.hasNext()) {
+        QString path = changedFilesIterator.next();
+        if (!mWatcher->files().contains(path))
+            if (QFile::exists(path))
+                mWatcher->addPath(path);
+    }
 
-		++i;
-	}
-
-	mChangedFiles.clear();
+    mChangedFiles.clear();
 }
 
 } // namespace Tiled
