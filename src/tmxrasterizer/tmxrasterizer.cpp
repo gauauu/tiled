@@ -129,7 +129,6 @@ int TmxRasterizer::render(const QString &fileName,
 int TmxRasterizer::renderMap(const QString &mapFileName,
                              const QString &imageFileName)
 {
-    MapReader reader;
     QString errorString;
     std::unique_ptr<Map> map { readMap(mapFileName, &errorString) };
     if (!map) {
@@ -218,7 +217,6 @@ int TmxRasterizer::renderWorld(const QString &worldFileName,
         return 1;
     }
     QRect worldBoundingRect;
-    MapReader reader;
     for (const World::MapEntry &mapEntry : maps) {
         std::unique_ptr<Map> map { readMap(mapEntry.fileName, &errorString) };
         if (!map) {
@@ -257,7 +255,6 @@ int TmxRasterizer::renderWorld(const QString &worldFileName,
     painter.translate(-worldBoundingRect.topLeft());
 
     for (const World::MapEntry &mapEntry : maps) {
-        MapReader reader;
         std::unique_ptr<Map> map { readMap(mapEntry.fileName, &errorString) };
         if (!map) {
             qWarning("Error while reading \"%s\":\n%s",
