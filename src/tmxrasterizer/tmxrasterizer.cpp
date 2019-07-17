@@ -36,7 +36,6 @@
 #include "mapreader.h"
 #include "objectgroup.h"
 #include "orthogonalrenderer.h"
-#include "pluginmanager.h"
 #include "staggeredrenderer.h"
 #include "tilelayer.h"
 #include "worldmanager.h"
@@ -118,8 +117,6 @@ bool TmxRasterizer::shouldDrawLayer(const Layer *layer) const
 int TmxRasterizer::render(const QString &fileName,
                           const QString &imageFileName)
 {
-    PluginManager::instance()->loadPlugins();
-
     if (fileName.endsWith(".world", Qt::CaseInsensitive))
         return renderWorld(fileName, imageFileName);
     else
