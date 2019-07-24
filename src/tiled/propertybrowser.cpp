@@ -598,11 +598,19 @@ void PropertyBrowser::addMapProperties()
 
     layerFormatProperty->setAttribute(QLatin1String("enumNames"), mLayerFormatNames);
 
+    QtVariantProperty *chunkWidthProperty = addProperty(ChunkWidthProperty, QVariant::Int, tr("Output Chunk Width"), groupProperty);
+    QtVariantProperty *chunkHeightProperty = addProperty(ChunkHeightProperty, QVariant::Int, tr("Output Chunk Height"), groupProperty);
+
+    chunkWidthProperty->setAttribute(QLatin1String("minimum"), CHUNK_SIZE_MIN);
+    chunkHeightProperty->setAttribute(QLatin1String("minimum"), CHUNK_SIZE_MIN);
+
     QtVariantProperty *renderOrderProperty =
             addProperty(RenderOrderProperty,
                         QtVariantPropertyManager::enumTypeId(),
                         tr("Tile Render Order"),
                         groupProperty);
+
+    addProperty(CompressionLevelProperty, QVariant::Int, tr("Compression level"), groupProperty);
 
     renderOrderProperty->setAttribute(QLatin1String("enumNames"), mRenderOrderNames);
 
@@ -965,7 +973,7 @@ void PropertyBrowser::applyMapValue(PropertyId id, const QVariant &val)
         break;
     }
     case LayerFormatProperty: {
-        Map::LayerDataFormat format = static_cast<Map::LayerDataFormat>(val.toInt());
+        Map::LayerDataFormat format = mLayerFormatValues.at(val.toInt());
         command = new ChangeMapProperty(mMapDocument, format);
         break;
     }
@@ -977,6 +985,21 @@ void PropertyBrowser::applyMapValue(PropertyId id, const QVariant &val)
     case BackgroundColorProperty:
         command = new ChangeMapProperty(mMapDocument, val.value<QColor>());
         break;
+    case CompressionLevelProperty:
+        command = new ChangeMapProperty(mMapDocument, ChangeMapProperty::CompressionLevel, val.toInt());
+        break;
+    case ChunkWidthProperty: {
+        QSize chunkSize = mMapDocument->map()->chunkSize();
+        chunkSize.setWidth(val.toInt());
+        command = new ChangeMapProperty(mMapDocument, chunkSize);
+        break;
+    }
+    case ChunkHeightProperty: {
+        QSize chunkSize = mMapDocument->map()->chunkSize();
+        chunkSize.setHeight(val.toInt());
+        command = new ChangeMapProperty(mMapDocument, chunkSize);
+        break;
+    }
     default:
         break;
     }
@@ -1574,8 +1597,11 @@ void PropertyBrowser::updateProperties()
         mIdToProperty[StaggerAxisProperty]->setValue(map->staggerAxis());
         mIdToProperty[StaggerIndexProperty]->setValue(map->staggerIndex());
         mIdToProperty[LayerFormatProperty]->setValue(map->layerDataFormat());
+        mIdToProperty[CompressionLevelProperty]->setValue(map->compressionLevel());
         mIdToProperty[RenderOrderProperty]->setValue(map->renderOrder());
         mIdToProperty[BackgroundColorProperty]->setValue(map->backgroundColor());
+        mIdToProperty[ChunkWidthProperty]->setValue(map->chunkSize().width());
+        mIdToProperty[ChunkHeightProperty]->setValue(map->chunkSize().height());
         break;
     }
     case Object::MapObjectType: {
@@ -1892,11 +1918,25 @@ void PropertyBrowser::retranslateUi()
     mTilesetOrientationNames.append(mOrientationNames.at(1));
 
     mLayerFormatNames.clear();
+    mLayerFormatValues.clear();
+
     mLayerFormatNames.append(QCoreApplication::translate("PreferencesDialog", "XML"));
     mLayerFormatNames.append(QCoreApplication::translate("PreferencesDialog", "Base64 (uncompressed)"));
     mLayerFormatNames.append(QCoreApplication::translate("PreferencesDialog", "Base64 (gzip compressed)"));
     mLayerFormatNames.append(QCoreApplication::translate("PreferencesDialog", "Base64 (zlib compressed)"));
+#ifdef TILED_ZSTD_SUPPORT
+    mLayerFormatNames.append(QCoreApplication::translate("PreferencesDialog", "Base64 (Zstandard compressed)"));
+#endif
     mLayerFormatNames.append(QCoreApplication::translate("PreferencesDialog", "CSV"));
+
+    mLayerFormatValues.append(Map::XML);
+    mLayerFormatValues.append(Map::Base64);
+    mLayerFormatValues.append(Map::Base64Gzip);
+    mLayerFormatValues.append(Map::Base64Zlib);
+#ifdef TILED_ZSTD_SUPPORT
+    mLayerFormatValues.append(Map::Base64Zstandard);
+#endif
+    mLayerFormatValues.append(Map::CSV);
 
     mRenderOrderNames.clear();
     mRenderOrderNames.append(QCoreApplication::translate("PreferencesDialog", "Right Down"));

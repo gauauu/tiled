@@ -84,7 +84,9 @@ public:
 
     QString mError;
     Map::LayerDataFormat mLayerDataFormat;
+    int mCompressionlevel;
     bool mDtdEnabled;
+    QSize mChunkSize;
 
 private:
     void writeMap(QXmlStreamWriter &w, const Map &map);
@@ -113,7 +115,9 @@ private:
 
 MapWriterPrivate::MapWriterPrivate()
     : mLayerDataFormat(Map::Base64Zlib)
+    , mCompressionlevel(-1)
     , mDtdEnabled(false)
+    , mChunkSize(CHUNK_SIZE, CHUNK_SIZE)
     , mUseAbsolutePaths(false)
 {
 }
@@ -149,6 +153,8 @@ void MapWriterPrivate::writeMap(const Map *map, QIODevice *device,
     mMapDir = QDir(path);
     mUseAbsolutePaths = path.isEmpty();
     mLayerDataFormat = map->layerDataFormat();
+    mCompressionlevel = map->compressionLevel();
+    mChunkSize = map->chunkSize();
 
     AutoFormattingWriter writer(device);
     writer.writeStartDocument();
@@ -216,6 +222,7 @@ void MapWriterPrivate::writeMap(QXmlStreamWriter &w, const Map &map)
     w.writeAttribute(QLatin1String("tiledversion"), QCoreApplication::applicationVersion());
     w.writeAttribute(QLatin1String("orientation"), orientation);
     w.writeAttribute(QLatin1String("renderorder"), renderOrder);
+    w.writeAttribute(QLatin1String("compressionlevel"), QString::number(map.compressionLevel()));
     w.writeAttribute(QLatin1String("width"), QString::number(map.width()));
     w.writeAttribute(QLatin1String("height"), QString::number(map.height()));
     w.writeAttribute(QLatin1String("tilewidth"),
@@ -567,19 +574,20 @@ void MapWriterPrivate::writeTileLayer(QXmlStreamWriter &w,
     QString encoding;
     QString compression;
 
-    if (mLayerDataFormat == Map::Base64
-            || mLayerDataFormat == Map::Base64Gzip
-            || mLayerDataFormat == Map::Base64Zlib) {
-
+    switch (mLayerDataFormat) {
+    case Map::XML:
+        break;
+    case Map::Base64:
+    case Map::Base64Gzip:
+    case Map::Base64Zlib:
+    case Map::Base64Zstandard:
         encoding = QLatin1String("base64");
-
-        if (mLayerDataFormat == Map::Base64Gzip)
-            compression = QLatin1String("gzip");
-        else if (mLayerDataFormat == Map::Base64Zlib)
-            compression = QLatin1String("zlib");
-
-    } else if (mLayerDataFormat == Map::CSV)
+        compression = compressionToString(mLayerDataFormat);
+        break;
+    case Map::CSV:
         encoding = QLatin1String("csv");
+        break;
+    }
 
     w.writeStartElement(QLatin1String("data"));
     if (!encoding.isEmpty())
@@ -588,7 +596,12 @@ void MapWriterPrivate::writeTileLayer(QXmlStreamWriter &w,
         w.writeAttribute(QLatin1String("compression"), compression);
 
     if (tileLayer.map()->infinite()) {
-        const auto chunks = tileLayer.sortedChunksToWrite();
+        if (mChunkSize.width() != CHUNK_SIZE || mChunkSize.height() != CHUNK_SIZE) {
+            w.writeAttribute(QLatin1String("outputchunkwidth"), QString::number(mChunkSize.width()));
+            w.writeAttribute(QLatin1String("outputchunkheight"), QString::number(mChunkSize.height()));
+        }
+
+        const auto chunks = tileLayer.sortedChunksToWrite(mChunkSize);
         for (const QRect &rect : chunks) {
             w.writeStartElement(QLatin1String("chunk"));
             w.writeAttribute(QLatin1String("x"), QString::number(rect.x()));
@@ -641,7 +654,8 @@ void MapWriterPrivate::writeTileLayerData(QXmlStreamWriter &w,
     } else {
         QByteArray chunkData = mGidMapper.encodeLayerData(tileLayer,
                                                           mLayerDataFormat,
-                                                          bounds);
+                                                          bounds,
+                                                          mCompressionlevel);
 
         w.writeCharacters(QLatin1String("\n   "));
         w.writeCharacters(QString::fromLatin1(chunkData));

@@ -201,7 +201,7 @@ void MapDocument::setExportFormat(FileFormat *format)
  */
 QString MapDocument::displayName() const
 {
-    QString displayName = QFileInfo(mFileName).fileName();
+    QString displayName = QFileInfo(fileName()).fileName();
     if (displayName.isEmpty())
         displayName = tr("untitled.tmx");
 
@@ -246,6 +246,24 @@ void MapDocument::setSelectedLayers(const QList<Layer *> &layers)
 
     mSelectedLayers = layers;
     emit selectedLayersChanged();
+}
+
+void MapDocument::switchCurrentLayer(Layer *layer)
+{
+    setCurrentLayer(layer);
+
+    // Automatically select the layer if it isn't already
+    if (layer && !mSelectedLayers.contains(layer))
+        setSelectedLayers({ layer });
+}
+
+void MapDocument::switchSelectedLayers(const QList<Layer *> &layers)
+{
+    setSelectedLayers(layers);
+
+    // Automatically make sure the current layer is one of the selected ones
+    if (!layers.contains(mCurrentLayer))
+        setCurrentLayer(layers.isEmpty() ? nullptr : layers.first());
 }
 
 void MapDocument::resizeMap(QSize size, QPoint offset, bool removeObjects)
@@ -359,7 +377,7 @@ Layer *MapDocument::addLayer(Layer::TypeFlag layerType)
     auto parentLayer = mCurrentLayer ? mCurrentLayer->parentLayer() : nullptr;
     const int index = layerIndex(mCurrentLayer) + 1;
     undoStack()->push(new AddLayer(this, index, layer, parentLayer));
-    setCurrentLayer(layer);
+    switchSelectedLayers({layer});
 
     emit editLayerNameRequested();
 
@@ -474,10 +492,8 @@ void MapDocument::duplicateLayers(const QList<Layer *> &layers)
         }
 
         Layer *duplicate = layer->clone();
+        duplicate->resetIds();
         duplicate->setName(tr("Copy of %1").arg(duplicate->name()));
-
-        if (duplicate->layerType() == Layer::ObjectGroupType)
-            static_cast<ObjectGroup*>(duplicate)->resetObjectIds();
 
         auto parentLayer = layer->parentLayer();
 
@@ -495,8 +511,7 @@ void MapDocument::duplicateLayers(const QList<Layer *> &layers)
 
     undoStack()->endMacro();
 
-    setCurrentLayer(newLayers.first());
-    setSelectedLayers(newLayers);
+    switchSelectedLayers(newLayers);
 }
 
 /**
@@ -545,8 +560,7 @@ void MapDocument::mergeLayersDown(const QList<Layer *> &layers)
 
     undoStack()->endMacro();
 
-    setCurrentLayer(lastMergedLayer);
-    setSelectedLayers({ lastMergedLayer });
+    switchSelectedLayers({ lastMergedLayer });
 }
 
 /**
@@ -877,7 +891,7 @@ void MapDocument::setSelectedObjects(const QList<MapObject *> &selectedObjects)
     // Switch the current object layer if only one object layer (and/or its objects)
     // are included in the current selection.
     if (singleObjectGroup)
-        setCurrentLayer(singleObjectGroup);
+        switchCurrentLayer(singleObjectGroup);
 
     if (selectedObjects.size() == 1)
         setCurrentObject(selectedObjects.first());
@@ -1081,7 +1095,7 @@ void MapDocument::onLayerAdded(Layer *layer)
 
     // Select the first layer that gets added to the map
     if (mMap->layerCount() == 1 && mMap->layerAt(0) == layer)
-        setCurrentLayer(layer);
+        switchCurrentLayer(layer);
 }
 
 static void collectObjects(Layer *layer, QList<MapObject*> &objects)
@@ -1123,8 +1137,6 @@ void MapDocument::onLayerRemoved(Layer *layer)
         // Assumption: the current object is either not a layer, or it is the current layer.
         if (mCurrentObject == mCurrentLayer)
             setCurrentObject(nullptr);
-
-        setCurrentLayer(nullptr);
     }
 
     // Make sure affected layers are removed from the selection
@@ -1132,7 +1144,7 @@ void MapDocument::onLayerRemoved(Layer *layer)
     for (int i = selectedLayers.size() - 1; i >= 0; --i)
         if (selectedLayers.at(i)->isParentOrSelf(layer))
             selectedLayers.removeAt(i);
-    setSelectedLayers(selectedLayers);
+    switchSelectedLayers(selectedLayers);
 
     emit layerRemoved(layer);
 }
