@@ -201,7 +201,7 @@ void MapDocument::setExportFormat(FileFormat *format)
  */
 QString MapDocument::displayName() const
 {
-    QString displayName = QFileInfo(mFileName).fileName();
+    QString displayName = QFileInfo(fileName()).fileName();
     if (displayName.isEmpty())
         displayName = tr("untitled.tmx");
 
@@ -492,10 +492,8 @@ void MapDocument::duplicateLayers(const QList<Layer *> &layers)
         }
 
         Layer *duplicate = layer->clone();
+        duplicate->resetIds();
         duplicate->setName(tr("Copy of %1").arg(duplicate->name()));
-
-        if (duplicate->layerType() == Layer::ObjectGroupType)
-            static_cast<ObjectGroup*>(duplicate)->resetObjectIds();
 
         auto parentLayer = layer->parentLayer();
 
