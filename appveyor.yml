@@ -63,8 +63,6 @@ after_build:
   - cd itch
   - cd archive*
   - move tiled-*.7z %APPVEYOR_BUILD_FOLDER%
-  - cd ..\..
-  - if defined PUSH_TO_ITCH dist\win\push-to-itch.bat
 
 artifacts:
   - name: Installer
@@ -72,30 +70,4 @@ artifacts:
   - name: Archive
     path: 'tiled-*.7z'
 
-deploy:
-  - provider: GitHub
-    release: Tiled $(TILED_VERSION)
-    auth_token:
-      secure: 57ahePdHlJPeOX8/MqsIg5ho4x512wvAbwRA7TkXAOav/JTHvkTG5gf8k37/883r
-    artifact: /.*\.msi/
-    draft: true
-    on:
-        appveyor_repo_tag: true
-        push_release: true
 
-  - provider: FTP
-    protocol: sftp
-    host: update.mapeditor.org
-    username: update
-    password:
-      secure: YPoSL+S82PCgS5PYbhtxQv0YD7uwZAX9LhjJBBbDGvk=
-    folder: update.mapeditor.org/snapshots-win
-    artifact: /.*\.(msi|7z)/
-    on:
-        branch: snapshot
-        appveyor_repo_tag: false
-        push_release: true
-
-notifications:
-  - provider: Webhook
-    url: https://webhooks.gitter.im/e/6e48d432e0e0dd1b2d22
