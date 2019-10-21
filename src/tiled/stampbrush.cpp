@@ -47,7 +47,7 @@ using namespace Tiled;
 StampBrush::StampBrush(QObject *parent)
     : AbstractTileTool(tr("Stamp Brush"),
                        QIcon(QLatin1String(
-                               ":images/22x22/stock-tool-clone.png")),
+                               ":images/22/stock-tool-clone.png")),
                        QKeySequence(tr("B")),
                        nullptr,
                        parent)
@@ -485,7 +485,7 @@ void StampBrush::drawPreviewLayer(const QVector<QPoint> &points)
                     if ((stampStaggerIndex == mapStaggerIndex) == topIsOdd) {
                         Map *shiftedMap = shiftedCopies.value(map);
                         if (!shiftedMap) {
-                            shiftedMap = map->clone();
+                            shiftedMap = map->clone().release();
                             shiftedCopies.insert(map, shiftedMap);
 
                             LayerIterator it(shiftedMap, Layer::TileLayerType);
@@ -500,7 +500,7 @@ void StampBrush::drawPreviewLayer(const QVector<QPoint> &points)
                     if ((stampStaggerIndex == mapStaggerIndex) == leftIsOdd) {
                         Map *shiftedMap = shiftedCopies.value(map);
                         if (!shiftedMap) {
-                            shiftedMap = map->clone();
+                            shiftedMap = map->clone().release();
                             shiftedCopies.insert(map, shiftedMap);
 
                             LayerIterator it(shiftedMap, Layer::TileLayerType);

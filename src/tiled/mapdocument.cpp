@@ -24,6 +24,7 @@
 #include "addremovelayer.h"
 #include "addremovemapobject.h"
 #include "addremovetileset.h"
+#include "brokenlinks.h"
 #include "changelayer.h"
 #include "changemapobject.h"
 #include "changemapobjectsorder.h"
@@ -36,7 +37,9 @@
 #include "hexagonalrenderer.h"
 #include "imagelayer.h"
 #include "isometricrenderer.h"
+#include "issuesmodel.h"
 #include "layermodel.h"
+#include "logginginterface.h"
 #include "mapobject.h"
 #include "mapobjectmodel.h"
 #include "movelayer.h"
@@ -69,8 +72,8 @@
 
 using namespace Tiled;
 
-MapDocument::MapDocument(std::unique_ptr<Map> map, const QString &fileName)
-    : Document(MapDocumentType, fileName)
+MapDocument::MapDocument(std::unique_ptr<Map> map)
+    : Document(MapDocumentType, map->fileName)
     , mMap(std::move(map))
     , mLayerModel(new LayerModel(this))
     , mHoveredMapObject(nullptr)
@@ -109,6 +112,9 @@ MapDocument::MapDocument(std::unique_ptr<Map> map, const QString &fileName)
 
 MapDocument::~MapDocument()
 {
+    // Clear any previously found issues in this document
+    IssuesModel::instance().removeIssuesWithContext(this);
+
     // Needs to be deleted before the Map instance is deleted, because it may
     // cause script values to detach from the map, in which case they'll need
     // to be able to copy the data.
@@ -130,6 +136,12 @@ bool MapDocument::save(const QString &fileName, QString *error)
     }
 
     undoStack()->setClean();
+
+    if (mMap->fileName != fileName) {
+        mMap->fileName = fileName;
+        mMap->exportFileName.clear();
+    }
+
     setFileName(fileName);
     mLastSaved = QFileInfo(fileName).lastModified();
 
@@ -156,7 +168,9 @@ MapDocumentPtr MapDocument::load(const QString &fileName,
         return MapDocumentPtr();
     }
 
-    MapDocumentPtr document = MapDocumentPtr::create(std::move(map), fileName);
+    map->fileName = fileName;
+
+    MapDocumentPtr document = MapDocumentPtr::create(std::move(map));
     document->setReaderFormat(format);
     if (format->hasCapabilities(MapFormat::Write))
         document->setWriterFormat(format);
@@ -184,15 +198,27 @@ void MapDocument::setWriterFormat(MapFormat *format)
     mWriterFormat = format;
 }
 
+QString MapDocument::lastExportFileName() const
+{
+    return map()->exportFileName;
+}
+
+void MapDocument::setLastExportFileName(const QString &fileName)
+{
+    map()->exportFileName = fileName;
+}
+
 MapFormat *MapDocument::exportFormat() const
 {
-    return mExportFormat;
+    if (map()->exportFormat.isEmpty())
+        return nullptr;
+    return findFileFormat<MapFormat>(map()->exportFormat);
 }
 
 void MapDocument::setExportFormat(FileFormat *format)
 {
-    mExportFormat = qobject_cast<MapFormat*>(format);
-    Q_ASSERT(mExportFormat);
+    Q_ASSERT(qobject_cast<MapFormat*>(format));
+    map()->exportFormat = format->shortName();
 }
 
 /**
@@ -266,9 +292,103 @@ void MapDocument::switchSelectedLayers(const QList<Layer *> &layers)
         setCurrentLayer(layers.isEmpty() ? nullptr : layers.first());
 }
 
+/**
+ * Custom intersects check necessary because QRectF::intersects wants a
+ * non-empty area of overlap, but we should also consider overlap with empty
+ * area as intersection.
+ *
+ * Results for rectangles with negative size are undefined.
+ */
+static bool intersects(const QRectF &a, const QRectF &b)
+{
+    return a.right() >= b.left() &&
+            a.bottom() >= b.top() &&
+            a.left() <= b.right() &&
+            a.top() <= b.bottom();
+}
+
+static bool visibleIn(const QRectF &area, MapObject *object,
+                      const MapRenderer &renderer)
+{
+    QRectF boundingRect = renderer.boundingRect(object);
+
+    if (object->rotation() != 0) {
+        // Rotate around object position
+        QPointF pos = renderer.pixelToScreenCoords(object->position());
+        boundingRect.translate(-pos);
+
+        QTransform transform;
+        transform.rotate(object->rotation());
+        boundingRect = transform.mapRect(boundingRect);
+
+        boundingRect.translate(pos);
+    }
+
+    return intersects(area, boundingRect);
+}
+
 void MapDocument::resizeMap(QSize size, QPoint offset, bool removeObjects)
 {
-    static_cast<EditableMap*>(editable())->resize(size, offset, removeObjects);
+    const QRegion movedSelection = selectedArea().translated(offset);
+    const QRect newArea = QRect(-offset, size);
+    const QRectF visibleArea = renderer()->boundingRect(newArea);
+
+    const QPointF origin = renderer()->tileToPixelCoords(QPointF());
+    const QPointF newOrigin = renderer()->tileToPixelCoords(-offset);
+    const QPointF pixelOffset = origin - newOrigin;
+
+    // Resize the map and each layer
+    QUndoCommand *command = new QUndoCommand(tr("Resize Map"));
+
+    QList<MapObject *> objectsToRemove;
+
+    LayerIterator iterator(map());
+    while (Layer *layer = iterator.next()) {
+        switch (layer->layerType()) {
+        case Layer::TileLayerType: {
+            TileLayer *tileLayer = static_cast<TileLayer*>(layer);
+            new ResizeTileLayer(this, tileLayer, size, offset, command);
+            break;
+        }
+        case Layer::ObjectGroupType: {
+            ObjectGroup *objectGroup = static_cast<ObjectGroup*>(layer);
+
+            for (MapObject *o : objectGroup->objects()) {
+                if (removeObjects && !visibleIn(visibleArea, o, *renderer())) {
+                    // Remove objects that will fall outside of the map
+                    objectsToRemove.append(o);
+                } else {
+                    QPointF oldPos = o->position();
+                    QPointF newPos = oldPos + pixelOffset;
+                    new MoveMapObject(this, o, newPos, oldPos, command);
+                }
+            }
+            break;
+        }
+        case Layer::ImageLayerType: {
+            // Adjust image layer by changing its offset
+            auto imageLayer = static_cast<ImageLayer*>(layer);
+            new SetLayerOffset(this, layer,
+                               imageLayer->offset() + pixelOffset,
+                               command);
+            break;
+        }
+        case Layer::GroupLayerType: {
+            // Recursion handled by LayerIterator
+            break;
+        }
+        }
+    }
+
+    if (!objectsToRemove.isEmpty())
+        new RemoveMapObjects(this, objectsToRemove, command);
+
+    new ResizeMap(this, size, command);
+    new ChangeSelectedArea(this, movedSelection, command);
+
+    undoStack()->push(command);
+
+    // TODO: Handle layers that don't match the map size correctly
 }
 
 void MapDocument::autocropMap()
@@ -893,8 +1013,15 @@ void MapDocument::setSelectedObjects(const QList<MapObject *> &selectedObjects)
     if (singleObjectGroup)
         switchCurrentLayer(singleObjectGroup);
 
-    if (selectedObjects.size() == 1)
+    // Make sure the current object is one of the selected ones
+    if (!selectedObjects.isEmpty()) {
+        if (currentObject() && currentObject()->typeId() == Object::MapObjectType) {
+            if (selectedObjects.contains(static_cast<MapObject*>(currentObject())))
+                return;
+        }
+
         setCurrentObject(selectedObjects.first());
+    }
 }
 
 QList<Object*> MapDocument::currentObjects() const
@@ -1147,6 +1274,49 @@ void MapDocument::onLayerRemoved(Layer *layer)
     switchSelectedLayers(selectedLayers);
 
     emit layerRemoved(layer);
+}
+
+void MapDocument::checkIssues()
+{
+    // Clear any previously found issues in this document
+    IssuesModel::instance().removeIssuesWithContext(this);
+
+    for (const SharedTileset &tileset : map()->tilesets()) {
+        if (tileset->isExternal() && tileset->status() == LoadingError) {
+            ERROR(tr("Failed to load tileset '%1'").arg(tileset->fileName()),
+                  LocateTileset { tileset, sharedFromThis() },
+                  this);
+        }
+    }
+
+    QSet<const ObjectTemplate*> brokenTemplates;
+
+    LayerIterator it(map());
+    for (Layer *layer : map()->objectGroups()) {
+        ObjectGroup *objectGroup = static_cast<ObjectGroup*>(layer->asObjectGroup());
+        for (MapObject *mapObject : *objectGroup) {
+            if (const ObjectTemplate *objectTemplate = mapObject->objectTemplate())
+                if (!objectTemplate->object())
+                    brokenTemplates.insert(objectTemplate);
+        }
+    }
+
+    for (auto objectTemplate : brokenTemplates) {
+        ERROR(tr("Failed to load template '%1'").arg(objectTemplate->fileName()),
+              LocateObjectTemplate { objectTemplate, sharedFromThis() },
+              this);
+    }
+
+    checkFilePathProperties(map());
+
+    for (Layer *layer : map()->allLayers()) {
+        checkFilePathProperties(layer);
+
+        if (layer->isObjectGroup()) {
+            for (MapObject *mapObject : static_cast<ObjectGroup*>(layer)->objects())
+                checkFilePathProperties(mapObject);
+        }
+    }
 }
 
 void MapDocument::updateTemplateInstances(const ObjectTemplate *objectTemplate)

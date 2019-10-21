@@ -85,7 +85,7 @@ public:
     /**
      * Constructs a map document around the given map.
      */
-    MapDocument(std::unique_ptr<Map> map, const QString &fileName = QString());
+    MapDocument(std::unique_ptr<Map> map);
 
     ~MapDocument() override;
 
@@ -106,6 +106,9 @@ public:
 
     FileFormat *writerFormat() const override;
     void setWriterFormat(MapFormat *format);
+
+    QString lastExportFileName() const override;
+    void setLastExportFileName(const QString &fileName) override;
 
     MapFormat *exportFormat() const override;
     void setExportFormat(FileFormat *format) override;
@@ -247,6 +250,8 @@ public:
 
     bool templateAllowed(const ObjectTemplate *objectTemplate) const;
 
+    void checkIssues() override;
+
 signals:
     /**
      * Emitted when the selected tile region changes. Sends the currently
@@ -337,7 +342,12 @@ signals:
     void tileProbabilityChanged(Tile *tile);
     void tileObjectGroupChanged(Tile *tile);
 
-private slots:
+public slots:
+    void updateTemplateInstances(const ObjectTemplate *objectTemplate);
+    void selectAllInstances(const ObjectTemplate *objectTemplate);
+    void deselectObjects(const QList<MapObject*> &objects);
+
+private:
     void onChanged(const ChangeEvent &change);
 
     void onMapObjectModelRowsInserted(const QModelIndex &parent, int first, int last);
@@ -349,12 +359,6 @@ private slots:
     void onLayerAboutToBeRemoved(GroupLayer *groupLayer, int index);
     void onLayerRemoved(Layer *layer);
 
-public slots:
-    void updateTemplateInstances(const ObjectTemplate *objectTemplate);
-    void selectAllInstances(const ObjectTemplate *objectTemplate);
-    void deselectObjects(const QList<MapObject*> &objects);
-
-private:
     void moveObjectIndex(const MapObject *object, int count);
 
     /*
@@ -363,7 +367,6 @@ private:
      */
     QPointer<MapFormat> mReaderFormat;
     QPointer<MapFormat> mWriterFormat;
-    QPointer<MapFormat> mExportFormat;
     std::unique_ptr<Map> mMap;
     LayerModel *mLayerModel;
     QRegion mSelectedArea;

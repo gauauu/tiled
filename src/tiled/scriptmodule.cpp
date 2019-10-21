@@ -24,12 +24,16 @@
 #include "commanddatamodel.h"
 #include "commandmanager.h"
 #include "editabletileset.h"
+#include "issuesmodel.h"
 #include "logginginterface.h"
+#include "mainwindow.h"
+#include "mapeditor.h"
 #include "scriptedaction.h"
 #include "scriptedmapformat.h"
 #include "scriptedtool.h"
 #include "scriptmanager.h"
 #include "tilesetdocument.h"
+#include "tileseteditor.h"
 
 #include <QAction>
 #include <QCoreApplication>
@@ -41,7 +45,6 @@ namespace Tiled {
 
 ScriptModule::ScriptModule(QObject *parent)
     : QObject(parent)
-    , mLogger(new LoggingInterface(this))
 {
     auto documentManager = DocumentManager::instance();
     connect(documentManager, &DocumentManager::documentCreated, this, &ScriptModule::documentCreated);
@@ -50,16 +53,14 @@ ScriptModule::ScriptModule(QObject *parent)
     connect(documentManager, &DocumentManager::documentSaved, this, &ScriptModule::documentSaved);
     connect(documentManager, &DocumentManager::documentAboutToClose, this, &ScriptModule::documentAboutToClose);
     connect(documentManager, &DocumentManager::currentDocumentChanged, this, &ScriptModule::currentDocumentChanged);
-
-    PluginManager::addObject(mLogger);
 }
 
 ScriptModule::~ScriptModule()
 {
-    PluginManager::removeObject(mLogger);
-
     for (const auto &pair : mRegisteredActions)
         ActionManager::unregisterAction(pair.second->id());
+
+    IssuesModel::instance().removeIssuesWithContext(this);
 }
 
 QString ScriptModule::version() const
@@ -138,6 +139,16 @@ QList<QObject *> ScriptModule::openAssets() const
     for (const DocumentPtr &document : documentManager->documents())
         assets.append(document->editable());
     return assets;
+}
+
+TilesetEditor *ScriptModule::tilesetEditor() const
+{
+    return static_cast<TilesetEditor*>(DocumentManager::instance()->editor(Document::TilesetDocumentType));
+}
+
+MapEditor *ScriptModule::mapEditor() const
+{
+    return static_cast<MapEditor*>(DocumentManager::instance()->editor(Document::MapDocumentType));
 }
 
 EditableAsset *ScriptModule::open(const QString &fileName) const
@@ -358,27 +369,47 @@ void ScriptModule::executeCommand(const QString &name, bool inTerminal) const
 
 void ScriptModule::alert(const QString &text, const QString &title) const
 {
-    QMessageBox::warning(nullptr, title, text);
+    QMessageBox::warning(MainWindow::instance(), title, text);
 }
 
 bool ScriptModule::confirm(const QString &text, const QString &title) const
 {
-    return QMessageBox::question(nullptr, title, text) == QMessageBox::Yes;
+    return QMessageBox::question(MainWindow::instance(), title, text) == QMessageBox::Yes;
 }
 
 QString ScriptModule::prompt(const QString &label, const QString &text, const QString &title) const
 {
-    return QInputDialog::getText(nullptr, title, label, QLineEdit::Normal, text);
+    return QInputDialog::getText(MainWindow::instance(), title, label, QLineEdit::Normal, text);
 }
 
 void ScriptModule::log(const QString &text) const
 {
-    mLogger->info(text);
+    Tiled::INFO(text);
 }
 
-void ScriptModule::error(const QString &text) const
+void ScriptModule::warn(const QString &text, QJSValue activated)
 {
-    mLogger->error(tr("Error: %1").arg(text));
+    Issue issue { Issue::Warning, text };
+    setCallback(issue, activated);
+    LoggingInterface::instance().report(issue);
+}
+
+void ScriptModule::error(const QString &text, QJSValue activated)
+{
+    Issue issue { Issue::Error, text };
+    setCallback(issue, activated);
+    LoggingInterface::instance().report(issue);
+}
+
+void ScriptModule::setCallback(Issue &issue, QJSValue activated)
+{
+    if (activated.isCallable()) {
+        issue.setCallback([activated] () mutable {   // 'mutable' needed because of non-const QJSValue::call
+            QJSValue result = activated.call();
+            ScriptManager::instance().checkError(result);
+        });
+        issue.setContext(this);
+    }
 }
 
 void ScriptModule::documentCreated(Document *document)

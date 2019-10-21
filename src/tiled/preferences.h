@@ -92,11 +92,11 @@ public:
     Map::RenderOrder mapRenderOrder() const;
     void setMapRenderOrder(Map::RenderOrder mapRenderOrder);
 
-    bool dtdEnabled() const;
-    void setDtdEnabled(bool enabled);
-
     bool safeSavingEnabled() const;
     void setSafeSavingEnabled(bool enabled);
+
+    bool exportOnSave() const;
+    void setExportOnSave(bool enabled);
 
     enum ExportOption {
         EmbedTilesets                   = 0x1,
@@ -272,6 +272,7 @@ private:
     Map::RenderOrder mMapRenderOrder;
     bool mDtdEnabled;
     bool mSafeSavingEnabled;
+    bool mExportOnSave;
     ExportOptions mExportOptions;
     QString mLanguage;
     bool mReloadTilesetsOnChange;
@@ -396,14 +397,14 @@ inline Map::RenderOrder Preferences::mapRenderOrder() const
     return mMapRenderOrder;
 }
 
-inline bool Preferences::dtdEnabled() const
-{
-    return mDtdEnabled;
-}
-
 inline bool Preferences::safeSavingEnabled() const
 {
     return mSafeSavingEnabled;
+}
+
+inline bool Preferences::exportOnSave() const
+{
+    return mExportOnSave;
 }
 
 inline Preferences::ExportOptions Preferences::exportOptions() const

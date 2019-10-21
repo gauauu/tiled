@@ -22,12 +22,15 @@
 
 #include "changetile.h"
 #include "changetileanimation.h"
+#include "changetileimagesource.h"
+#include "changetileobjectgroup.h"
 #include "changetileprobability.h"
 #include "changetileterrain.h"
 #include "editablemanager.h"
 #include "editableobjectgroup.h"
 #include "editableterrain.h"
 #include "editabletileset.h"
+#include "imagecache.h"
 #include "objectgroup.h"
 #include "scriptmanager.h"
 
@@ -156,6 +159,23 @@ void EditableTile::setType(const QString &type)
         tile()->setType(type);
 }
 
+void EditableTile::setImageFileName(const QString &fileName)
+{
+    if (asset()) {
+        if (!tileset()->tileset()->isCollection()) {
+            ScriptManager::instance().throwError(tr("Tileset needs to be an image collection"));
+            return;
+        }
+
+        asset()->push(new ChangeTileImageSource(tileset()->tilesetDocument(),
+                                                tile(),
+                                                QUrl::fromLocalFile(fileName)));
+    } else {
+        tile()->setImage(ImageCache::loadPixmap(fileName));
+        tile()->setImageSource(QUrl::fromLocalFile(fileName));
+    }
+}
+
 void EditableTile::setTerrain(QJSValue value)
 {
     if (!value.isObject() && !value.isNumber()) {
@@ -190,6 +210,33 @@ void EditableTile::setProbability(qreal probability)
         asset()->push(new ChangeTileProbability(tileset()->tilesetDocument(), { tile() }, probability));
     else
         tile()->setProbability(probability);
+}
+
+void EditableTile::setObjectGroup(EditableObjectGroup *editableObjectGroup)
+{
+    if (!editableObjectGroup) {
+        ScriptManager::instance().throwError(tr("Invalid argument"));
+        return;
+    }
+
+    if (!editableObjectGroup->isOwning()) {
+        ScriptManager::instance().throwError(tr("ObjectGroup is in use"));
+        return;
+    }
+
+    std::unique_ptr<ObjectGroup> og(static_cast<ObjectGroup*>(editableObjectGroup->release()));
+
+    if (asset()) {
+        asset()->push(new ChangeTileObjectGroup(tileset()->tilesetDocument(),
+                                                tile(),
+                                                std::move(og)));
+    } else {
+        detachObjectGroup();
+        tile()->setObjectGroup(std::move(og));
+    }
+
+    Q_ASSERT(editableObjectGroup->objectGroup() == tile()->objectGroup());
+    Q_ASSERT(!editableObjectGroup->isOwning());
 }
 
 void EditableTile::setFrames(QJSValue value)

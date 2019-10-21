@@ -169,7 +169,6 @@ QtGuiApplication {
         "commandmanager.h",
         "consoledock.cpp",
         "consoledock.h",
-        "containerhelpers.h",
         "createellipseobjecttool.cpp",
         "createellipseobjecttool.h",
         "createobjecttool.cpp",
@@ -258,6 +257,12 @@ QtGuiApplication {
         "imagelayeritem.h",
         "clickablelabel.cpp",
         "clickablelabel.h",
+        "issuescounter.cpp",
+        "issuescounter.h",
+        "issuesdock.cpp",
+        "issuesdock.h",
+        "issuesmodel.cpp",
+        "issuesmodel.h",
         "languagemanager.cpp",
         "languagemanager.h",
         "layerdock.cpp",
@@ -618,7 +623,7 @@ QtGuiApplication {
         condition: qbs.targetOS.contains("linux")
         qbs.install: true
         qbs.installDir: "share/icons/hicolor/16x16/apps"
-        files: [ "images/16x16/tiled.png" ]
+        files: [ "images/16/tiled.png" ]
     }
 
     Group {
@@ -626,7 +631,7 @@ QtGuiApplication {
         condition: qbs.targetOS.contains("linux")
         qbs.install: true
         qbs.installDir: "share/icons/hicolor/32x32/apps"
-        files: [ "images/32x32/tiled.png" ]
+        files: [ "images/32/tiled.png" ]
     }
 
     Group {
@@ -642,7 +647,7 @@ QtGuiApplication {
         condition: qbs.targetOS.contains("linux")
         qbs.install: true
         qbs.installDir: "share/icons/hicolor/16x16/mimetypes"
-        files: [ "images/16x16/application-x-tiled.png" ]
+        files: [ "images/16/application-x-tiled.png" ]
     }
 
     Group {
@@ -650,7 +655,7 @@ QtGuiApplication {
         condition: qbs.targetOS.contains("linux")
         qbs.install: true
         qbs.installDir: "share/icons/hicolor/32x32/mimetypes"
-        files: [ "images/32x32/application-x-tiled.png" ]
+        files: [ "images/32/application-x-tiled.png" ]
     }
 
     Group {

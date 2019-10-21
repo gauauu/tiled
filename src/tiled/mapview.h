@@ -42,6 +42,8 @@ class MapView : public QGraphicsView
 {
     Q_OBJECT
 
+    Q_PROPERTY(qreal scale READ scale WRITE setScale)
+
 public:
     /**
      * Using Qt::WA_StaticContents gives a performance boost in certain
@@ -64,8 +66,14 @@ public:
 
     Zoomable *zoomable() const { return mZoomable; }
 
+    qreal scale() const;
+    void setScale(qreal scale);
+
     bool handScrolling() const { return mHandScrolling; }
     void setHandScrolling(bool handScrolling);
+
+    using QGraphicsView::centerOn;
+    Q_INVOKABLE void centerOn(qreal x, qreal y) { forceCenterOn(QPointF(x, y)); };
 
     void forceCenterOn(const QPointF &pos);
 
@@ -87,19 +95,18 @@ protected:
 
     void handlePinchGesture(QPinchGesture *pinch);
 
-    void adjustCenterFromMousePosition(QPoint &mousePos);
+    void adjustCenterFromMousePosition(QPoint mousePos);
 
 signals:
     void focused();
 
-private slots:
+private:
     void adjustScale(qreal scale);
     void setUseOpenGL(bool useOpenGL);
     void updateSceneRect(const QRectF &sceneRect);
     void updateSceneRect(const QRectF &sceneRect, const QTransform &transform);
     void focusMapObject(MapObject *mapObject);
 
-private:
     void setMapDocument(MapDocument *mapDocument);
 
     MapDocument *mMapDocument = nullptr;
@@ -111,3 +118,5 @@ private:
 };
 
 } // namespace Tiled
+
+Q_DECLARE_METATYPE(Tiled::MapView*)

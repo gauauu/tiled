@@ -61,6 +61,7 @@ Preferences::Preferences()
             (intValue("MapRenderOrder", Map::RightDown));
     mDtdEnabled = boolValue("DtdEnabled");
     mSafeSavingEnabled = boolValue("SafeSavingEnabled", true);
+    mExportOnSave = boolValue("ExportOnSave", false);
     mReloadTilesetsOnChange = boolValue("ReloadTilesets", true);
     mStampsDirectory = stringValue("StampsDirectory");
     mTemplatesDirectory = stringValue("TemplatesDirectory");
@@ -401,17 +402,17 @@ void Preferences::setMapRenderOrder(Map::RenderOrder mapRenderOrder)
                         mMapRenderOrder);
 }
 
-void Preferences::setDtdEnabled(bool enabled)
-{
-    mDtdEnabled = enabled;
-    mSettings->setValue(QLatin1String("Storage/DtdEnabled"), enabled);
-}
-
 void Preferences::setSafeSavingEnabled(bool enabled)
 {
     mSafeSavingEnabled = enabled;
     mSettings->setValue(QLatin1String("Storage/SafeSavingEnabled"), enabled);
     SaveFile::setSafeSavingEnabled(enabled);
+}
+
+void Preferences::setExportOnSave(bool enabled)
+{
+    mExportOnSave = enabled;
+    mSettings->setValue(QLatin1String("Storage/ExportOnSave"), enabled);
 }
 
 void Preferences::setExportOption(Preferences::ExportOption option, bool value)

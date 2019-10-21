@@ -198,6 +198,9 @@ TilesetDock::TilesetDock(QWidget *parent)
     , mExportTileset(new QAction(this))
     , mEditTileset(new QAction(this))
     , mDeleteTileset(new QAction(this))
+    , mSelectNextTileset(new QAction(this))
+    , mSelectPreviousTileset(new QAction(this))
+    , mDynamicWrappingToggle(new QAction(this))
     , mTilesetMenuButton(new TilesetMenuButton(this))
     , mTilesetMenu(new QMenu(this))
     , mTilesetActionGroup(new QActionGroup(this))
@@ -205,6 +208,9 @@ TilesetDock::TilesetDock(QWidget *parent)
     , mSynchronizingSelection(false)
 {
     setObjectName(QLatin1String("TilesetDock"));
+
+    ActionManager::registerAction(mSelectNextTileset, "SelectNextTileset");
+    ActionManager::registerAction(mSelectPreviousTileset, "SelectPreviousTileset");
 
     mTabBar->setUsesScrollButtons(true);
     mTabBar->setExpanding(false);
@@ -236,11 +242,14 @@ TilesetDock::TilesetDock(QWidget *parent)
     horizontal->addWidget(mToolBar, 1);
     vertical->addLayout(horizontal);
 
-    mNewTileset->setIcon(QIcon(QLatin1String(":images/16x16/document-new.png")));
-    mEmbedTileset->setIcon(QIcon(QLatin1String(":images/16x16/document-import.png")));
-    mExportTileset->setIcon(QIcon(QLatin1String(":images/16x16/document-export.png")));
-    mEditTileset->setIcon(QIcon(QLatin1String(":images/16x16/document-properties.png")));
-    mDeleteTileset->setIcon(QIcon(QLatin1String(":images/16x16/edit-delete.png")));
+    mDynamicWrappingToggle->setCheckable(true);
+    mDynamicWrappingToggle->setIcon(QIcon(QLatin1String("://images/scalable/wrap.svg")));
+
+    mNewTileset->setIcon(QIcon(QLatin1String(":images/16/document-new.png")));
+    mEmbedTileset->setIcon(QIcon(QLatin1String(":images/16/document-import.png")));
+    mExportTileset->setIcon(QIcon(QLatin1String(":images/16/document-export.png")));
+    mEditTileset->setIcon(QIcon(QLatin1String(":images/16/document-properties.png")));
+    mDeleteTileset->setIcon(QIcon(QLatin1String(":images/16/edit-delete.png")));
 
     Utils::setThemeIcon(mNewTileset, "document-new");
     Utils::setThemeIcon(mEmbedTileset, "document-import");
@@ -253,13 +262,24 @@ TilesetDock::TilesetDock(QWidget *parent)
     connect(mExportTileset, &QAction::triggered, this, &TilesetDock::exportTileset);
     connect(mEditTileset, &QAction::triggered, this, &TilesetDock::editTileset);
     connect(mDeleteTileset, &QAction::triggered, this, &TilesetDock::removeTileset);
+    connect(mSelectNextTileset, &QAction::triggered, this, [this] { mTabBar->setCurrentIndex(mTabBar->currentIndex() + 1); });
+    connect(mSelectPreviousTileset, &QAction::triggered, this, [this] { mTabBar->setCurrentIndex(mTabBar->currentIndex() - 1); });
+    connect(mDynamicWrappingToggle, &QAction::toggled, this, [this] (bool checked) {
+        if (TilesetView *view = currentTilesetView())
+            view->setDynamicWrapping(checked);
+    });
 
-    mToolBar->addAction(mNewTileset);
+    auto stretch = new QWidget;
+    stretch->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Minimum);
+
     mToolBar->setIconSize(Utils::smallIconSize());
+    mToolBar->addAction(mNewTileset);
     mToolBar->addAction(mEmbedTileset);
     mToolBar->addAction(mExportTileset);
     mToolBar->addAction(mEditTileset);
     mToolBar->addAction(mDeleteTileset);
+    mToolBar->addWidget(stretch);
+    mToolBar->addAction(mDynamicWrappingToggle);
 
     mZoomComboBox = new QComboBox;
     horizontal->addWidget(mZoomComboBox);
@@ -443,6 +463,8 @@ void TilesetDock::currentTilesetChanged()
 
         if (const QItemSelectionModel *s = view->selectionModel())
             setCurrentTile(view->tilesetModel()->tileAt(s->currentIndex()));
+
+        mDynamicWrappingToggle->setChecked(view->dynamicWrapping());
     }
 }
 
@@ -490,6 +512,8 @@ void TilesetDock::updateActions()
     mExportTileset->setEnabled(tilesetIsDisplayed && !external);
     mEditTileset->setEnabled(tilesetIsDisplayed);
     mDeleteTileset->setEnabled(tilesetIsDisplayed && map && contains(map->tilesets(), tileset));
+    mSelectNextTileset->setEnabled(index != -1 && index < mTabBar->count() - 1);
+    mSelectPreviousTileset->setEnabled(index > 0);
 }
 
 void TilesetDock::updateCurrentTiles()
@@ -737,6 +761,11 @@ void TilesetDock::retranslateUi()
     mExportTileset->setText(tr("&Export Tileset As..."));
     mEditTileset->setText(tr("Edit Tile&set"));
     mDeleteTileset->setText(tr("&Remove Tileset"));
+    mSelectNextTileset->setText(tr("Select &Next Tileset"));
+    mSelectNextTileset->setShortcut(tr("]"));
+    mSelectPreviousTileset->setText(tr("Select &Previous Tileset"));
+    mSelectPreviousTileset->setShortcut(tr("["));
+    mDynamicWrappingToggle->setText(tr("Dynamically Wrap Tiles"));
 }
 
 void TilesetDock::onTilesetRowsInserted(const QModelIndex &parent, int first, int last)
@@ -846,6 +875,20 @@ SharedTileset TilesetDock::currentTileset() const
         return {};
 
     return mTilesets.at(index);
+}
+
+void TilesetDock::setCurrentEditableTileset(EditableTileset *tileset)
+{
+    setCurrentTileset(tileset->tileset()->sharedPointer());
+}
+
+EditableTileset *TilesetDock::currentEditableTileset() const
+{
+    const int index = mTabBar->currentIndex();
+    if (index == -1)
+        return nullptr;
+
+    return mTilesetDocuments.at(index)->editable();
 }
 
 TilesetView *TilesetDock::currentTilesetView() const

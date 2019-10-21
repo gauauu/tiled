@@ -29,18 +29,22 @@
 #include "editor.h"
 #include "filechangedwarning.h"
 #include "filesystemwatcher.h"
+#include "logginginterface.h"
 #include "map.h"
 #include "mapdocument.h"
 #include "mapeditor.h"
 #include "mapformat.h"
+#include "maprenderer.h"
 #include "mapview.h"
 #include "noeditorwidget.h"
 #include "preferences.h"
+#include "terrain.h"
 #include "tilesetdocument.h"
 #include "tilesetdocumentsmodel.h"
 #include "tilesetmanager.h"
 #include "tmxmapformat.h"
 #include "utils.h"
+#include "wangset.h"
 #include "zoomable.h"
 
 #include <QCoreApplication>
@@ -134,6 +138,141 @@ DocumentManager::DocumentManager(QObject *parent)
 
     connect(TilesetManager::instance(), &TilesetManager::tilesetImagesChanged,
             this, &DocumentManager::tilesetImagesChanged);
+
+    OpenFile::activated = [this] (const OpenFile &open) {
+        openFile(open.file);
+    };
+
+    JumpToTile::activated = [this] (const JumpToTile &jump) {
+        if (auto mapDocument = openMapFile(jump.mapFile)) {
+            auto renderer = mapDocument->renderer();
+            auto mapView = viewForDocument(mapDocument);
+            auto pos = renderer->tileToScreenCoords(jump.tilePos);
+            mapView->forceCenterOn(pos);
+
+            if (auto layer = mapDocument->map()->findLayerById(jump.layerId))
+                mapDocument->switchSelectedLayers({ layer });
+        }
+    };
+
+    JumpToObject::activated = [this] (const JumpToObject &jump) {
+        if (auto mapDocument = openMapFile(jump.mapFile)) {
+            if (auto object = mapDocument->map()->findObjectById(jump.objectId)) {
+                mapDocument->focusMapObjectRequested(object);
+                mapDocument->setSelectedObjects({ object });
+            }
+        }
+    };
+
+    SelectLayer::activated = [this] (const SelectLayer &select) {
+        if (auto mapDocument = openMapFile(select.mapFile)) {
+            if (auto layer = mapDocument->map()->findLayerById(select.layerId)) {
+                mapDocument->switchSelectedLayers({ layer });
+                mapDocument->setCurrentObject(layer);
+            }
+        }
+    };
+
+    SelectCustomProperty::activated = [this] (const SelectCustomProperty &select) {
+        openFile(select.fileName);
+        const int i = findDocument(select.fileName);
+        if (i == -1)
+            return;
+
+        auto doc = mDocuments.at(i).data();
+        Object *obj = nullptr;
+
+        switch (doc->type()) {
+        case Document::MapDocumentType: {
+            auto mapDocument = static_cast<MapDocument*>(doc);
+            switch (select.objectType) {
+            case Object::LayerType:
+                if (auto layer = mapDocument->map()->findLayerById(select.id)) {
+                    mapDocument->switchSelectedLayers({ layer });
+                    obj = layer;
+                }
+                break;
+            case Object::MapObjectType:
+                if (auto object = mapDocument->map()->findObjectById(select.id)) {
+                    mapDocument->focusMapObjectRequested(object);
+                    mapDocument->setSelectedObjects({ object });
+                    obj = object;
+                }
+                break;
+            case Object::MapType:
+                obj = mapDocument->map();
+                break;
+            case Object::ObjectTemplateType:
+                emit templateOpenRequested(select.fileName);
+                // todo: can't access Object pointer
+                break;
+            }
+            break;
+        }
+        case Document::TilesetDocumentType:
+            auto tilesetDocument = static_cast<TilesetDocument*>(doc);
+            switch (select.objectType) {
+            case Object::MapObjectType:
+                // todo: no way to know to which tile this object belongs
+                break;
+            case Object::TerrainType:
+                // todo: select the terrain
+                if (select.id < tilesetDocument->tileset()->terrainCount())
+                    obj = tilesetDocument->tileset()->terrain(select.id);
+                break;
+            case Object::TilesetType:
+                obj = tilesetDocument->tileset().data();
+                break;
+            case Object::TileType:
+                if (auto tile = tilesetDocument->tileset()->findTile(select.id)) {
+                    tilesetDocument->setSelectedTiles({ tile });
+                    obj = tile;
+                }
+                break;
+            case Object::WangSetType: {
+                // todo: select the wang set
+                if (select.id < tilesetDocument->tileset()->wangSetCount())
+                    obj = tilesetDocument->tileset()->wangSet(select.id);
+                break;
+            }
+            case Object::WangColorType:
+                // todo: can't select just by color index
+                break;
+            case Object::ObjectTemplateType:
+                emit templateOpenRequested(select.fileName);
+                // todo: can't access Object pointer
+                break;
+            }
+            break;
+        }
+
+        if (obj) {
+            doc->setCurrentObject(obj);
+            emit selectCustomPropertyRequested(select.propertyName);
+        }
+    };
+
+    SelectTile::activated = [this] (const SelectTile &select) {
+        TilesetDocument* tilesetDocument = nullptr;
+
+        if (SharedTileset tileset { select.tileset }) {
+            tilesetDocument = findTilesetDocument(tileset);
+            if (tilesetDocument) {
+                if (!switchToDocument(tilesetDocument))
+                    addDocument(tilesetDocument->sharedFromThis());
+            }
+        }
+
+        if (!tilesetDocument && !select.tilesetFile.isEmpty())
+            tilesetDocument = openTilesetFile(select.tilesetFile);
+
+        if (tilesetDocument) {
+            if (auto tile = tilesetDocument->tileset()->findTile(select.tileId)) {
+                tilesetDocument->setSelectedTiles({ tile });
+                tilesetDocument->setCurrentObject(tile);
+            }
+        }
+    };
 
     mTabBar->installEventFilter(this);
 }
@@ -372,7 +511,7 @@ void DocumentManager::addDocument(const DocumentPtr &document)
     mTabBar->setTabToolTip(documentIndex, document->fileName());
 
     connect(documentPtr, &Document::fileNameChanged, this, &DocumentManager::fileNameChanged);
-    connect(document->editable(), &EditableAsset::modifiedChanged, this, [=] { updateDocumentTab(documentPtr); });
+    connect(documentPtr, &Document::modifiedChanged, this, [=] { updateDocumentTab(documentPtr); });
     connect(documentPtr, &Document::saved, this, &DocumentManager::onDocumentSaved);
 
     if (auto *mapDocument = qobject_cast<MapDocument*>(documentPtr)) {
@@ -517,7 +656,7 @@ bool DocumentManager::saveDocumentAs(Document *document)
         }
 
         while (true) {
-            fileName = QFileDialog::getSaveFileName(mWidget->window(), QString(),
+            fileName = QFileDialog::getSaveFileName(mWidget->window(), tr("Save File As"),
                                                     fileName,
                                                     filter,
                                                     &selectedFilter);
@@ -838,7 +977,7 @@ void DocumentManager::tabContextMenuRequested(const QPoint &pos)
     menu.addSeparator();
 
     QAction *closeTab = menu.addAction(tr("Close"));
-    closeTab->setIcon(QIcon(QStringLiteral(":/images/16x16/window-close.png")));
+    closeTab->setIcon(QIcon(QStringLiteral(":/images/16/window-close.png")));
     Utils::setThemeIcon(closeTab, "window-close");
     connect(closeTab, &QAction::triggered, [this, index] {
         documentCloseRequested(index);
@@ -984,6 +1123,20 @@ void DocumentManager::removeFromTilesetDocument(const SharedTileset &tileset, Ma
             emit tilesetDocumentRemoved(tilesetDocument);
         }
     }
+}
+
+MapDocument *DocumentManager::openMapFile(const QString &path)
+{
+    openFile(path);
+    const int i = findDocument(path);
+    return i == -1 ? nullptr : qobject_cast<MapDocument*>(mDocuments.at(i).data());
+}
+
+TilesetDocument *DocumentManager::openTilesetFile(const QString &path)
+{
+    openFile(path);
+    const int i = findDocument(path);
+    return i == -1 ? nullptr : qobject_cast<TilesetDocument*>(mDocuments.at(i).data());
 }
 
 static bool mayNeedColumnCountAdjustment(const Tileset &tileset)

@@ -331,9 +331,12 @@ bool Map::isTilesetUsed(const Tileset *tileset) const
     return false;
 }
 
-Map *Map::clone() const
+std::unique_ptr<Map> Map::clone() const
 {
-    Map *o = new Map(mOrientation, mWidth, mHeight, mTileWidth, mTileHeight, mInfinite);
+    auto o = std::make_unique<Map>(mOrientation, mWidth, mHeight, mTileWidth, mTileHeight, mInfinite);
+    o->fileName = fileName;
+    o->exportFileName = exportFileName;
+    o->exportFormat = exportFormat;
     o->mRenderOrder = mRenderOrder;
     o->mHexSideLength = mHexSideLength;
     o->mStaggerAxis = mStaggerAxis;
@@ -344,7 +347,7 @@ Map *Map::clone() const
     o->mDrawMarginsDirty = mDrawMarginsDirty;
     for (const Layer *layer : mLayers) {
         Layer *clone = layer->clone();
-        clone->setMap(o);
+        clone->setMap(o.get());
         o->mLayers.append(clone);
     }
     o->mTilesets = mTilesets;
@@ -381,6 +384,26 @@ void Map::initializeObjectIds(ObjectGroup &objectGroup)
         if (o->id() == 0)
             o->setId(takeNextObjectId());
     }
+}
+
+Layer *Map::findLayerById(int layerId) const
+{
+    for (Layer *layer : allLayers()) {
+        if (layer->id() == layerId)
+            return layer;
+    }
+    return nullptr;
+}
+
+MapObject *Map::findObjectById(int objectId) const
+{
+    for (Layer *layer : objectGroups()) {
+        for (MapObject *mapObject : static_cast<ObjectGroup*>(layer)->objects()) {
+            if (mapObject->id() == objectId)
+                return mapObject;
+        }
+    }
+    return nullptr;
 }
 
 QRegion Map::tileRegion() const

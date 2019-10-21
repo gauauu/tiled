@@ -1,6 +1,7 @@
 /*
  * consoledock.h
  * Copyright 2013, Samuli Tuomola <samuli.tuomola@gmail.com>
+ * Copyright 2018-2019, Thorbjørn Lindeijer <bjorn@lindeijer.nl>
  *
  * This file is part of Tiled.
  *
@@ -27,8 +28,6 @@ class QPlainTextEdit;
 
 namespace Tiled {
 
-class LoggingInterface;
-
 class ConsoleDock : public QDockWidget
 {
     Q_OBJECT
@@ -37,18 +36,20 @@ public:
     explicit ConsoleDock(QWidget *parent = nullptr);
     ~ConsoleDock();
 
-private slots:
+protected:
+    void changeEvent(QEvent *e) override;
+
+private:
     void appendInfo(const QString &str);
+    void appendWarning(const QString &str);
     void appendError(const QString &str);
     void appendScript(const QString &str);
 
-    void onObjectAdded(QObject *object);
     void executeScript();
 
     void moveHistory(int direction);
 
-private:
-    void registerOutput(LoggingInterface *output);
+    void retranslateUi();
 
     QPlainTextEdit *mPlainTextEdit;
     QLineEdit *mLineEdit;

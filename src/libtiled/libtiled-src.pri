@@ -12,6 +12,7 @@ SOURCES += $$PWD/compression.cpp \
     $$PWD/imagereference.cpp \
     $$PWD/isometricrenderer.cpp \
     $$PWD/layer.cpp \
+    $$PWD/logginginterface.cpp \
     $$PWD/map.cpp \
     $$PWD/mapformat.cpp \
     $$PWD/mapobject.cpp \
@@ -42,6 +43,7 @@ SOURCES += $$PWD/compression.cpp \
     $$PWD/wangset.cpp \
     $$PWD/worldmanager.cpp
 HEADERS += $$PWD/compression.h \
+    $$PWD/containerhelpers.h \
     $$PWD/filesystemwatcher.h \
     $$PWD/fileformat.h \
     $$PWD/gidmapper.h \

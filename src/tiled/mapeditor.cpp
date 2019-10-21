@@ -34,9 +34,11 @@
 #include "createtextobjecttool.h"
 #include "createtileobjecttool.h"
 #include "documentmanager.h"
+#include "editablemap.h"
 #include "editpolygontool.h"
 #include "eraser.h"
 #include "filechangedwarning.h"
+#include "issuescounter.h"
 #include "layerdock.h"
 #include "layermodel.h"
 #include "layeroffsettool.h"
@@ -89,6 +91,7 @@
 #include <QLabel>
 #include <QMainWindow>
 #include <QMessageBox>
+#include <QQmlEngine>
 #include <QScrollBar>
 #include <QSettings>
 #include <QShortcut>
@@ -251,6 +254,7 @@ MapEditor::MapEditor(QObject *parent)
     mMainWindow->statusBar()->addPermanentWidget(mZoomComboBox);
     mMainWindow->statusBar()->addPermanentWidget(new NewsButton);
     mMainWindow->statusBar()->addPermanentWidget(new NewVersionButton(NewVersionButton::AutoVisible));
+    mMainWindow->statusBar()->addWidget(new IssuesCounter);
     mMainWindow->statusBar()->addWidget(mStatusInfoLabel);
 
     connect(mWidgetStack, &QStackedWidget::currentChanged, this, &MapEditor::currentWidgetChanged);
@@ -262,6 +266,8 @@ MapEditor::MapEditor(QObject *parent)
     connect(mTemplatesDock, &TemplatesDock::currentTemplateChanged, mToolManager, &ToolManager::setObjectTemplate);
     connect(DocumentManager::instance(), &DocumentManager::templateOpenRequested,
             mTemplatesDock, &TemplatesDock::openTemplate);
+    connect(DocumentManager::instance(), &DocumentManager::selectCustomPropertyRequested,
+            mPropertiesDock, &PropertiesDock::selectCustomProperty);
 
     connect(mTemplatesDock, &TemplatesDock::templateTilesetReplaced,
             DocumentManager::instance(), &DocumentManager::templateTilesetReplaced);
@@ -822,6 +828,16 @@ void MapEditor::addExternalTilesets(const QStringList &fileNames)
     handleExternalTilesetsAndImages(fileNames, false);
 }
 
+QAction *MapEditor::actionSelectNextTileset() const
+{
+    return mTilesetDock->actionSelectNextTileset();
+}
+
+QAction *MapEditor::actionSelectPreviousTileset() const
+{
+    return mTilesetDock->actionSelectPreviousTileset();
+}
+
 void MapEditor::filesDroppedOnTilesetDock(const QStringList &fileNames)
 {
     handleExternalTilesetsAndImages(fileNames, true);
@@ -851,6 +867,7 @@ void MapEditor::handleExternalTilesetsAndImages(const QStringList &fileNames,
         if (tilesetFormat) {
             tileset = tilesetFormat->read(fileName);
             if (tileset) {
+                tileset->setFileName(fileName);
                 tileset->setFormat(tilesetFormat);
                 tilesets.append(tileset);
                 continue;
@@ -968,6 +985,24 @@ void MapEditor::setCurrentTileset(const SharedTileset &tileset)
 SharedTileset MapEditor::currentTileset() const
 {
     return mTilesetDock->currentTileset();
+}
+
+EditableMap *MapEditor::currentBrush() const
+{
+    const TileStamp &stamp = mStampBrush->stamp();
+    if (stamp.isEmpty())
+        return nullptr;
+
+    auto map = stamp.variations().first().map->clone();
+    auto editableMap = new EditableMap(std::move(map));
+    QQmlEngine::setObjectOwnership(editableMap, QQmlEngine::JavaScriptOwnership);
+    return editableMap;
+}
+
+void MapEditor::setCurrentBrush(EditableMap *editableMap)
+{
+    // todo: filter any non-tilelayers out of the map?
+    setStamp(TileStamp(editableMap->map()->clone()));
 }
 
 } // namespace Tiled

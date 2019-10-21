@@ -83,6 +83,9 @@ SOURCES += aboutdialog.cpp \
     changewangcolordata.cpp \
     changewangsetdata.cpp \
     clickablelabel.cpp \
+    issuescounter.cpp \
+    issuesdock.cpp \
+    issuesmodel.cpp \
     clipboardmanager.cpp \
     colorbutton.cpp \
     commandbutton.cpp \
@@ -305,6 +308,9 @@ HEADERS += aboutdialog.h \
     changewangcolordata.h \
     changewangsetdata.h \
     clickablelabel.h \
+    issuescounter.h \
+    issuesdock.h \
+    issuesmodel.h \
     clipboardmanager.h \
     colorbutton.h \
     commandbutton.h \
@@ -314,7 +320,6 @@ HEADERS += aboutdialog.h \
     commandlineparser.h \
     commandmanager.h \
     consoledock.h \
-    containerhelpers.h \
     createellipseobjecttool.h \
     createobjecttool.h \
     createpointobjecttool.h \

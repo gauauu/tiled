@@ -131,7 +131,7 @@ static void drawOrthogonalTileLayer(QSGNode *parent,
     QVector<TileData> tileData;
     tileData.reserve(TilesNode::MaxTileCount);
 
-    const QRect contentRect = rect.intersected(layer->bounds().translated(-layer->position()));
+    const QRect contentRect = rect.intersected(layer->localBounds());
 
     for (int y = contentRect.top(); y <= contentRect.bottom(); ++y) {
         for (int x = contentRect.left(); x <= contentRect.right(); ++x) {
@@ -296,8 +296,7 @@ TileLayerItem::TileLayerItem(TileLayer *layer, MapRenderer *renderer,
     , mVisibleTiles(parent->visibleTileArea(layer))
 {
     setFlag(ItemHasContents);
-
-    connect(parent, &MapItem::visibleAreaChanged, this, &TileLayerItem::updateVisibleTiles);
+    layerVisibilityChanged();
 
     syncWithTileLayer();
     setOpacity(mLayer->opacity());
@@ -337,6 +336,23 @@ void TileLayerItem::updateVisibleTiles()
     if (mVisibleTiles != rect) {
         mVisibleTiles = rect;
         update();
+    }
+}
+
+void TileLayerItem::layerVisibilityChanged()
+{
+    const bool visible = mLayer->isVisible();
+    setVisible(visible);
+
+    MapItem *parent = qobject_cast<MapItem*>(parentItem());
+    if (visible) {
+        updateVisibleTiles();
+
+        if (parent)
+            connect(parent, &MapItem::visibleAreaChanged, this, &TileLayerItem::updateVisibleTiles);
+    } else {
+        if (parent)
+            disconnect(parent, &MapItem::visibleAreaChanged, this, &TileLayerItem::updateVisibleTiles);
     }
 }
 

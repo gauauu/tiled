@@ -111,6 +111,16 @@ MapScene *MapView::mapScene() const
     return static_cast<MapScene*>(scene());
 }
 
+qreal MapView::scale() const
+{
+    return mZoomable->scale();
+}
+
+void MapView::setScale(qreal scale)
+{
+    mZoomable->setScale(scale);
+}
+
 void MapView::adjustScale(qreal scale)
 {
     const QTransform newTransform = QTransform::fromScale(scale, scale);
@@ -232,7 +242,7 @@ void MapView::forceCenterOn(const QPointF &pos)
 {
     // This is only to make it update QGraphicsViewPrivate::lastCenterPoint,
     // just in case this is important.
-    centerOn(pos);
+    QGraphicsView::centerOn(pos);
 
     auto hBar = static_cast<FlexibleScrollBar*>(horizontalScrollBar());
     auto vBar = static_cast<FlexibleScrollBar*>(verticalScrollBar());
@@ -440,12 +450,12 @@ void MapView::handlePinchGesture(QPinchGesture *pinch)
     setTransformationAnchor(QGraphicsView::AnchorViewCenter);
 }
 
-void MapView::adjustCenterFromMousePosition(QPoint &mousePos)
+void MapView::adjustCenterFromMousePosition(QPoint mousePos)
 {
     // Place the last known mouse scene pos below the mouse again
     QWidget *view = viewport();
     QPointF viewCenterScenePos = mapToScene(view->rect().center());
     QPointF mouseScenePos = mapToScene(view->mapFromGlobal(mousePos));
     QPointF diff = viewCenterScenePos - mouseScenePos;
-    centerOn(mLastMouseScenePos + diff);
+    QGraphicsView::centerOn(mLastMouseScenePos + diff);
 }

@@ -33,16 +33,19 @@ class EditableTileset : public EditableAsset
     Q_OBJECT
 
     Q_PROPERTY(QString name READ name WRITE setName)
+    Q_PROPERTY(QString image READ image WRITE setImage)
     Q_PROPERTY(QList<QObject*> tiles READ tiles)
     Q_PROPERTY(QList<QObject*> terrains READ terrains)
     Q_PROPERTY(int tileCount READ tileCount)
-    Q_PROPERTY(int tileWidth READ tileWidth)
-    Q_PROPERTY(int tileHeight READ tileHeight)
+    Q_PROPERTY(int tileWidth READ tileWidth WRITE setTileWidth)
+    Q_PROPERTY(int tileHeight READ tileHeight WRITE setTileHeight)
     Q_PROPERTY(QSize tileSize READ tileSize)
     Q_PROPERTY(int tileSpacing READ tileSpacing)
     Q_PROPERTY(int margin READ margin)
     Q_PROPERTY(QPoint tileOffset READ tileOffset WRITE setTileOffset)
     Q_PROPERTY(QColor backgroundColor READ backgroundColor WRITE setBackgroundColor)
+    Q_PROPERTY(bool collection READ isCollection)
+    Q_PROPERTY(QList<QObject*> selectedTiles READ selectedTiles WRITE setSelectedTiles)
 
 public:
     Q_INVOKABLE explicit EditableTileset(const QString &name = QString(),
@@ -51,9 +54,10 @@ public:
                              QObject *parent = nullptr);
     ~EditableTileset() override;
 
-    bool isReadOnly() const override;
+    bool isReadOnly() const final;
 
     const QString &name() const;
+    QString image() const;
     int tileCount() const;
     int tileWidth() const;
     int tileHeight() const;
@@ -62,20 +66,35 @@ public:
     int margin() const;
     QPoint tileOffset() const;
     QColor backgroundColor() const;
+    bool isCollection() const;
 
     Q_INVOKABLE Tiled::EditableTile *tile(int id);
     QList<QObject*> tiles();
     QList<QObject*> terrains();
+
+    QList<QObject*> selectedTiles();
+    void setSelectedTiles(const QList<QObject*> &tiles);
+
+    Q_INVOKABLE Tiled::EditableTile *addTile();
+    Q_INVOKABLE void removeTiles(const QList<QObject*> &tiles);
+
+    // TODO: Add ability to change the tileset image and tile size
 
     TilesetDocument *tilesetDocument() const;
     Tileset *tileset() const;
 
 public slots:
     void setName(const QString &name);
+    void setImage(const QString &imageFilePath);
+    void setTileWidth(int width);
+    void setTileHeight(int height);
+    void setTileSize(int width, int height);
     void setTileOffset(QPoint tileOffset);
     void setBackgroundColor(const QColor &color);
 
-private slots:
+private:
+    bool tilesFromEditables(const QList<QObject*> &editableTiles, QList<Tile *> &tiles);
+
     void attachTiles(const QList<Tile*> &tiles);
     void detachTiles(const QList<Tile*> &tiles);
     void detachTerrains(const QList<Terrain*> &terrains);
@@ -84,7 +103,6 @@ private slots:
 
     void terrainAdded(Tileset *tileset, int terrainId);
 
-private:
     bool mReadOnly = false;
     SharedTileset mTileset;
 };
@@ -98,6 +116,11 @@ inline bool EditableTileset::isReadOnly() const
 inline const QString &EditableTileset::name() const
 {
     return tileset()->name();
+}
+
+inline QString EditableTileset::image() const
+{
+    return tileset()->imageSource().toString(QUrl::PreferLocalFile);
 }
 
 inline int EditableTileset::tileCount() const
@@ -140,9 +163,24 @@ inline QColor EditableTileset::backgroundColor() const
     return tileset()->backgroundColor();
 }
 
+inline bool EditableTileset::isCollection() const
+{
+    return tileset()->isCollection();
+}
+
 inline Tileset *EditableTileset::tileset() const
 {
     return static_cast<Tileset*>(object());
+}
+
+inline void EditableTileset::setTileWidth(int width)
+{
+    setTileSize(width, tileHeight());
+}
+
+inline void EditableTileset::setTileHeight(int height)
+{
+    setTileSize(tileWidth(), height);
 }
 
 } // namespace Tiled

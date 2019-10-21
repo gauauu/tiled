@@ -1,6 +1,6 @@
 /*
- *
- * Copyright 2015, Thorbjørn Lindeijer <bjorn@lindeijer.nl>
+ * issuesdock.h
+ * Copyright 2019, Thorbjørn Lindeijer <bjorn@lindeijer.nl>
  *
  * This file is part of Tiled.
  *
@@ -20,19 +20,38 @@
 
 #pragma once
 
-#include <algorithm>
+#include <QDockWidget>
 
-template<typename Container, typename Value>
-inline int indexOf(const Container &container, Value value)
-{
-    auto it = std::find(container.begin(), container.end(), value);
-    return it == container.end() ? -1 : std::distance(container.begin(), it);
-}
+class QListView;
+class QSortFilterProxyModel;
 
-template<typename Container, typename Value>
-inline bool contains(const Container &container, Value value)
+namespace Tiled {
+
+class FilterEdit;
+class Issue;
+class IssueFilterModel;
+
+/**
+ * A dock widget that shows errors and warnings, along with the ability to
+ * filter them.
+ */
+class IssuesDock : public QDockWidget
 {
-    return std::find(container.begin(),
-                     container.end(),
-                     value) != container.end();
-}
+    Q_OBJECT
+
+public:
+    IssuesDock(QWidget *parent = nullptr);
+
+protected:
+    void changeEvent(QEvent *e) override;
+
+private:
+    void activated(const QModelIndex &index);
+    void retranslateUi();
+
+    IssueFilterModel *mProxyModel;
+    FilterEdit *mFilterEdit;
+    QListView *mIssuesView;
+};
+
+} // namespace Tiled

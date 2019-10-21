@@ -24,11 +24,35 @@
 #include "savefile.h"
 #include "scriptmanager.h"
 
+#include <QFile>
 #include <QJSEngine>
 #include <QJSValueIterator>
 #include <QTextStream>
 
 namespace Tiled {
+
+QString ScriptFile::readAsText()
+{
+    QFile file(mFilePath);
+    if (file.open(QIODevice::ReadOnly | QIODevice::Text))
+        return QTextStream(&file).readAll();
+    else
+        mError = file.errorString();
+
+    return {};
+}
+
+QByteArray ScriptFile::readAsBinary()
+{
+    QFile file(mFilePath);
+    if (file.open(QIODevice::ReadOnly))
+        return file.readAll();
+    else
+        mError = file.errorString();
+
+    return {};
+}
+
 
 ScriptedMapFormat::ScriptedMapFormat(const QString &shortName,
                                      const QJSValue &object,
@@ -49,10 +73,10 @@ FileFormat::Capabilities ScriptedMapFormat::capabilities() const
 {
     Capabilities capabilities;
 
-    if (mObject.property(QStringLiteral("fromString")).isCallable())
+    if (mObject.property(QStringLiteral("read")).isCallable())
         capabilities |= Read;
 
-    if (mObject.property(QStringLiteral("toString")).isCallable())
+    if (mObject.property(QStringLiteral("write")).isCallable())
         capabilities |= Write;
 
     return capabilities;
@@ -75,7 +99,7 @@ bool ScriptedMapFormat::supportsFile(const QString &fileName) const
 }
 
 #if 0
-// TODO: Currently makes no sense, because 'toString' can only return the contents of a single file anyway
+// TODO: Currently makes no sense, because 'write' can only return the contents of a single file anyway
 QStringList ScriptedMapFormat::outputFiles(const Map *map, const QString &fileName) const
 {
     QJSValue outputFiles = mObject.property(QStringLiteral("outputFiles"));
@@ -108,10 +132,26 @@ QStringList ScriptedMapFormat::outputFiles(const Map *map, const QString &fileNa
 
 std::unique_ptr<Map> ScriptedMapFormat::read(const QString &fileName)
 {
-    Q_UNUSED(fileName)
+    mError.clear();
 
-    // TODO: Requires ability to create new things in script
-    mError = QLatin1String("Not implemented");
+    QJSValue readProperty = mObject.property(QStringLiteral("read"));
+
+    ScriptFile file(fileName);
+
+    QJSValueList arguments;
+    arguments.append(ScriptManager::instance().engine()->newQObject(&file));
+
+    QJSValue resultValue = readProperty.call(arguments);
+
+    if (ScriptManager::instance().checkError(resultValue)) {
+        mError = resultValue.toString();
+        return nullptr;
+    }
+
+    EditableMap *editableMap = qobject_cast<EditableMap*>(resultValue.toQObject());
+    if (editableMap)
+        return std::unique_ptr<Map>(editableMap->map()->clone());
+
     return nullptr;
 }
 
@@ -121,41 +161,47 @@ bool ScriptedMapFormat::write(const Map *map, const QString &fileName, Options o
 
     EditableMap editable(map);
 
-    QJSValue toStringProperty = mObject.property(QStringLiteral("toString"));
+    QJSValue writeProperty = mObject.property(QStringLiteral("write"));
 
     QJSValueList arguments;
     arguments.append(ScriptManager::instance().engine()->newQObject(&editable));
     arguments.append(fileName);
     arguments.append(static_cast<Options::Int>(options));
 
-    QJSValue resultValue = toStringProperty.call(arguments);
+    QJSValue resultValue = writeProperty.call(arguments);
 
-    if (resultValue.isError()) {
+    if (ScriptManager::instance().checkError(resultValue)) {
         mError = resultValue.toString();
         return false;
     }
 
-    if (!resultValue.isString()) {
-        mError = tr("Invalid return value for 'toString' (string expected)");
+    QByteArray bytes;
+    bool isString = resultValue.isString();
+
+    if (!isString && (bytes = qjsvalue_cast<QByteArray>(resultValue)).isNull()) {
+        mError = tr("Invalid return value for 'write' (string or ArrayBuffer expected)");
         return false;
     }
 
     SaveFile file(fileName);
 
-    if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
+    QIODevice::OpenMode mode { QIODevice::WriteOnly };
+    if (isString)
+        mode |= QIODevice::Text;
+
+    if (!file.open(mode)) {
         mError = tr("Could not open file for writing.");
         return false;
     }
 
-    QTextStream out(file.device());
-    out << resultValue.toString();
-
-    if (file.error() != QFileDevice::NoError) {
-        mError = file.errorString();
-        return false;
+    if (isString) {
+        QTextStream out(file.device());
+        out << resultValue.toString();
+    } else {
+        file.device()->write(bytes);
     }
 
-    if (!file.commit()) {
+    if (file.error() != QFileDevice::NoError || !file.commit()) {
         mError = file.errorString();
         return false;
     }
@@ -167,8 +213,8 @@ bool ScriptedMapFormat::validateMapFormatObject(const QJSValue &value)
 {
     const QJSValue nameProperty = value.property(QStringLiteral("name"));
     const QJSValue extensionProperty = value.property(QStringLiteral("extension"));
-    const QJSValue toStringProperty = value.property(QStringLiteral("toString"));
-    const QJSValue fromStringProperty = value.property(QStringLiteral("fromString"));
+    const QJSValue writeProperty = value.property(QStringLiteral("write"));
+    const QJSValue readProperty = value.property(QStringLiteral("read"));
 
     if (!nameProperty.isString()) {
         ScriptManager::instance().throwError(tr("Invalid map format object (requires string 'name' property)"));
@@ -180,8 +226,8 @@ bool ScriptedMapFormat::validateMapFormatObject(const QJSValue &value)
         return false;
     }
 
-    if (!toStringProperty.isCallable() && !fromStringProperty.isCallable()) {
-        ScriptManager::instance().throwError(tr("Invalid map format object (requires a 'toString' and/or 'fromString' function property)"));
+    if (!writeProperty.isCallable() && !readProperty.isCallable()) {
+        ScriptManager::instance().throwError(tr("Invalid map format object (requires a 'write' and/or 'read' function property)"));
         return false;
     }
 

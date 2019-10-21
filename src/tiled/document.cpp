@@ -21,6 +21,7 @@
 #include "document.h"
 
 #include "editableasset.h"
+#include "logginginterface.h"
 #include "object.h"
 #include "tile.h"
 
@@ -37,9 +38,12 @@ Document::Document(DocumentType type, const QString &fileName,
     , mType(type)
     , mFileName(fileName)
     , mCanonicalFilePath(QFileInfo(mFileName).canonicalFilePath())
+    , mUndoStack(new QUndoStack(this))
 {
     if (!mCanonicalFilePath.isEmpty())
         sDocumentInstances.insert(mCanonicalFilePath, this);
+
+    connect(mUndoStack, &QUndoStack::cleanChanged, this, &Document::modifiedChanged);
 }
 
 Document::~Document()
@@ -49,15 +53,6 @@ Document::~Document()
         if (i != sDocumentInstances.end() && *i == this)
             sDocumentInstances.erase(i);
     }
-}
-
-/**
- * Returns the undo stack of this document. Should be used to push any commands
- * on that modify the document.
- */
-QUndoStack *Document::undoStack()
-{
-    return editable()->undoStack();
 }
 
 void Document::setFileName(const QString &fileName)
@@ -82,12 +77,28 @@ void Document::setFileName(const QString &fileName)
     emit fileNameChanged(fileName, oldFileName);
 }
 
+void Document::checkFilePathProperties(const Object *object) const
+{
+    auto &props = object->properties();
+
+    for (auto i = props.begin(), i_end = props.end(); i != i_end; ++i) {
+        if (i.value().userType() == filePathTypeId()) {
+            const QString localFile = i.value().value<FilePath>().url.toLocalFile();
+            if (!localFile.isEmpty() && !QFile::exists(localFile)) {
+                WARNING(tr("Custom property '%1' refers to non-existing file '%2'").arg(i.key(), localFile),
+                        SelectCustomProperty { fileName(), i.key(), object},
+                        this);
+            }
+        }
+    }
+}
+
 /**
  * Returns whether the document has unsaved changes.
  */
 bool Document::isModified() const
 {
-    return mEditable && mEditable->isModified();
+    return !undoStack()->isClean();
 }
 
 void Document::setCurrentObject(Object *object)

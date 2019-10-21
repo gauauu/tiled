@@ -80,14 +80,14 @@ PreferencesDialog::PreferencesDialog(QWidget *parent)
 
     auto *preferences = Preferences::instance();
 
-    connect(mUi->enableDtd, &QCheckBox::toggled,
-            preferences, &Preferences::setDtdEnabled);
     connect(mUi->reloadTilesetImages, &QCheckBox::toggled,
             preferences, &Preferences::setReloadTilesetsOnChanged);
     connect(mUi->openLastFiles, &QCheckBox::toggled,
             preferences, &Preferences::setOpenLastFilesOnStartup);
     connect(mUi->safeSaving, &QCheckBox::toggled,
             preferences, &Preferences::setSafeSavingEnabled);
+    connect(mUi->exportOnSave, &QCheckBox::toggled,
+            preferences, &Preferences::setExportOnSave);
 
     connect(mUi->embedTilesets, &QCheckBox::toggled, preferences, [preferences] (bool value) {
         preferences->setExportOption(Preferences::EmbedTilesets, value);
@@ -172,9 +172,9 @@ void PreferencesDialog::fromPreferences()
 
     // General
     mUi->reloadTilesetImages->setChecked(prefs->reloadTilesetsOnChange());
-    mUi->enableDtd->setChecked(prefs->dtdEnabled());
     mUi->openLastFiles->setChecked(prefs->openLastFilesOnStartup());
     mUi->safeSaving->setChecked(prefs->safeSavingEnabled());
+    mUi->exportOnSave->setChecked(prefs->exportOnSave());
 
     mUi->embedTilesets->setChecked(prefs->exportOption(Preferences::EmbedTilesets));
     mUi->detachTemplateInstances->setChecked(prefs->exportOption(Preferences::DetachTemplateInstances));

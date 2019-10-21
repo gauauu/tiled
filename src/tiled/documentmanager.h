@@ -60,6 +60,9 @@ class DocumentManager : public QObject
 
     Q_PROPERTY(Document *currentDocument READ currentDocument NOTIFY currentDocumentChanged)
 
+    DocumentManager(QObject *parent = nullptr);
+    ~DocumentManager() override;
+
 public:
     static DocumentManager *instance();
     static void deleteInstance();
@@ -125,6 +128,8 @@ public:
 
     void abortMultiDocumentClose();
 
+    bool eventFilter(QObject *object, QEvent *event) override;
+
 signals:
     void documentCreated(Document *document);
     void documentOpened(Document *document);
@@ -135,6 +140,7 @@ signals:
     void fileOpenRequested(const QString &path);
     void fileSaveRequested();
     void templateOpenRequested(const QString &path);
+    void selectCustomPropertyRequested(const QString &name);
     void templateTilesetReplaced();
 
     /**
@@ -168,7 +174,7 @@ public slots:
     void openFile(const QString &path);
     void saveFile();
 
-private slots:
+private:
     void currentIndexChanged();
     void fileNameChanged(const QString &fileName,
                          const QString &oldFileName);
@@ -187,16 +193,13 @@ private slots:
 
     void tilesetImagesChanged(Tileset *tileset);
 
-private:
-    DocumentManager(QObject *parent = nullptr);
-    ~DocumentManager() override;
-
     bool askForAdjustment(const Tileset &tileset);
 
     void addToTilesetDocument(const SharedTileset &tileset, MapDocument *mapDocument);
     void removeFromTilesetDocument(const SharedTileset &tileset, MapDocument *mapDocument);
 
-    bool eventFilter(QObject *object, QEvent *event) override;
+    MapDocument *openMapFile(const QString &path);
+    TilesetDocument *openTilesetFile(const QString &path);
 
     QVector<DocumentPtr> mDocuments;
     TilesetDocumentsModel *mTilesetDocumentsModel;
