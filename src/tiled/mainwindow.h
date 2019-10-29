@@ -132,6 +132,7 @@ private:
     void zoomIn();
     void zoomOut();
     void zoomNormal();
+    void fitInView();
     void setFullScreen(bool fullScreen);
     void toggleClearView(bool clearView);
     void resetToDefaultLayout();
@@ -150,7 +151,8 @@ private:
     void updateZoomable();
     void updateZoomActions();
     void openDocumentation();
-    void becomePatron();
+    void openForum();
+    void showDonationDialog();
     void aboutTiled();
     void openRecentFile();
 

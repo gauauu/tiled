@@ -106,8 +106,9 @@
      <string>&amp;Help</string>
     </property>
     <addaction name="actionDocumentation"/>
+    <addaction name="actionForum"/>
     <addaction name="separator"/>
-    <addaction name="actionBecomePatron"/>
+    <addaction name="actionDonate"/>
     <addaction name="actionAbout"/>
    </widget>
    <widget class="QMenu" name="menuMap">
@@ -168,6 +169,7 @@
     <addaction name="actionZoomIn"/>
     <addaction name="actionZoomOut"/>
     <addaction name="actionZoomNormal"/>
+    <addaction name="actionFitInView"/>
     <addaction name="separator"/>
     <addaction name="actionFullScreen"/>
     <addaction name="actionClearView"/>
@@ -492,9 +494,9 @@
     <string>Ctrl+E</string>
    </property>
   </action>
-  <action name="actionBecomePatron">
+  <action name="actionDonate">
    <property name="text">
-    <string>Become a Patron</string>
+    <string>Support Tiled Development</string>
    </property>
   </action>
   <action name="actionSaveAll">
@@ -507,7 +509,7 @@
   </action>
   <action name="actionDocumentation">
    <property name="text">
-    <string>User Manual</string>
+    <string>User Manual ↗</string>
    </property>
   </action>
   <action name="actionNoLabels">
@@ -648,6 +650,23 @@
    </property>
    <property name="text">
     <string>Show Tile Collision Shapes</string>
+   </property>
+  </action>
+  <action name="actionFitInView">
+   <property name="icon">
+    <iconset resource="tiled.qrc">
+     <normaloff>:/images/16/zoom-fit-best.png</normaloff>:/images/16/zoom-fit-best.png</iconset>
+   </property>
+   <property name="text">
+    <string>Fit Map in View</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Shift+J</string>
+   </property>
+  </action>
+  <action name="actionForum">
+   <property name="text">
+    <string>Community Forum ↗</string>
    </property>
   </action>
  </widget>

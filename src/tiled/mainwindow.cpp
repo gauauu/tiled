@@ -56,7 +56,7 @@
 #include "objectgroup.h"
 #include "objecttypeseditor.h"
 #include "offsetmapdialog.h"
-#include "patreondialog.h"
+#include "donationdialog.h"
 #include "pluginmanager.h"
 #include "resizedialog.h"
 #include "scriptmanager.h"
@@ -226,7 +226,7 @@ MainWindow::MainWindow(QWidget *parent, Qt::WindowFlags flags)
     ActionManager::registerAction(mUi->actionAddExternalTileset, "AddExternalTileset");
     ActionManager::registerAction(mUi->actionAutoMap, "AutoMap");
     ActionManager::registerAction(mUi->actionAutoMapWhileDrawing, "AutoMapWhileDrawing");
-    ActionManager::registerAction(mUi->actionBecomePatron, "BecomePatron");
+    ActionManager::registerAction(mUi->actionDonate, "Donate");
     ActionManager::registerAction(mUi->actionClearRecentFiles, "ClearRecentFiles");
     ActionManager::registerAction(mUi->actionClearView, "ClearView");
     ActionManager::registerAction(mUi->actionClose, "Close");
@@ -271,8 +271,9 @@ MainWindow::MainWindow(QWidget *parent, Qt::WindowFlags flags)
     ActionManager::registerAction(mUi->actionSnapToPixels, "SnapToPixels");
     ActionManager::registerAction(mUi->actionTilesetProperties, "TilesetProperties");
     ActionManager::registerAction(mUi->actionZoomIn, "ZoomIn");
-    ActionManager::registerAction(mUi->actionZoomNormal, "ZoomNormal");
     ActionManager::registerAction(mUi->actionZoomOut, "ZoomOut");
+    ActionManager::registerAction(mUi->actionZoomNormal, "ZoomNormal");
+    ActionManager::registerAction(mUi->actionFitInView, "FitInView");
 
     mMapEditor = new MapEditor;
     mTilesetEditor = new TilesetEditor;
@@ -497,6 +498,7 @@ MainWindow::MainWindow(QWidget *parent, Qt::WindowFlags flags)
     connect(mUi->actionZoomIn, &QAction::triggered, this, &MainWindow::zoomIn);
     connect(mUi->actionZoomOut, &QAction::triggered, this, &MainWindow::zoomOut);
     connect(mUi->actionZoomNormal, &QAction::triggered, this, &MainWindow::zoomNormal);
+    connect(mUi->actionFitInView, &QAction::triggered, this, &MainWindow::fitInView);
     connect(mUi->actionFullScreen, &QAction::toggled, this, &MainWindow::setFullScreen);
     connect(mUi->actionClearView, &QAction::toggled, this, &MainWindow::toggleClearView);
 
@@ -551,7 +553,8 @@ MainWindow::MainWindow(QWidget *parent, Qt::WindowFlags flags)
             this, &MainWindow::editTilesetProperties);
 
     connect(mUi->actionDocumentation, &QAction::triggered, this, &MainWindow::openDocumentation);
-    connect(mUi->actionBecomePatron, &QAction::triggered, this, &MainWindow::becomePatron);
+    connect(mUi->actionForum, &QAction::triggered, this, &MainWindow::openForum);
+    connect(mUi->actionDonate, &QAction::triggered, this, &MainWindow::showDonationDialog);
     connect(mUi->actionAbout, &QAction::triggered, this, &MainWindow::aboutTiled);
     connect(mUi->actionAboutQt, &QAction::triggered, qApp, &QApplication::aboutQt);
 
@@ -586,6 +589,7 @@ MainWindow::MainWindow(QWidget *parent, Qt::WindowFlags flags)
     setThemeIcon(mUi->actionZoomIn, "zoom-in");
     setThemeIcon(mUi->actionZoomOut, "zoom-out");
     setThemeIcon(mUi->actionZoomNormal, "zoom-original");
+    setThemeIcon(mUi->actionFitInView, "zoom-fit-best");
     setThemeIcon(mUi->actionResizeMap, "document-page-setup");
     setThemeIcon(mUi->actionMapProperties, "document-properties");
     setThemeIcon(mUi->actionDocumentation, "help-contents");
@@ -678,8 +682,8 @@ MainWindow::MainWindow(QWidget *parent, Qt::WindowFlags flags)
     connect(preferences, &Preferences::recentFilesChanged, this, &MainWindow::updateRecentFilesMenu);
 
     QTimer::singleShot(500, this, [this,preferences] {
-        if (preferences->shouldShowPatreonDialog())
-            becomePatron();
+        if (preferences->shouldShowDonationDialog())
+            showDonationDialog();
     });
 }
 
@@ -1165,6 +1169,12 @@ void MainWindow::zoomNormal()
         mZoomable->resetZoom();
 }
 
+void MainWindow::fitInView()
+{
+    if (MapView *mapView = mDocumentManager->currentMapView())
+        mapView->fitMapInView();
+}
+
 void MainWindow::setFullScreen(bool fullScreen)
 {
     if (isFullScreen() == fullScreen)
@@ -1577,6 +1587,7 @@ void MainWindow::updateZoomActions()
     mUi->actionZoomIn->setEnabled(mZoomable && mZoomable->canZoomIn());
     mUi->actionZoomOut->setEnabled(mZoomable && mZoomable->canZoomOut());
     mUi->actionZoomNormal->setEnabled(scale != 1);
+    mUi->actionFitInView->setEnabled(mDocument && mDocument->type() == Document::MapDocumentType);
 }
 
 void MainWindow::openDocumentation()
@@ -1586,6 +1597,11 @@ void MainWindow::openDocumentation()
 #else
     QDesktopServices::openUrl(QUrl(QLatin1String("https://docs.mapeditor.org")));
 #endif
+}
+
+void MainWindow::openForum()
+{
+    QDesktopServices::openUrl(QUrl(QLatin1String("https://discourse.mapeditor.org")));
 }
 
 void MainWindow::writeSettings()
@@ -1650,10 +1666,10 @@ void MainWindow::updateWindowTitle()
     }
 }
 
-void MainWindow::becomePatron()
+void MainWindow::showDonationDialog()
 {
-    PatreonDialog patreonDialog(this);
-    patreonDialog.exec();
+    DonationDialog donationDialog(this);
+    donationDialog.exec();
 }
 
 void MainWindow::aboutTiled()
