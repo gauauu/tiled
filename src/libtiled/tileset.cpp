@@ -295,6 +295,11 @@ bool Tileset::loadImage()
     p.margin = mMargin;
     p.transparentColor = mImageReference.transparentColor;
 
+    if (p.tileWidth <= 0 || p.tileHeight <= 0) {
+        mImageReference.status = LoadingError;
+        return false;
+    }
+
     QImage image = ImageCache::loadImage(p.fileName);
     if (image.isNull()) {
         mImageReference.status = LoadingError;
@@ -514,7 +519,11 @@ Terrain *Tileset::takeTerrainAt(int index)
  */
 void Tileset::swapTerrains(int index, int swapIndex)
 {
+#if QT_VERSION < QT_VERSION_CHECK(5, 13, 0)
     mTerrainTypes.swap(index, swapIndex);
+#else
+    mTerrainTypes.swapItemsAt(index, swapIndex);
+#endif
 
     // Reassign terrain IDs
     mTerrainTypes.at(index)->mId = index;
@@ -712,7 +721,7 @@ Tile *Tileset::addTile(const QPixmap &image, const QUrl &source)
 void Tileset::addTiles(const QList<Tile *> &tiles)
 {
     for (Tile *tile : tiles) {
-        Q_ASSERT(!mTiles.contains(tile->id()));
+        Q_ASSERT(tile->tileset() == this && !mTiles.contains(tile->id()));
         mTiles.insert(tile->id(), tile);
     }
 
@@ -727,7 +736,7 @@ void Tileset::addTiles(const QList<Tile *> &tiles)
 void Tileset::removeTiles(const QList<Tile *> &tiles)
 {
     for (Tile *tile : tiles) {
-        Q_ASSERT(mTiles.contains(tile->id()));
+        Q_ASSERT(tile->tileset() == this && mTiles.contains(tile->id()));
         mTiles.remove(tile->id());
     }
 
@@ -776,6 +785,24 @@ void Tileset::setTileImage(Tile *tile,
                 mTileWidth = newImageSize.width();
         }
     }
+}
+
+void Tileset::setOriginalTileset(const SharedTileset &original)
+{
+    mOriginalTileset = original;
+}
+
+/**
+ * When a tileset gets exported, a copy might be made to apply certain export
+ * options. In this case, the copy will have a (weak) pointer to the original
+ * tileset, to allow issues found during export to refer to this tileset.
+ */
+SharedTileset Tileset::originalTileset() const
+{
+    SharedTileset original { mOriginalTileset };
+    if (!original)
+        original = sharedPointer();
+    return original;
 }
 
 void Tileset::swap(Tileset &other)

@@ -20,6 +20,7 @@
 
 #include "editabletileset.h"
 
+#include "addremovetiles.h"
 #include "editablemanager.h"
 #include "editableterrain.h"
 #include "editabletile.h"
@@ -27,6 +28,8 @@
 #include "tilesetchanges.h"
 #include "tilesetdocument.h"
 #include "tilesetterrainmodel.h"
+
+#include <QCoreApplication>
 
 namespace Tiled {
 
@@ -36,6 +39,12 @@ EditableTileset::EditableTileset(const QString &name,
 {
     mTileset = Tileset::create(name, 0, 0);
     setObject(mTileset.data());
+}
+
+EditableTileset::EditableTileset(const Tileset *tileset, QObject *parent)
+    : EditableAsset(nullptr, const_cast<Tileset*>(tileset), parent)
+    , mReadOnly(true)
+{
 }
 
 EditableTileset::EditableTileset(TilesetDocument *tilesetDocument,
@@ -60,7 +69,7 @@ EditableTile *EditableTileset::tile(int id)
     Tile *tile = tileset()->findTile(id);
 
     if (!tile) {
-        ScriptManager::instance().throwError(tr("Invalid tile ID"));
+        ScriptManager::instance().throwError(QCoreApplication::translate("Script Errors", "Invalid tile ID"));
         return nullptr;
     }
 
@@ -85,6 +94,71 @@ QList<QObject *> EditableTileset::terrains()
     return terrains;
 }
 
+QList<QObject *> EditableTileset::selectedTiles()
+{
+    if (!tilesetDocument())
+        return QList<QObject*>();
+
+    QList<QObject*> selectedTiles;
+
+    auto &editableManager = EditableManager::instance();
+    for (Tile *tile : tilesetDocument()->selectedTiles())
+        selectedTiles.append(editableManager.editableTile(this, tile));
+
+    return selectedTiles;
+}
+
+void EditableTileset::setSelectedTiles(const QList<QObject *> &tiles)
+{
+    auto document = tilesetDocument();
+    if (!document)
+        return;
+
+    QList<Tile*> plainTiles;
+    if (!tilesFromEditables(tiles, plainTiles))
+        return;
+
+    document->setSelectedTiles(plainTiles);
+}
+
+Tiled::EditableTile *EditableTileset::addTile()
+{
+    if (!isCollection()) {
+        ScriptManager::instance().throwError(QCoreApplication::translate("Script Errors", "Can only add tiles to an image collection tileset"));
+        return nullptr;
+    }
+    if (checkReadOnly())
+        return nullptr;
+
+    Tile *tile = new Tile(tileset()->takeNextTileId(), tileset());
+
+    if (tilesetDocument())
+        push(new AddTiles(tilesetDocument(), { tile }));
+    else
+        tileset()->addTiles({ tile });
+
+    return EditableManager::instance().editableTile(this, tile);
+}
+
+void EditableTileset::removeTiles(const QList<QObject *> &tiles)
+{
+    if (!isCollection()) {
+        ScriptManager::instance().throwError(QCoreApplication::translate("Script Errors", "Can only remove tiles from an image collection tileset"));
+        return;
+    }
+
+    QList<Tile*> plainTiles;
+    if (!tilesFromEditables(tiles, plainTiles))
+        return;
+
+    if (tilesetDocument()) {
+        push(new RemoveTiles(tilesetDocument(), plainTiles));
+    } else if (!checkReadOnly()) {
+        tileset()->removeTiles(plainTiles);
+        detachTiles(plainTiles);
+    }
+}
+
 TilesetDocument *EditableTileset::tilesetDocument() const
 {
     return static_cast<TilesetDocument*>(document());
@@ -94,15 +168,55 @@ void EditableTileset::setName(const QString &name)
 {
     if (tilesetDocument())
         push(new RenameTileset(tilesetDocument(), name));
-    else
+    else if (!checkReadOnly())
         tileset()->setName(name);
+}
+
+void EditableTileset::setImage(const QString &imageFilePath)
+{
+    if (isCollection() && tileCount() > 0) {
+        ScriptManager::instance().throwError(QCoreApplication::translate("Script Errors", "Can't set the image of an image collection tileset"));
+        return;
+    }
+
+    if (tilesetDocument()) {
+        TilesetParameters parameters(*tileset());
+        parameters.imageSource = QUrl::fromLocalFile(imageFilePath);
+
+        push(new ChangeTilesetParameters(tilesetDocument(), parameters));
+    } else if (!checkReadOnly()) {
+        tileset()->setImageSource(imageFilePath);
+
+        if (!tileSize().isEmpty() && !image().isEmpty())
+            tileset()->loadImage();
+    }
+}
+
+void EditableTileset::setTileSize(int width, int height)
+{
+    if (isCollection() && tileCount() > 0) {
+        ScriptManager::instance().throwError(QCoreApplication::translate("Script Errors", "Can't set tile size on an image collection tileset"));
+        return;
+    }
+
+    if (tilesetDocument()) {
+        TilesetParameters parameters(*tileset());
+        parameters.tileSize = QSize(width, height);
+
+        push(new ChangeTilesetParameters(tilesetDocument(), parameters));
+    } else if (!checkReadOnly()) {
+        tileset()->setTileSize(QSize(width, height));
+
+        if (!tileSize().isEmpty() && !image().isEmpty())
+            tileset()->loadImage();
+    }
 }
 
 void EditableTileset::setTileOffset(QPoint tileOffset)
 {
     if (tilesetDocument())
         push(new ChangeTilesetTileOffset(tilesetDocument(), tileOffset));
-    else
+    else if (!checkReadOnly())
         tileset()->setTileOffset(tileOffset);
 }
 
@@ -110,8 +224,27 @@ void EditableTileset::setBackgroundColor(const QColor &color)
 {
     if (tilesetDocument())
         push(new ChangeTilesetBackgroundColor(tilesetDocument(), color));
-    else
+    else if (!checkReadOnly())
         tileset()->setBackgroundColor(color);
+}
+
+bool EditableTileset::tilesFromEditables(const QList<QObject *> &editableTiles, QList<Tile*> &tiles)
+{
+    for (QObject *tileObject : editableTiles) {
+        auto editableTile = qobject_cast<EditableTile*>(tileObject);
+        if (!editableTile) {
+            ScriptManager::instance().throwError(QCoreApplication::translate("Script Errors", "Not a tile"));
+            return false;
+        }
+        if (editableTile->tileset() != this) {
+            ScriptManager::instance().throwError(QCoreApplication::translate("Script Errors", "Tile not from this tileset"));
+            return false;
+        }
+
+        tiles.append(editableTile->tile());
+    }
+
+    return true;
 }
 
 void EditableTileset::attachTiles(const QList<Tile *> &tiles)
@@ -150,7 +283,8 @@ void EditableTileset::tileObjectGroupChanged(Tile *tile)
     Q_ASSERT(tile->tileset() == tileset());
 
     if (auto editable = EditableManager::instance().find(tile))
-        editable->detachObjectGroup();
+        if (editable->attachedObjectGroup() != tile->objectGroup())
+            editable->detachObjectGroup();
 }
 
 void EditableTileset::terrainAdded(Tileset *tileset, int terrainId)

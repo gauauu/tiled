@@ -24,12 +24,16 @@
 #include "commanddatamodel.h"
 #include "commandmanager.h"
 #include "editabletileset.h"
+#include "issuesmodel.h"
 #include "logginginterface.h"
+#include "mainwindow.h"
+#include "mapeditor.h"
 #include "scriptedaction.h"
-#include "scriptedmapformat.h"
+#include "scriptedfileformat.h"
 #include "scriptedtool.h"
 #include "scriptmanager.h"
 #include "tilesetdocument.h"
+#include "tileseteditor.h"
 
 #include <QAction>
 #include <QCoreApplication>
@@ -41,7 +45,6 @@ namespace Tiled {
 
 ScriptModule::ScriptModule(QObject *parent)
     : QObject(parent)
-    , mLogger(new LoggingInterface(this))
 {
     auto documentManager = DocumentManager::instance();
     connect(documentManager, &DocumentManager::documentCreated, this, &ScriptModule::documentCreated);
@@ -50,16 +53,14 @@ ScriptModule::ScriptModule(QObject *parent)
     connect(documentManager, &DocumentManager::documentSaved, this, &ScriptModule::documentSaved);
     connect(documentManager, &DocumentManager::documentAboutToClose, this, &ScriptModule::documentAboutToClose);
     connect(documentManager, &DocumentManager::currentDocumentChanged, this, &ScriptModule::currentDocumentChanged);
-
-    PluginManager::addObject(mLogger);
 }
 
 ScriptModule::~ScriptModule()
 {
-    PluginManager::removeObject(mLogger);
-
     for (const auto &pair : mRegisteredActions)
         ActionManager::unregisterAction(pair.second->id());
+
+    IssuesModel::instance().removeIssuesWithContext(this);
 }
 
 QString ScriptModule::version() const
@@ -140,6 +141,16 @@ QList<QObject *> ScriptModule::openAssets() const
     return assets;
 }
 
+TilesetEditor *ScriptModule::tilesetEditor() const
+{
+    return static_cast<TilesetEditor*>(DocumentManager::instance()->editor(Document::TilesetDocumentType));
+}
+
+MapEditor *ScriptModule::mapEditor() const
+{
+    return static_cast<MapEditor*>(DocumentManager::instance()->editor(Document::MapDocumentType));
+}
+
 EditableAsset *ScriptModule::open(const QString &fileName) const
 {
     auto documentManager = DocumentManager::instance();
@@ -160,7 +171,7 @@ bool ScriptModule::close(EditableAsset *asset) const
 
     int index = documentManager->findDocument(asset->document());
     if (index == -1) {
-        ScriptManager::instance().throwError(tr("Not an open asset"));
+        ScriptManager::instance().throwError(QCoreApplication::translate("Script Errors", "Not an open asset"));
         return false;
     }
 
@@ -174,13 +185,13 @@ EditableAsset *ScriptModule::reload(EditableAsset *asset) const
 
     int index = documentManager->findDocument(asset->document());
     if (index == -1) {
-        ScriptManager::instance().throwError(tr("Not an open asset"));
+        ScriptManager::instance().throwError(QCoreApplication::translate("Script Errors", "Not an open asset"));
         return nullptr;
     }
 
     if (auto editableTileset = qobject_cast<EditableTileset*>(asset)) {
         if (editableTileset->tilesetDocument()->isEmbedded()) {
-            ScriptManager::instance().throwError(tr("Can't reload an embedded tileset"));
+            ScriptManager::instance().throwError(QCoreApplication::translate("Script Errors", "Can't reload an embedded tileset"));
             return nullptr;
         }
     }
@@ -201,12 +212,12 @@ EditableAsset *ScriptModule::reload(EditableAsset *asset) const
 ScriptedAction *ScriptModule::registerAction(const QByteArray &idName, QJSValue callback)
 {
     if (idName.isEmpty()) {
-        ScriptManager::instance().throwError(tr("Invalid ID"));
+        ScriptManager::instance().throwError(QCoreApplication::translate("Script Errors", "Invalid ID"));
         return nullptr;
     }
 
     if (!callback.isCallable()) {
-        ScriptManager::instance().throwError(tr("Invalid callback function"));
+        ScriptManager::instance().throwError(QCoreApplication::translate("Script Errors", "Invalid callback function"));
         return nullptr;
     }
 
@@ -217,7 +228,7 @@ ScriptedAction *ScriptModule::registerAction(const QByteArray &idName, QJSValue 
     if (action) {
         ActionManager::unregisterAction(id);
     } else if (ActionManager::findAction(id)) {
-        ScriptManager::instance().throwError(tr("Reserved ID"));
+        ScriptManager::instance().throwError(QCoreApplication::translate("Script Errors", "Reserved ID"));
         return nullptr;
     }
 
@@ -229,21 +240,35 @@ ScriptedAction *ScriptModule::registerAction(const QByteArray &idName, QJSValue 
 void ScriptModule::registerMapFormat(const QString &shortName, QJSValue mapFormatObject)
 {
     if (shortName.isEmpty()) {
-        ScriptManager::instance().throwError(tr("Invalid shortName"));
+        ScriptManager::instance().throwError(QCoreApplication::translate("Script Errors", "Invalid shortName"));
         return;
     }
 
-    if (!ScriptedMapFormat::validateMapFormatObject(mapFormatObject))
+    if (!ScriptedFileFormat::validateFileFormatObject(mapFormatObject))
         return;
 
     auto &format = mRegisteredMapFormats[shortName];
     format = std::make_unique<ScriptedMapFormat>(shortName, mapFormatObject, this);
 }
 
+void ScriptModule::registerTilesetFormat(const QString &shortName, QJSValue tilesetFormatObject)
+{
+    if (shortName.isEmpty()) {
+        ScriptManager::instance().throwError(QCoreApplication::translate("Script Errors", "Invalid shortName"));
+        return;
+    }
+
+    if (!ScriptedFileFormat::validateFileFormatObject(tilesetFormatObject))
+        return;
+
+    auto &format = mRegisteredTilesetFormats[shortName];
+    format = std::make_unique<ScriptedTilesetFormat>(shortName, tilesetFormatObject, this);
+}
+
 QJSValue ScriptModule::registerTool(const QString &shortName, QJSValue toolObject)
 {
     if (shortName.isEmpty()) {
-        ScriptManager::instance().throwError(tr("Invalid shortName"));
+        ScriptManager::instance().throwError(QCoreApplication::translate("Script Errors", "Invalid shortName"));
         return QJSValue();
     }
 
@@ -274,7 +299,7 @@ void ScriptModule::extendMenu(const QByteArray &idName, QJSValue items)
     extension.menuId = Id(idName);
 
     if (!ActionManager::findMenu(extension.menuId)) {
-        ScriptManager::instance().throwError(tr("Unknown menu"));
+        ScriptManager::instance().throwError(QCoreApplication::translate("Script Errors", "Unknown menu"));
         return;
     }
 
@@ -289,17 +314,17 @@ void ScriptModule::extendMenu(const QByteArray &idName, QJSValue items)
 
         if (!menuItem.action.isNull()) {
             if (menuItem.isSeparator) {
-                ScriptManager::instance().throwError(tr("Separators can't have actions"));
+                ScriptManager::instance().throwError(QCoreApplication::translate("Script Errors", "Separators can't have actions"));
                 return false;
             }
 
             if (!ActionManager::findAction(menuItem.action)) {
-                ScriptManager::instance().throwError(tr("Unknown action: '%1'").arg(
+                ScriptManager::instance().throwError(QCoreApplication::translate("Script Errors", "Unknown action: '%1'").arg(
                                                          QString::fromUtf8(menuItem.action.name())));
                 return false;
             }
         } else if (!menuItem.isSeparator) {
-            ScriptManager::instance().throwError(tr("Non-separator item without action"));
+            ScriptManager::instance().throwError(QCoreApplication::translate("Script Errors", "Non-separator item without action"));
             return false;
         }
 
@@ -339,7 +364,7 @@ void ScriptModule::trigger(const QByteArray &actionName) const
     if (QAction *action = ActionManager::findAction(actionName))
         action->trigger();
     else
-        ScriptManager::instance().throwError(tr("Unknown action"));
+        ScriptManager::instance().throwError(QCoreApplication::translate("Script Errors", "Unknown action"));
 }
 
 void ScriptModule::executeCommand(const QString &name, bool inTerminal) const
@@ -353,32 +378,52 @@ void ScriptModule::executeCommand(const QString &name, bool inTerminal) const
         }
     }
 
-    ScriptManager::instance().throwError(tr("Unknown command"));
+    ScriptManager::instance().throwError(QCoreApplication::translate("Script Errors", "Unknown command"));
 }
 
 void ScriptModule::alert(const QString &text, const QString &title) const
 {
-    QMessageBox::warning(nullptr, title, text);
+    QMessageBox::warning(MainWindow::instance(), title, text);
 }
 
 bool ScriptModule::confirm(const QString &text, const QString &title) const
 {
-    return QMessageBox::question(nullptr, title, text) == QMessageBox::Yes;
+    return QMessageBox::question(MainWindow::instance(), title, text) == QMessageBox::Yes;
 }
 
 QString ScriptModule::prompt(const QString &label, const QString &text, const QString &title) const
 {
-    return QInputDialog::getText(nullptr, title, label, QLineEdit::Normal, text);
+    return QInputDialog::getText(MainWindow::instance(), title, label, QLineEdit::Normal, text);
 }
 
 void ScriptModule::log(const QString &text) const
 {
-    mLogger->info(text);
+    Tiled::INFO(text);
 }
 
-void ScriptModule::error(const QString &text) const
+void ScriptModule::warn(const QString &text, QJSValue activated)
 {
-    mLogger->error(tr("Error: %1").arg(text));
+    Issue issue { Issue::Warning, text };
+    setCallback(issue, activated);
+    LoggingInterface::instance().report(issue);
+}
+
+void ScriptModule::error(const QString &text, QJSValue activated)
+{
+    Issue issue { Issue::Error, text };
+    setCallback(issue, activated);
+    LoggingInterface::instance().report(issue);
+}
+
+void ScriptModule::setCallback(Issue &issue, QJSValue activated)
+{
+    if (activated.isCallable()) {
+        issue.setCallback([activated] () mutable {   // 'mutable' needed because of non-const QJSValue::call
+            QJSValue result = activated.call();
+            ScriptManager::instance().checkError(result);
+        });
+        issue.setContext(this);
+    }
 }
 
 void ScriptModule::documentCreated(Document *document)

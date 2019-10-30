@@ -106,8 +106,8 @@ void WangBrushItem::setInvalidTiles(const QRegion &region)
 WangBrush::WangBrush(QObject *parent)
     : AbstractTileTool(tr("Wang Brush"),
                       QIcon(QLatin1String(
-                                ":images/24x24/wangtile-edit.png")),
-                      QKeySequence(tr("G")),
+                                ":images/24/wangtile-edit.png")),
+                      QKeySequence(Qt::Key_G),
                       new WangBrushItem,
                       parent)
     , mEdgeDir(WangId::Top)
@@ -173,7 +173,6 @@ void WangBrush::modifiersChanged(Qt::KeyboardModifiers modifiers)
 void WangBrush::languageChanged()
 {
     setName(tr("Wang Brush"));
-    setShortcut(QKeySequence(tr("G")));
 }
 
 void WangBrush::setEdgeColor(int color)

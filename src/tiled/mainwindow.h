@@ -24,7 +24,6 @@
 #pragma once
 
 #include "clipboardmanager.h"
-#include "consoledock.h"
 #include "document.h"
 #include "preferences.h"
 #include "preferencesdialog.h"
@@ -49,13 +48,17 @@ class Terrain;
 
 class ActionManager;
 class AutomappingManager;
+class ConsoleDock;
 class DocumentManager;
+class IssuesDock;
 class MapDocument;
 class MapDocumentActionHandler;
+class MapEditor;
 class MapScene;
 class MapView;
 class ObjectTypesEditor;
 class TilesetDocument;
+class TilesetEditor;
 class Zoomable;
 
 /**
@@ -90,6 +93,8 @@ public:
      */
     void openLastFiles();
 
+    static MainWindow *instance();
+
 protected:
     bool event(QEvent *event) override;
 
@@ -102,13 +107,14 @@ protected:
     void dragEnterEvent(QDragEnterEvent *) override;
     void dropEvent(QDropEvent *) override;
 
-private slots:
+private:
     void newMap();
     void openFileDialog();
     bool saveFile();
     bool saveFileAs();
     void saveAll();
     void export_(); // 'export' is a reserved word
+    bool exportDocument(Document *document);
     void exportAs();
     void exportAsImage();
     void reload();
@@ -126,6 +132,7 @@ private slots:
     void zoomIn();
     void zoomOut();
     void zoomNormal();
+    void fitInView();
     void setFullScreen(bool fullScreen);
     void toggleClearView(bool clearView);
     void resetToDefaultLayout();
@@ -144,11 +151,13 @@ private slots:
     void updateZoomable();
     void updateZoomActions();
     void openDocumentation();
-    void becomePatron();
+    void openForum();
+    void showDonationDialog();
     void aboutTiled();
     void openRecentFile();
 
     void documentChanged(Document *document);
+    void documentSaved(Document *document);
     void closeDocument(int index);
 
     void reloadError(const QString &error);
@@ -159,7 +168,6 @@ private slots:
 
     void ensureHasBorderInFullScreen();
 
-private:
     /**
       * Asks the user whether the given \a mapDocument should be saved, when
       * necessary. If it needs to ask, also makes sure that it is the current
@@ -197,6 +205,7 @@ private:
     Zoomable *mZoomable = nullptr;
     MapDocumentActionHandler *mActionHandler;
     ConsoleDock *mConsoleDock;
+    IssuesDock *mIssuesDock;
     ObjectTypesEditor *mObjectTypesEditor;
     QSettings mSettings;
 
@@ -215,10 +224,20 @@ private:
 
     AutomappingManager *mAutomappingManager;
     DocumentManager *mDocumentManager;
+    MapEditor *mMapEditor;
+    TilesetEditor *mTilesetEditor;
 
     QPointer<PreferencesDialog> mPreferencesDialog;
 
     QMap<QMainWindow*, QByteArray> mMainWindowStates;
+
+    static MainWindow *mInstance;
 };
+
+inline MainWindow *MainWindow::instance()
+{
+    Q_ASSERT(mInstance);
+    return mInstance;
+}
 
 } // namespace Tiled

@@ -8,13 +8,10 @@ Scripting
 Introduction
 ------------
 
-Initial scripting capabilities have been added to Tiled. The API is still
-incomplete, but many actions can be automated either by interacting with any
-open assets or by triggering UI actions.
-
-Scripts can be used to implement :ref:`map export formats <script-registerMapFormat>`
-(only text formats for now), :ref:`custom actions <script-registerAction>` and
-:ref:`new tools <script-registerTool>`.
+Tiled can be extended with the use of JavaScript. Scripts can be used to
+implement :ref:`custom map formats <script-registerMapFormat>`,
+:ref:`custom actions <script-registerAction>` and :ref:`new tools <script-registerTool>`.
+Scripts can also :ref:`automate actions based on signals <script-connecting-to-signals>`.
 
 On startup, Tiled will execute any script files present in
 :ref:`extensions <script-extensions>`. In addition it is possible to run
@@ -27,7 +24,7 @@ Scripted Extensions
 ^^^^^^^^^^^^^^^^^^^
 
 Extensions are placed in a system-specific location. This folder can be opened
-from the Plugins tab in the Preferences dialog.
+from the Plugins tab in the :doc:`Preferences dialog </manual/preferences>`.
 
 +-------------+-----------------------------------------------------------------+
 | **Windows** | | :file:`C:/Users/<USER>/AppData/Local/Tiled/extensions/`       |
@@ -37,8 +34,8 @@ from the Plugins tab in the Preferences dialog.
 | **Linux**   | | :file:`~/.config/tiled/extensions/`                           |
 +-------------+-----------------------------------------------------------------+
 
-Each extension is expected to be placed in a sub-directory of the extensions
-directory. All scripts files found in these sub-directories are executed on
+An extension can be placed directly in the extensions directory, or in a
+sub-directory. All scripts files found in these directories are executed on
 startup.
 
 .. note::
@@ -54,36 +51,6 @@ works as intended.
 Apart from scripts, extensions can include images that can be used as the icon
 for scripted actions or tools.
 
-Startup Script
-^^^^^^^^^^^^^^
-
-.. warning::
-
-    This functionality is deprecated. Write an
-    :ref:`extension <script-extensions>` instead.
-
-If present, a :file:`startup.js` script is evaluated on startup. This
-script could define functions that can be called from the Console or can
-connect to signals to add functionality.
-
-The location of the startup script depends on the platform. The file
-:file:`startup.js` is searched for in the following locations:
-
-+-------------+-----------------------------------------------------------------+
-| **Windows** | | :file:`C:/Users/<USER>/AppData/Local/Tiled/startup.js`        |
-|             | | :file:`C:/ProgramData/Tiled/startup.js`                       |
-+-------------+-----------------------------------------------------------------+
-| **macOS**   | | :file:`~/Library/Preferences/Tiled/startup.js`                |
-+-------------+-----------------------------------------------------------------+
-| **Linux**   | | :file:`~/.config/tiled/startup.js`                            |
-|             | | :file:`/etc/xdg/tiled/startup.js`                             |
-+-------------+-----------------------------------------------------------------+
-
-Any file that exists will be evaluated.
-
-As with extensions, the script engine is reinstantiated and the scripts are
-reloaded when the startup script is changed.
-
 .. _script-console:
 
 Console View
@@ -94,6 +61,8 @@ find a text entry where you can write or paste scripts to evaluate them.
 
 You can use the Up/Down keys to navigate through previously entered
 script expressions.
+
+.. _script-connecting-to-signals:
 
 Connecting to Signals
 ^^^^^^^^^^^^^^^^^^^^^
@@ -156,6 +125,8 @@ Properties
     **activeAsset** : :ref:`script-asset`, "Currently selected asset, or ``null`` if no file is open. Can be assigned
     any open asset in order to change the active asset."
     **openAssets** : array |ro|, "List of currently opened :ref:`assets <script-asset>`."
+    **mapEditor** : :ref:`script-mapeditor`, "Access the editor used when editing maps."
+    **tilesetEditor** : :ref:`script-tileseteditor`, "Access the editor used when editing tilesets."
 
 Functions
 ~~~~~~~~~
@@ -173,9 +144,11 @@ tiled.trigger(action : string) : void
 
 .. _script-execute:
 
-tiled.executeCommand(name : string, inTerminal : bool) : bool
+tiled.executeCommand(name : string, inTerminal : bool) : void
     Executes the first custom command with the given name, as if it was
     triggered manually. Works also with commands that are not currently enabled.
+
+    Raises a script error if the command is not found.
 
 .. _script-open:
 
@@ -213,9 +186,19 @@ tiled.prompt(label : string [, text : string [, title : string]]) : string
 tiled.log(text : string) : void
     Outputs the given text in the Console window as regular text.
 
-tiled.error(text : string) : void
-    Outputs the given text in the Console window as error message (automatically
-    gets "Error: " prepended).
+tiled.warn(text : string, activated : function) : void
+    Outputs the given text in the Console window as warning message and creates
+    an issue in the Issues window.
+
+    When the issue is activated (with double-click or Enter key) the given
+    callback function is invoked.
+
+tiled.error(text : string, activated : function) : void
+    Outputs the given text in the Console window as error message and creates
+    an issue in the Issues window.
+
+    When the issue is activated (with double-click or Enter key) the given
+    callback function is invoked.
 
 .. _script-registerAction:
 
@@ -242,7 +225,8 @@ tiled.registerAction(id : string, callback : function) : :ref:`script-action`
 .. _script-registerMapFormat:
 
 tiled.registerMapFormat(shortName : string, mapFormat : object) : void
-    Registers a new map format that can then be used to export maps to.
+    Registers a new map format that can then be used to open and/or save maps
+    in that format.
 
     If a map format is already registered with the same ``shortName``,
     the existing format is replaced. The short name can also be used to
@@ -257,9 +241,11 @@ tiled.registerMapFormat(shortName : string, mapFormat : object) : void
 
         **name** : string, Name of the format as shown in the file dialog.
         **extension** : string, The file extension used by the format.
-        "**toString** : function(map : :ref:`script-map`, fileName : string) : string", "A function
-        that returns the string representation of the given map, when
-        saved to the given file name (useful for relative references)."
+        "**read** : function(file : :ref:`script-file`) : map : :ref:`script-map`", "A function
+        that loads a map from the given :ref:`script-file`."
+        "**write** : function(map : :ref:`script-map`, fileName : string) : string | ArrayBuffer", "A function
+        that serializes the map into either a string or binary data (using ArrayBuffer). The result will be
+        written to the given *fileName* (useful for making relative file references)."
 
     Example that produces a simple JSON representation of a map:
 
@@ -269,7 +255,7 @@ tiled.registerMapFormat(shortName : string, mapFormat : object) : void
             name: "Custom map format",
             extension: "custom",
 
-            toString: function(map, fileName) {
+            write: function(map, fileName) {
                 var m = {
                     width: map.width,
                     height: map.height,
@@ -296,6 +282,25 @@ tiled.registerMapFormat(shortName : string, mapFormat : object) : void
 
         tiled.registerMapFormat("custom", customMapFormat)
 
+.. _script-registerTilesetFormat:
+
+tiled.registerTilesetFormat(shortName : string, tilesetFormat : object) : void
+    Like :ref:`registerMapFormat <script-registerMapFormat>`, but registers a
+    custom tileset format instead.
+
+    The ``tilesetFormat`` object is expected to have the following properties:
+
+    .. csv-table::
+        :widths: 1, 2
+
+        **name** : string, Name of the format as shown in the file dialog.
+        **extension** : string, The file extension used by the format.
+        "**read** : function(file : :ref:`script-file`) : tileset : :ref:`script-tileset`", "A function
+        that loads a tileset from the given :ref:`script-file`."
+        "**write** : function(tileset : :ref:`script-tileset`, fileName : string) : string | ArrayBuffer", "A function
+        that serializes the tileset into either a string or binary data (using ArrayBuffer). The result will be
+        written to the given *fileName* (useful for making relative file references)."
+
 .. _script-registerTool:
 
 tiled.registerTool(shortName : string, tool : object) : object
@@ -312,7 +317,8 @@ tiled.registerTool(shortName : string, tool : object) : object
 
         **name** : string, Name of the tool as shown on the tool bar.
         **map** : :ref:`script-map`, Currently active tile map.
-        **selectedTile** : :ref:`script-tile`, The last clicked tile for the active map.
+        **selectedTile** : :ref:`script-tile`, The last clicked tile for the active map. See also the ``currentBrush`` property of :ref:`script-mapeditor`.
+        **preview** : :ref:`script-map`, Get or set the preview for tile layer edits.
         **tilePosition** : :ref:`script-point`, Mouse cursor position in tile coordinates.
         **statusInfo** : string, Text shown in the status bar while the tool is active.
         **enabled** : bool, Whether this tool is enabled.
@@ -554,19 +560,19 @@ Properties
 .. csv-table::
     :widths: 1, 2
 
-    **width** : int |ro|, Width of the map in tiles (only relevant for non-infinite maps). Use :ref:`resize <script-map-resize>` to change it.
-    **height** : int |ro|, Height of the map in tiles (only relevant for non-infinite maps). Use :ref:`resize <script-map-resize>` to change it.
-    **size** : size |ro|, Size of the map in tiles (only relevant for non-infinite maps). Use :ref:`resize <script-map-resize>` to change it.
+    **width** : int, Width of the map in tiles (only relevant for non-infinite maps).
+    **height** : int, Height of the map in tiles (only relevant for non-infinite maps).
+    **size** : :ref:`script-size` |ro|, Size of the map in tiles (only relevant for non-infinite maps).
     **tileWidth** : int, Tile width (used by tile layers).
     **tileHeight**: int, Tile height (used by tile layers).
     **infinite** : bool, Whether this map is infinite.
     **hexSideLength** : int, Length of the side of a hexagonal tile (used by tile layers on hexagonal maps).
-    **staggerAxis** : int, "For staggered and hexagonal maps, determines which axis (X or Y) is staggered: 0 (X), 1 (Y)."
-    **orientation** : int, "General map orientation: 0 (Unknown), 1 (Orthogonal), 2 (Isometric), 3 (Staggered), 4 (Hexagonal)"
-    **renderOrder** : int, "Tile rendering order (only implemented for orthogonal maps): 0 (RightDown), 1 (RightUp), 2 (LeftDown), 3 (LeftUp)"
-    **staggerIndex** : int, "For staggered and hexagonal maps, determines whether the even or odd indexes along the staggered axis are shifted. 0 (Odd), 1 (Even)."
+    **staggerAxis** : :ref:`StaggerAxis <script-map-staggeraxis>`, "For staggered and hexagonal maps, determines which axis (X or Y) is staggered."
+    **orientation** : :ref:`Orientation <script-map-orientation>`, "General map orientation"
+    **renderOrder** : :ref:`RenderOrder <script-map-renderorder>`, "Tile rendering order (only implemented for orthogonal maps)"
+    **staggerIndex** : :ref:`StaggerIndex <script-map-staggerindex>`, "For staggered and hexagonal maps, determines whether the even or odd indexes along the staggered axis are shifted."
     **backgroundColor** : color, Background color of the map.
-    **layerDataFormat** : int, "The format in which the layer data is stored, taken into account by TMX, JSON and Lua map formats: 0 (XML), 1 (Base64), 2 (Base64Gzip), 3 (Base64Zlib), 4 (CSV)"
+    **layerDataFormat** : :ref:`LayerDataFormat <script-map-layerdataformat>`, "The format in which the layer data is stored, taken into account by TMX, JSON and Lua map formats."
     **layerCount** : int |ro|, Number of top-level layers the map has.
     **tilesets** : [:ref:`script-tileset`], "The list of tilesets referenced by this map. To determine which tilesets are actually used, call :ref:`usedTilesets() <script-map-usedTilesets>`."
     **selectedArea** : :ref:`SelectionArea <script-selectedarea>`, The selected area of tiles.
@@ -574,11 +580,86 @@ Properties
     **selectedLayers** : [:ref:`script-layer`], Selected layers.
     **selectedObjects** : [:ref:`script-mapobject`], Selected objects.
 
+.. _script-map-orientation:
+
+.. csv-table::
+    :header: "TileMap.Orientation"
+
+    TileMap.Unknown
+    TileMap.Orthogonal
+    TileMap.Isometric
+    TileMap.Staggered
+    TileMap.Hexagonal
+
+.. _script-map-layerdataformat:
+
+.. csv-table::
+    :header: "TileMap.LayerDataFormat"
+
+    TileMap.XML
+    TileMap.Base64
+    TileMap.Base64Gzip
+    TileMap.Base64Zlib
+    TileMap.Base64Zstandard
+    TileMap.CSV
+
+.. _script-map-renderorder:
+
+.. csv-table::
+    :header: "TileMap.RenderOrder"
+
+    TileMap.RightDown
+    TileMap.RightUp
+    TileMap.LeftDown
+    TileMap.LeftUp
+
+.. _script-map-staggeraxis:
+
+.. csv-table::
+    :header: "TileMap.StaggerAxis"
+
+    TileMap.StaggerX
+    TileMap.StaggerY
+
+.. _script-map-staggerindex:
+
+.. csv-table::
+    :header: "TileMap.StaggerIndex"
+
+    TileMap.StaggerOdd
+    TileMap.StaggerEven
+
 Functions
 ~~~~~~~~~
 
 new TileMap()
     Constructs a new map.
+
+.. _script-map-autoMap:
+
+TileMap.autoMap([rulesFile : string]) : void
+    Applies :doc:`/manual/automapping` using the given rules file, or using the
+    default rules file is none is given.
+
+    *This operation can only be applied to maps loaded from a file.*
+
+TileMap.autoMap(region : :ref:`script-region` | :ref:`script-rect` [, rulesFile : string]) : void
+    Applies :doc:`/manual/automapping` in the given region using the given
+    rules file, or using the default rules file is none is given.
+
+    *This operation can only be applied to maps loaded from a file.*
+
+.. _script-map-setSize:
+
+TileMap.setSize(width : int, height : int) : void
+    Sets the size of the map in tiles. This does not affect the contents of the map.
+
+    See also :ref:`resize <script-map-resize>`.
+
+.. _script-map-setTileSize:
+
+TileMap.setTileSize(width : int, height : int) : void
+    Sets the tile size of the map in pixels. This affects the rendering of all tile layers.
 
 .. _script-map-layerAt:
 
@@ -641,10 +722,27 @@ TileMap.usedTilesets() : [:ref:`script-tileset`]
     a subset of the tilesets referenced by the map (the ``TileMap.tilesets``
     property).
 
+.. _script-map-merge:
+
+TileMap.merge(map : :ref:`script-map` [, canJoin : bool = false]) : void
+    Merges the tile layers in the given map with this one. If only a single
+    tile layer exists in the given map, it will be merged with the
+    ``currentLayer``.
+
+    If ``canJoin`` is ``true``, the operation joins with the previous one on
+    the undo stack when possible. Useful for reducing the amount of undo
+    commands.
+
+    *This operation can currently only be applied to maps loaded from a file.*
+
 .. _script-map-resize:
 
-TileMap.resize(size : size [, offset : :ref:`script-point` [, removeObjects : bool = false]]) : void
-    Resizes the map to the given size, optionally applying an offset (in tiles)
+TileMap.resize(size : :ref:`script-size` [, offset : :ref:`script-point` [, removeObjects : bool = false]]) : void
+    Resizes the map to the given size, optionally applying an offset (in tiles).
+
+    *This operation can currently only be applied to maps loaded from a file.*
+
+    See also :ref:`setSize <script-map-setSize>`.
 
 .. _script-layer:
 
@@ -678,15 +776,21 @@ TileLayer
 
 Inherits :ref:`script-layer`.
 
+Note that while tile layers have a size, the size is generally ignored on
+infinite maps. Even for finite maps, nothing in the scripting API stops you
+from changing the layer outside of its boundaries and changing the size of the
+layer has no effect on its contents. If you want to change the size while
+affecting the contents, use the ``resize`` function.
+
 Properties
 ~~~~~~~~~~
 
 .. csv-table::
     :widths: 1, 2
 
-    **width** : int |ro|, Width of the layer in tiles (only relevant for non-infinite maps).
-    **height** : int |ro|, Height of the layer in tiles (only relevant for non-infinite maps).
-    **size** : size |ro|, Size of the layer in tiles (has ``width`` and ``height`` members) (only relevant for non-infinite maps).
+    **width** : int, Width of the layer in tiles (only relevant for non-infinite maps).
+    **height** : int, Height of the layer in tiles (only relevant for non-infinite maps).
+    **size** : :ref:`script-size`, Size of the layer in tiles (has ``width`` and ``height`` members) (only relevant for non-infinite maps).
 
 Functions
 ~~~~~~~~~
@@ -697,7 +801,12 @@ new TileLayer([name : string])
 TileLayer.region() : region
     Returns the region of the layer that is covered with tiles.
 
-TileLayer.cellAt(x : int, y : int) : cell
+TileLayer.resize(size : :ref:`script-size`, offset : :ref:`script-point`) : void
+    Resizes the layer, erasing the part of the contents that falls outside of
+    the layer's new size. The offset parameter can be used to shift the contents
+    by a certain distance in tiles before applying the resize.
+
+TileLayer.cellAt(x : int, y : int) : :ref:`script-cell`
     Returns the value of the cell at the given position. Can be used to query
     the flags and the tile ID, but does not currently allow getting a tile
     reference.
@@ -886,16 +995,19 @@ Properties
     :widths: 1, 2
 
     **name** : string, Name of the tileset.
+    **image** : string, The file name of the image used by this tileset. Empty in case of image collection tilesets.
     **tiles**: [:ref:`script-tile`] |ro|, Array of all tiles in this tileset. Note that the index of a tile in this array does not always match with its ID.
     **terrains**: [:ref:`script-terrain`] |ro|, Array of all terrains in this tileset.
     **tileCount** : int, The number of tiles in this tileset.
-    **tileWidth** : int |ro|, Tile width for tiles in this tileset in pixels.
-    **tileHeight** : int |ro|, Tile Height for tiles in this tileset in pixels.
+    **tileWidth** : int, Tile width for tiles in this tileset in pixels.
+    **tileHeight** : int, Tile Height for tiles in this tileset in pixels.
     **tileSize** : size |ro|, Tile size for tiles in this tileset in pixels (has ``width`` and ``height`` members).
     **tileSpacing** : int |ro|, Spacing between tiles in this tileset in pixels.
     **margin** : int |ro|, Margin around the tileset in pixels (only used at the top and left sides of the tileset image).
     **tileOffset** : :ref:`script-point`, Offset in pixels that is applied when tiles from this tileset are rendered.
     **backgroundColor** : color, Background color for this tileset in the *Tilesets* view.
+    **isCollection** : bool, Whether this tileset is a collection of images.
+    **selectedTiles** : [:ref:`script-tile`], Selected tiles (in the tileset editor).
 
 Functions
 ~~~~~~~~~
@@ -911,6 +1023,16 @@ Tileset.tile(id : int) : :ref:`script-tile`
     Note that the tiles in a tileset are only guaranteed to have consecutive
     IDs for tileset-image based tilesets. For image collection tilesets there
     will be gaps when tiles have been removed from the tileset.
+
+Tileset.setTileSize(width : int, height : int) : void
+    Sets the tile size for this tileset. If an image has been specified as well,
+    the tileset will be (re)loaded. Can't be used on image collection tilesets.
+
+Tileset.addTile() : :ref:`script-tile`
+    Adds a new tile to this tileset and returns it. Only works for image collection tilesets.
+
+Tileset.removeTiles(tiles : [:ref:`script-tile`]) : void
+    Removes the given tiles from this tileset. Only works for image collection tilesets.
 
 .. _script-tile:
 
@@ -930,9 +1052,10 @@ Properties
     **height** : int |ro|, Height of the tile in pixels.
     **size** : size |ro|, Size of the tile in pixels (has ``width`` and ``height`` members).
     **type** : string, Type of the tile.
+    **imageFileName** : string, File name of the tile image (when the tile is part of an image collection tileset).
     **terrain** : :ref:`script-tileterrains`, An object specifying the terrain at each corner of the tile.
     **probability** : number, Probability that the tile gets chosen relative to other tiles.
-    **objectGroup** : :ref:`script-objectgroup` |ro|, The :ref:`script-objectgroup` associated with the tile in case collision shapes were defined. Returns ``null`` if no collision shapes were defined for this tile.
+    **objectGroup** : :ref:`script-objectgroup`, The :ref:`script-objectgroup` associated with the tile in case collision shapes were defined. Returns ``null`` if no collision shapes were defined for this tile.
     **frames** : :ref:`[frame] <script-frames>`, This tile's animation as an array of frames.
     **animated** : bool |ro|, Indicates whether this tile is animated.
     **tileset** : :ref:`script-tileset` |ro|, The tileset of the tile.
@@ -1097,6 +1220,89 @@ Action.toggle() : void
     Changes the checked state to its opposite state.
 
 
+.. _script-mapeditor:
+
+Map Editor
+^^^^^^^^^^
+
+Properties
+~~~~~~~~~~
+
+.. csv-table::
+    :widths: 1, 2
+
+    **currentBrush** : :ref:`script-map`, "Get or set the currently used tile brush."
+    **currentMapView** : :ref:`script-mapview` |ro|, "Access the current map view."
+    **tilesetsView** : :ref:`script-tilesetsview` |ro|, "Access the Tilesets view."
+
+.. _script-mapview:
+
+Map View
+^^^^^^^^
+
+The view displaying the map.
+
+Properties
+~~~~~~~~~~
+
+.. csv-table::
+    :widths: 1, 2
+
+    **scale** : number, "Get or set the scale of the view."
+
+Functions
+~~~~~~~~~
+
+MapView.centerOn(x : number, y : number) : void
+    Centers the view at the given location in screen coordinates.
+
+.. _script-tilesetsview:
+
+Tilesets View
+^^^^^^^^^^^^^
+
+Properties
+~~~~~~~~~~
+
+.. csv-table::
+    :widths: 1, 2
+
+    **currentTileset** : :ref:`script-tileset`, "Access or change the currently displayed tileset."
+
+.. _script-tileseteditor:
+
+Tileset Editor
+^^^^^^^^^^^^^^
+
+Properties
+~~~~~~~~~~
+
+.. csv-table::
+    :widths: 1, 2
+
+    **collisionEditor** : :ref:`script-tilecollisioneditor`, "Access the collision editor within the tileset editor."
+
+.. _script-tilecollisioneditor:
+
+Tile Collision Editor
+^^^^^^^^^^^^^^^^^^^^^
+
+Properties
+~~~~~~~~~~
+
+.. csv-table::
+    :widths: 1, 2
+
+    **selectedObjects** : [:ref:`script-mapobject`], Selected objects.
+    **view** : [:ref:`script-mapview`], The map view used by the Collision Editor.
+
+Functions
+~~~~~~~~~
+
+TileCollisionEditor.focusObject(object : :ref:`script-mapobject`) : void
+    Focuses the given object in the collision editor view and makes sure its
+    visible in its objects list. Does not automatically select the object.
+
 .. _script-basic-types:
 
 Basic Types
@@ -1140,6 +1346,25 @@ Font
     **strikeOut** : bool, Whether the text is striked through.
     **kerning** : bool, Whether to use kerning when rendering the text.
 
+.. _script-cell:
+
+cell
+~~~~
+
+A cell on a :ref:`script-tilelayer`.
+
+**Properties**
+
+.. csv-table::
+    :widths: 1, 2
+
+    **tileId** : int, "The local tile ID of the tile, or -1 if the cell is empty."
+    **empty** : bool, Whether the cell is empty.
+    **flippedHorizontally** : bool, Whether the tile is flipped horizontally.
+    **flippedVertically** : bool, Whether the tile is flipped vertically.
+    **flippedAntiDiagonally** : bool, Whether the tile is flipped anti-diagonally.
+    **rotatedHexagonal120** : bool, "Whether the tile is rotated by 120 degrees (for hexagonal maps, the anti-diagonal flip is interpreted as a 60-degree rotation)."
+
 .. _script-frames:
 
 Frames
@@ -1160,7 +1385,7 @@ rect
 
 ``Qt.rect(x, y, width, height)`` can be used to create a rectangle.
 
-**Properties**:
+**Properties**
 
 .. csv-table::
     :widths: 1, 2
@@ -1175,7 +1400,7 @@ rect
 region
 ~~~~~~
 
-**Properties**:
+**Properties**
 
 .. csv-table::
     :widths: 1, 2
@@ -1190,13 +1415,28 @@ point
 
 ``Qt.point(x, y)`` can be used to create a point object.
 
-**Properties**:
+**Properties**
 
 .. csv-table::
     :widths: 1, 2
 
     **x** : number, X coordinate of the point.
     **y** : number, Y coordinate of the point.
+
+.. _script-size:
+
+size
+~~~~
+
+``Qt.size(width, height)`` can be used to create a size object.
+
+**Properties**
+
+.. csv-table::
+    :widths: 1, 2
+
+    **width** : number, Width.
+    **height** : number, Height.
 
 .. _script-polygon:
 
@@ -1222,3 +1462,27 @@ An object specifying the terrain for each corner of a tile:
     **topRight** : :ref:`script-terrain`
     **bottomLeft** : :ref:`script-terrain`
     **bottomRight** : :ref:`script-terrain`
+
+.. _script-file:
+
+file
+~~~~
+
+The file object is used to enable reading from a file in custom map and tileset
+formats.
+
+**Properties**
+
+.. csv-table::
+    :widths: 1, 2
+
+    **filePath** : string |ro|, "The path of the file."
+    **errorString** : string |ro|, "The error string, in case ``readAsText`` or ``readAsBinary`` failed."
+
+**Functions**
+
+File.readAsText() : string
+    Reads the contents of the file in text mode and returns it as a string.
+
+File.readAsBinary() : ArrayBuffer
+    Reads the contents of the file in binary mode and returns it as an ArrayBuffer.

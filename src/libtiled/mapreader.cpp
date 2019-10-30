@@ -84,8 +84,10 @@ private:
     void readUnknownElement();
 
     std::unique_ptr<Map> readMap();
+    void readMapEditorSettings(Map &map);
 
     SharedTileset readTileset();
+    void readTilesetEditorSettings(Tileset &tileset);
     void readTilesetTile(Tileset &tileset);
     void readTilesetGrid(Tileset &tileset);
     void readTilesetImage(Tileset &tileset);
@@ -189,7 +191,7 @@ SharedTileset MapReaderPrivate::readTileset(QIODevice *device, const QString &pa
 std::unique_ptr<ObjectTemplate> MapReaderPrivate::readObjectTemplate(QIODevice *device, const QString &path)
 {
     mError.clear();
-    mPath = path;
+    mPath.setPath(path);
     std::unique_ptr<ObjectTemplate> objectTemplate;
 
     xml.setDevice(device);
@@ -293,7 +295,9 @@ std::unique_ptr<Map> MapReaderPrivate::readMap()
         mMap->setBackgroundColor(QColor(bgColorString.toString()));
 
     while (xml.readNextStartElement()) {
-        if (std::unique_ptr<Layer> layer = tryReadLayer())
+        if (xml.name() == QLatin1String("editorsettings"))
+            readMapEditorSettings(*mMap);
+        else if (std::unique_ptr<Layer> layer = tryReadLayer())
             mMap->addLayer(std::move(layer));
         else if (xml.name() == QLatin1String("properties"))
             mMap->mergeProperties(readProperties());
@@ -334,6 +338,36 @@ std::unique_ptr<Map> MapReaderPrivate::readMap()
     return std::move(mMap);
 }
 
+void MapReaderPrivate::readMapEditorSettings(Map &map)
+{
+    Q_ASSERT(xml.isStartElement() && xml.name() == QLatin1String("editorsettings"));
+
+    while (xml.readNextStartElement()) {
+        if (xml.name() == QLatin1String("chunksize")) {
+            const QXmlStreamAttributes atts = xml.attributes();
+
+            int chunkWidth = atts.value(QLatin1String("width")).toInt();
+            int chunkHeight = atts.value(QLatin1String("height")).toInt();
+
+            chunkWidth = chunkWidth == 0 ? CHUNK_SIZE : qMax(CHUNK_SIZE_MIN, chunkWidth);
+            chunkHeight = chunkHeight == 0 ? CHUNK_SIZE : qMax(CHUNK_SIZE_MIN, chunkHeight);
+
+            map.setChunkSize(QSize(chunkWidth, chunkHeight));
+
+            xml.skipCurrentElement();
+        } else if (xml.name() == QLatin1String("export")) {
+            const QXmlStreamAttributes atts = xml.attributes();
+
+            map.exportFileName = QDir::cleanPath(mPath.filePath(atts.value(QLatin1String("target")).toString()));
+            map.exportFormat = atts.value(QLatin1String("format")).toString();
+
+            xml.skipCurrentElement();
+        } else {
+            readUnknownElement();
+        }
+    }
+}
+
 SharedTileset MapReaderPrivate::readTileset()
 {
     Q_ASSERT(xml.isStartElement() && xml.name() == QLatin1String("tileset"));
@@ -368,7 +402,9 @@ SharedTileset MapReaderPrivate::readTileset()
                 tileset->setBackgroundColor(QColor(bgColorString.toString()));
 
             while (xml.readNextStartElement()) {
-                if (xml.name() == QLatin1String("tile")) {
+                if (xml.name() == QLatin1String("editorsettings")) {
+                    readTilesetEditorSettings(*tileset);
+                } else if (xml.name() == QLatin1String("tile")) {
                     readTilesetTile(*tileset);
                 } else if (xml.name() == QLatin1String("tileoffset")) {
                     const QXmlStreamAttributes oa = xml.attributes();
@@ -417,6 +453,24 @@ SharedTileset MapReaderPrivate::readTileset()
         mGidMapper.insert(firstGid, tileset);
 
     return tileset;
+}
+
+void MapReaderPrivate::readTilesetEditorSettings(Tileset &tileset)
+{
+    Q_ASSERT(xml.isStartElement() && xml.name() == QLatin1String("editorsettings"));
+
+    while (xml.readNextStartElement()) {
+        if (xml.name() == QLatin1String("export")) {
+            const QXmlStreamAttributes atts = xml.attributes();
+
+            tileset.exportFileName = QDir::cleanPath(mPath.filePath(atts.value(QLatin1String("target")).toString()));
+            tileset.exportFormat = atts.value(QLatin1String("format")).toString();
+
+            xml.skipCurrentElement();
+        } else {
+            readUnknownElement();
+        }
+    }
 }
 
 void MapReaderPrivate::readTilesetTile(Tileset &tileset)
@@ -795,14 +849,6 @@ void MapReaderPrivate::readTileLayerData(TileLayer &tileLayer)
     }
 
     mMap->setLayerDataFormat(layerDataFormat);
-
-    int chunkWidth = atts.value(QLatin1String("outputchunkwidth")).toInt();
-    int chunkHeight = atts.value(QLatin1String("outputchunkheight")).toInt();
-
-    chunkWidth = chunkWidth == 0 ? CHUNK_SIZE : qMax(CHUNK_SIZE_MIN, chunkWidth);
-    chunkHeight = chunkHeight == 0 ? CHUNK_SIZE : qMax(CHUNK_SIZE_MIN, chunkHeight);
-
-    mMap->setChunkSize(QSize(chunkWidth, chunkHeight));
 
     readTileLayerRect(tileLayer,
                       layerDataFormat,
@@ -1343,11 +1389,7 @@ SharedTileset MapReader::readTileset(const QString &fileName)
     if (!d->openFile(&file))
         return SharedTileset();
 
-    SharedTileset tileset = readTileset(&file, QFileInfo(fileName).absolutePath());
-    if (tileset)
-        tileset->setFileName(fileName);
-
-    return tileset;
+    return readTileset(&file, QFileInfo(fileName).absolutePath());
 }
 
 std::unique_ptr<ObjectTemplate> MapReader::readObjectTemplate(QIODevice *device, const QString &path)

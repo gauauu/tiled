@@ -92,11 +92,11 @@ public:
     Map::RenderOrder mapRenderOrder() const;
     void setMapRenderOrder(Map::RenderOrder mapRenderOrder);
 
-    bool dtdEnabled() const;
-    void setDtdEnabled(bool enabled);
-
     bool safeSavingEnabled() const;
     void setSafeSavingEnabled(bool enabled);
+
+    bool exportOnSave() const;
+    void setExportOnSave(bool enabled);
 
     enum ExportOption {
         EmbedTilesets                   = 0x1,
@@ -153,10 +153,10 @@ public:
     bool isPatron() const;
     void setPatron(bool isPatron);
 
-    bool shouldShowPatreonDialog() const;
-    void setPatreonDialogReminder(const QDate &date);
+    bool shouldShowDonationDialog() const;
+    void setDonationDialogReminder(const QDate &date);
 
-    enum { MaxRecentFiles = 8 };
+    enum { MaxRecentFiles = 12 };
     QStringList recentFiles() const;
     QString fileDialogStartLocation() const;
     void addRecentFile(const QString &fileName);
@@ -272,6 +272,7 @@ private:
     Map::RenderOrder mMapRenderOrder;
     bool mDtdEnabled;
     bool mSafeSavingEnabled;
+    bool mExportOnSave;
     ExportOptions mExportOptions;
     QString mLanguage;
     bool mReloadTilesetsOnChange;
@@ -285,7 +286,7 @@ private:
     QString mObjectTypesFile;
 
     QDate mFirstRun;
-    QDate mPatreonDialogTime;
+    QDate mDonationDialogTime;
     int mRunCount;
     bool mIsPatron;
     bool mCheckForUpdates;
@@ -396,14 +397,14 @@ inline Map::RenderOrder Preferences::mapRenderOrder() const
     return mMapRenderOrder;
 }
 
-inline bool Preferences::dtdEnabled() const
-{
-    return mDtdEnabled;
-}
-
 inline bool Preferences::safeSavingEnabled() const
 {
     return mSafeSavingEnabled;
+}
+
+inline bool Preferences::exportOnSave() const
+{
+    return mExportOnSave;
 }
 
 inline Preferences::ExportOptions Preferences::exportOptions() const

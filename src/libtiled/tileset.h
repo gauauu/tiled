@@ -103,6 +103,9 @@ private:
             int tileSpacing = 0, int margin = 0);
 
 public:
+    QString exportFileName;
+    QString exportFormat;
+
     ~Tileset();
 
     const QString &name() const;
@@ -215,6 +218,9 @@ public:
 
     SharedTileset sharedPointer() const;
 
+    void setOriginalTileset(const SharedTileset &original);
+    SharedTileset originalTileset() const;
+
     void setStatus(LoadingStatus status);
     void setImageStatus(LoadingStatus status);
     LoadingStatus status() const;
@@ -269,6 +275,7 @@ private:
     QPointer<TilesetFormat> mFormat;
 
     QWeakPointer<Tileset> mWeakPointer;
+    QWeakPointer<Tileset> mOriginalTileset;
 };
 
 

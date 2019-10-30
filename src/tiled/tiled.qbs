@@ -169,7 +169,6 @@ QtGuiApplication {
         "commandmanager.h",
         "consoledock.cpp",
         "consoledock.h",
-        "containerhelpers.h",
         "createellipseobjecttool.cpp",
         "createellipseobjecttool.h",
         "createobjecttool.cpp",
@@ -192,6 +191,9 @@ QtGuiApplication {
         "document.h",
         "documentmanager.cpp",
         "documentmanager.h",
+        "donationdialog.cpp",
+        "donationdialog.h",
+        "donationdialog.ui",
         "editableasset.cpp",
         "editableasset.h",
         "editablegrouplayer.cpp",
@@ -258,6 +260,12 @@ QtGuiApplication {
         "imagelayeritem.h",
         "clickablelabel.cpp",
         "clickablelabel.h",
+        "issuescounter.cpp",
+        "issuescounter.h",
+        "issuesdock.cpp",
+        "issuesdock.h",
+        "issuesmodel.cpp",
+        "issuesmodel.h",
         "languagemanager.cpp",
         "languagemanager.h",
         "layerdock.cpp",
@@ -352,9 +360,6 @@ QtGuiApplication {
         "offsetmapdialog.ui",
         "painttilelayer.cpp",
         "painttilelayer.h",
-        "patreondialog.cpp",
-        "patreondialog.h",
-        "patreondialog.ui",
         "pluginlistmodel.cpp",
         "pluginlistmodel.h",
         "pointhandle.cpp",
@@ -399,8 +404,8 @@ QtGuiApplication {
         "rotatemapobject.h",
         "scriptedaction.cpp",
         "scriptedaction.h",
-        "scriptedmapformat.cpp",
-        "scriptedmapformat.h",
+        "scriptedfileformat.cpp",
+        "scriptedfileformat.h",
         "scriptedtool.cpp",
         "scriptedtool.h",
         "scriptmanager.cpp",
@@ -618,7 +623,7 @@ QtGuiApplication {
         condition: qbs.targetOS.contains("linux")
         qbs.install: true
         qbs.installDir: "share/icons/hicolor/16x16/apps"
-        files: [ "images/16x16/tiled.png" ]
+        files: [ "images/16/tiled.png" ]
     }
 
     Group {
@@ -626,7 +631,7 @@ QtGuiApplication {
         condition: qbs.targetOS.contains("linux")
         qbs.install: true
         qbs.installDir: "share/icons/hicolor/32x32/apps"
-        files: [ "images/32x32/tiled.png" ]
+        files: [ "images/32/tiled.png" ]
     }
 
     Group {
@@ -642,7 +647,7 @@ QtGuiApplication {
         condition: qbs.targetOS.contains("linux")
         qbs.install: true
         qbs.installDir: "share/icons/hicolor/16x16/mimetypes"
-        files: [ "images/16x16/application-x-tiled.png" ]
+        files: [ "images/16/application-x-tiled.png" ]
     }
 
     Group {
@@ -650,7 +655,7 @@ QtGuiApplication {
         condition: qbs.targetOS.contains("linux")
         qbs.install: true
         qbs.installDir: "share/icons/hicolor/32x32/mimetypes"
-        files: [ "images/32x32/application-x-tiled.png" ]
+        files: [ "images/32/application-x-tiled.png" ]
     }
 
     Group {

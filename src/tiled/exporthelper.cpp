@@ -64,6 +64,7 @@ SharedTileset ExportHelper::prepareExportTileset(const SharedTileset &tileset,
     // Either needs to be embedded or is already embedded and we may need to
     // make other changes to the tileset
     SharedTileset exportTileset = tileset->clone();
+    exportTileset->setOriginalTileset(tileset);
 
     if (mOptions.testFlag(Preferences::DetachTemplateInstances)) {
         for (Tile *tile : exportTileset->tiles()) {
@@ -96,7 +97,7 @@ const Map *ExportHelper::prepareExportMap(const Map *map, std::unique_ptr<Map> &
         return map;
 
     // Make a copy to which export options are applied
-    exportMap.reset(map->clone());
+    exportMap = map->clone();
 
     if (mOptions.testFlag(Preferences::DetachTemplateInstances))
         for (Layer *layer : exportMap->objectGroups())

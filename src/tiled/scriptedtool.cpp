@@ -20,6 +20,7 @@
 
 #include "scriptedtool.h"
 
+#include "brushitem.h"
 #include "editablemap.h"
 #include "mapdocument.h"
 #include "pluginmanager.h"
@@ -27,8 +28,10 @@
 #include "tile.h"
 #include "tilesetdocument.h"
 
+#include <QCoreApplication>
 #include <QJSEngine>
 #include <QKeyEvent>
+#include <QQmlEngine>
 
 namespace Tiled {
 
@@ -75,6 +78,20 @@ EditableTile *ScriptedTool::editableTile() const
     }
 
     return nullptr;
+}
+
+EditableMap *ScriptedTool::preview() const
+{
+    auto editableMap = new EditableMap(brushItem()->map()->clone());
+    QQmlEngine::setObjectOwnership(editableMap, QQmlEngine::JavaScriptOwnership);
+    return editableMap;
+}
+
+void ScriptedTool::setPreview(EditableMap *editableMap)
+{
+    // todo: filter any non-tilelayers out of the map?
+    auto map = editableMap->map()->clone();
+    brushItem()->setMap(SharedMap { map.release() });
 }
 
 void ScriptedTool::activate(MapScene *scene)
@@ -187,7 +204,7 @@ bool ScriptedTool::validateToolObject(QJSValue value)
     const QJSValue nameProperty = value.property(QStringLiteral("name"));
 
     if (!nameProperty.isString()) {
-        ScriptManager::instance().throwError(tr("Invalid tool object (requires string 'name' property)"));
+        ScriptManager::instance().throwError(QCoreApplication::translate("Script Errors", "Invalid tool object (requires string 'name' property)"));
         return false;
     }
 

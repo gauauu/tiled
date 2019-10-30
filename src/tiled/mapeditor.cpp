@@ -34,9 +34,11 @@
 #include "createtextobjecttool.h"
 #include "createtileobjecttool.h"
 #include "documentmanager.h"
+#include "editablemap.h"
 #include "editpolygontool.h"
 #include "eraser.h"
 #include "filechangedwarning.h"
+#include "issuescounter.h"
 #include "layerdock.h"
 #include "layermodel.h"
 #include "layeroffsettool.h"
@@ -89,6 +91,7 @@
 #include <QLabel>
 #include <QMainWindow>
 #include <QMessageBox>
+#include <QQmlEngine>
 #include <QScrollBar>
 #include <QSettings>
 #include <QShortcut>
@@ -251,6 +254,7 @@ MapEditor::MapEditor(QObject *parent)
     mMainWindow->statusBar()->addPermanentWidget(mZoomComboBox);
     mMainWindow->statusBar()->addPermanentWidget(new NewsButton);
     mMainWindow->statusBar()->addPermanentWidget(new NewVersionButton(NewVersionButton::AutoVisible));
+    mMainWindow->statusBar()->addWidget(new IssuesCounter);
     mMainWindow->statusBar()->addWidget(mStatusInfoLabel);
 
     connect(mWidgetStack, &QStackedWidget::currentChanged, this, &MapEditor::currentWidgetChanged);
@@ -262,6 +266,8 @@ MapEditor::MapEditor(QObject *parent)
     connect(mTemplatesDock, &TemplatesDock::currentTemplateChanged, mToolManager, &ToolManager::setObjectTemplate);
     connect(DocumentManager::instance(), &DocumentManager::templateOpenRequested,
             mTemplatesDock, &TemplatesDock::openTemplate);
+    connect(DocumentManager::instance(), &DocumentManager::selectCustomPropertyRequested,
+            mPropertiesDock, &PropertiesDock::selectCustomProperty);
 
     connect(mTemplatesDock, &TemplatesDock::templateTilesetReplaced,
             DocumentManager::instance(), &DocumentManager::templateTilesetReplaced);
@@ -366,6 +372,9 @@ void MapEditor::addDocument(Document *document)
         int layerIndex = mapState.value(QLatin1String("selectedLayer")).toInt();
         if (Layer *layer = layerAtGlobalIndex(mapDocument->map(), layerIndex))
             mapDocument->switchCurrentLayer(layer);
+
+        // suppress fitting map in view upon show event
+        view->setViewInitialized();
     }
 }
 
@@ -375,21 +384,9 @@ void MapEditor::removeDocument(Document *document)
     Q_ASSERT(mapDocument);
     Q_ASSERT(mWidgetForMap.contains(mapDocument));
 
+    saveDocumentState(mapDocument);
+
     MapView *mapView = mWidgetForMap.take(mapDocument);
-
-    // remember the state of this map before deleting the view
-    if (!mapDocument->fileName().isEmpty()) {
-        QVariantMap mapState;
-        mapState.insert(QLatin1String("scale"), mapView->zoomable()->scale());
-        mapState.insert(QLatin1String("viewCenter"), mapView->mapToScene(mapView->viewport()->rect().center()));
-        mapState.insert(QLatin1String("selectedLayer"), globalIndex(mapDocument->currentLayer()));
-        mMapStates.insert(mapDocument->fileName(), mapState);
-
-        Preferences *prefs = Preferences::instance();
-        QSettings *settings = prefs->settings();
-        settings->setValue(QLatin1String(MAPSTATES_KEY), mMapStates);
-    }
-
     // remove first, to keep it valid while the current widget changes
     mWidgetStack->removeWidget(mapView);
     delete mapView;
@@ -614,6 +611,26 @@ Zoomable *MapEditor::zoomable() const
     return nullptr;
 }
 
+void MapEditor::saveDocumentState(MapDocument *mapDocument)
+{
+    MapView *mapView = mWidgetForMap.value(mapDocument);
+    if (!mapView)
+        return;
+
+    // remember the state of this map before deleting the view
+    if (!mapDocument->fileName().isEmpty()) {
+        QVariantMap mapState;
+        mapState.insert(QLatin1String("scale"), mapView->zoomable()->scale());
+        mapState.insert(QLatin1String("viewCenter"), mapView->mapToScene(mapView->viewport()->rect()).boundingRect().center());
+        mapState.insert(QLatin1String("selectedLayer"), globalIndex(mapDocument->currentLayer()));
+        mMapStates.insert(mapDocument->fileName(), mapState);
+
+        Preferences *prefs = Preferences::instance();
+        QSettings *settings = prefs->settings();
+        settings->setValue(QLatin1String(MAPSTATES_KEY), mMapStates);
+    }
+}
+
 void MapEditor::showMessage(const QString &text, int timeout)
 {
     mMainWindow->statusBar()->showMessage(text, timeout);
@@ -822,6 +839,16 @@ void MapEditor::addExternalTilesets(const QStringList &fileNames)
     handleExternalTilesetsAndImages(fileNames, false);
 }
 
+QAction *MapEditor::actionSelectNextTileset() const
+{
+    return mTilesetDock->actionSelectNextTileset();
+}
+
+QAction *MapEditor::actionSelectPreviousTileset() const
+{
+    return mTilesetDock->actionSelectPreviousTileset();
+}
+
 void MapEditor::filesDroppedOnTilesetDock(const QStringList &fileNames)
 {
     handleExternalTilesetsAndImages(fileNames, true);
@@ -851,6 +878,7 @@ void MapEditor::handleExternalTilesetsAndImages(const QStringList &fileNames,
         if (tilesetFormat) {
             tileset = tilesetFormat->read(fileName);
             if (tileset) {
+                tileset->setFileName(fileName);
                 tileset->setFormat(tilesetFormat);
                 tilesets.append(tileset);
                 continue;
@@ -968,6 +996,24 @@ void MapEditor::setCurrentTileset(const SharedTileset &tileset)
 SharedTileset MapEditor::currentTileset() const
 {
     return mTilesetDock->currentTileset();
+}
+
+EditableMap *MapEditor::currentBrush() const
+{
+    const TileStamp &stamp = mStampBrush->stamp();
+    if (stamp.isEmpty())
+        return nullptr;
+
+    auto map = stamp.variations().first().map->clone();
+    auto editableMap = new EditableMap(std::move(map));
+    QQmlEngine::setObjectOwnership(editableMap, QQmlEngine::JavaScriptOwnership);
+    return editableMap;
+}
+
+void MapEditor::setCurrentBrush(EditableMap *editableMap)
+{
+    // todo: filter any non-tilelayers out of the map?
+    setStamp(TileStamp(editableMap->map()->clone()));
 }
 
 } // namespace Tiled

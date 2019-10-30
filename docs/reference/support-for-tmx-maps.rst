@@ -35,8 +35,6 @@ C
 C++
 ~~~
 
--  `C++/Boost <http://www.catnapgames.com/blog/2011/10/10/simple-tmx-tilemap-parser.html>`__
-   by Tomas Andrle (limited functionality, single cpp file)
 -  `C++/TinyXML based tmxparser <https://github.com/sainteos/tmxparser>`__ (BSD)
 -  C++/Qt based libtiled, used by Tiled itself and included at
    `src/libtiled <https://github.com/bjorn/tiled/tree/master/src/libtiled>`__
@@ -62,6 +60,7 @@ C++
    with compressed map support but no external linking required.
    Includes examples for SFML and SDL2 rendering. Currently has full tmx
    support up to 0.16. (Zlib/libpng)
+-  `Tileson <https://github.com/SSBMTonberry/tileson>`__ - A Tiled JSON parser for modern C++ (C++17) by Robin Berg Pettersen (BSD)
 
 C#/.NET
 ~~~~~~~
@@ -147,6 +146,10 @@ Processing
 Python
 ~~~~~~
 
+-  `pytiled-parser <https://github.com/Beefy-Swain/pytiled_parser>`__: Python parser
+   for TMX maps
+-  `Arcade <http://arcade.academy>`__: 2D game library that uses pytiled-parser for 
+   easy loading of TMX maps into a game. `Arcade TMX Examples <http://arcade.academy/examples/index.html#tmx-files-tiled-map-editor>`_
 -  `pytmxlib <http://pytmxlib.readthedocs.org/en/latest/>`__: library
    for programmatic manipulation of TMX maps
 -  `python-tmx <http://python-tmx.nongnu.org>`__: a simple library for

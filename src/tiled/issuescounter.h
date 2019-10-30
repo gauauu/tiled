@@ -1,6 +1,6 @@
 /*
- *
- * Copyright 2015, Thorbjørn Lindeijer <bjorn@lindeijer.nl>
+ * issuescounter.h
+ * Copyright 2019, Thorbjørn Lindeijer <bjorn@lindeijer.nl>
  *
  * This file is part of Tiled.
  *
@@ -20,19 +20,29 @@
 
 #pragma once
 
-#include <algorithm>
+#include <QAbstractButton>
 
-template<typename Container, typename Value>
-inline int indexOf(const Container &container, Value value)
-{
-    auto it = std::find(container.begin(), container.end(), value);
-    return it == container.end() ? -1 : std::distance(container.begin(), it);
-}
+class QLabel;
 
-template<typename Container, typename Value>
-inline bool contains(const Container &container, Value value)
+namespace Tiled {
+
+class IssuesCounter : public QAbstractButton
 {
-    return std::find(container.begin(),
-                     container.end(),
-                     value) != container.end();
-}
+    Q_OBJECT
+
+public:
+    explicit IssuesCounter(QWidget *parent = nullptr);
+
+protected:
+    void paintEvent(QPaintEvent *event) override;
+
+private:
+    void updateLabels();
+
+    QLabel *mErrorIcon;
+    QLabel *mErrorCount;
+    QLabel *mWarningIcon;
+    QLabel *mWarningCount;
+};
+
+} // namespace Tiled

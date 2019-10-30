@@ -482,13 +482,13 @@ Can contain: :ref:`tmx-properties`, :ref:`tmx-object`
 -  **id:** Unique ID of the object. Each object that is placed on a map gets
    a unique id. Even if an object was deleted, no object gets the same
    ID. Can not be changed in Tiled. (since Tiled 0.11)
--  **name:** The name of the object. An arbitrary string.
--  **type:** The type of the object. An arbitrary string.
+-  **name:** The name of the object. An arbitrary string (defaults to "").
+-  **type:** The type of the object. An arbitrary string (defaults to "").
 -  **x:** The x coordinate of the object in pixels.
 -  **y:** The y coordinate of the object in pixels.
 -  **width:** The width of the object in pixels (defaults to 0).
 -  **height:** The height of the object in pixels (defaults to 0).
--  **rotation:** The rotation of the object in degrees clockwise (defaults
+-  **rotation:** The rotation of the object in degrees clockwise around (x, y) (defaults
    to 0).
 -  **gid:** A reference to a tile (optional).
 -  **visible:** Whether the object is shown (1) or hidden (0). Defaults to
@@ -507,7 +507,8 @@ such as spawn points, warps, exits, etc.
 When the object has a ``gid`` set, then it is represented by the image
 of the tile with that global ID. The image alignment currently depends
 on the map orientation. In orthogonal orientation it's aligned to the
-bottom-left while in isometric it's aligned to the bottom-center.
+bottom-left while in isometric it's aligned to the bottom-center. The
+image will rotate around the bottom-left or bottom-center, respectively.
 
 When the object has a ``template`` set, it will borrow all the
 properties from the specified template, properties saved with the object
@@ -586,6 +587,16 @@ object.
 
 Used to mark an object as a text object. Contains the actual text as
 character data.
+
+For alignment purposes, the bottom of the text is the descender height of
+the font, and the top of the text is the ascender height of the font. For
+example, ``bottom`` alignment of the word "cat" will leave some space below
+the text, even though it is unused for this word with most fonts. Similarly,
+``top`` alignment of the word "cat" will leave some space above the "t" with
+most fonts, because this space is used for diacritics.
+
+If the text is larger than the object's bounds, it is clipped to the bounds
+of the object.
 
 .. _tmx-imagelayer:
 

@@ -83,6 +83,9 @@ SOURCES += aboutdialog.cpp \
     changewangcolordata.cpp \
     changewangsetdata.cpp \
     clickablelabel.cpp \
+    issuescounter.cpp \
+    issuesdock.cpp \
+    issuesmodel.cpp \
     clipboardmanager.cpp \
     colorbutton.cpp \
     commandbutton.cpp \
@@ -103,6 +106,7 @@ SOURCES += aboutdialog.cpp \
     createtileobjecttool.cpp \
     document.cpp \
     documentmanager.cpp \
+    donationdialog.cpp \
     editableasset.cpp \
     editablegrouplayer.cpp \
     editableimagelayer.cpp \
@@ -178,7 +182,6 @@ SOURCES += aboutdialog.cpp \
     offsetlayer.cpp \
     offsetmapdialog.cpp \
     painttilelayer.cpp \
-    patreondialog.cpp \
     pluginlistmodel.cpp \
     pointhandle.cpp \
     preferences.cpp \
@@ -199,7 +202,7 @@ SOURCES += aboutdialog.cpp \
     reversingproxymodel.cpp \
     rotatemapobject.cpp \
     scriptedaction.cpp \
-    scriptedmapformat.cpp \
+    scriptedfileformat.cpp \
     scriptedtool.cpp \
     scriptmanager.cpp \
     scriptmodule.cpp \
@@ -305,6 +308,9 @@ HEADERS += aboutdialog.h \
     changewangcolordata.h \
     changewangsetdata.h \
     clickablelabel.h \
+    issuescounter.h \
+    issuesdock.h \
+    issuesmodel.h \
     clipboardmanager.h \
     colorbutton.h \
     commandbutton.h \
@@ -314,7 +320,6 @@ HEADERS += aboutdialog.h \
     commandlineparser.h \
     commandmanager.h \
     consoledock.h \
-    containerhelpers.h \
     createellipseobjecttool.h \
     createobjecttool.h \
     createpointobjecttool.h \
@@ -326,6 +331,7 @@ HEADERS += aboutdialog.h \
     createtileobjecttool.h \
     document.h \
     documentmanager.h \
+    donationdialog.h \
     editableasset.h \
     editablegrouplayer.h \
     editableimagelayer.h \
@@ -401,7 +407,6 @@ HEADERS += aboutdialog.h \
     offsetlayer.h \
     offsetmapdialog.h \
     painttilelayer.h \
-    patreondialog.h \
     pluginlistmodel.h \
     pointhandle.h \
     preferencesdialog.h \
@@ -424,7 +429,7 @@ HEADERS += aboutdialog.h \
     reversingproxymodel.h \
     rotatemapobject.h \
     scriptedaction.h \
-    scriptedmapformat.h \
+    scriptedfileformat.h \
     scriptedtool.h \
     scriptmanager.h \
     scriptmodule.h \
@@ -489,6 +494,7 @@ HEADERS += aboutdialog.h \
 FORMS += aboutdialog.ui \
     addpropertydialog.ui \
     commanddialog.ui \
+    donationdialog.ui \
     exportasimagedialog.ui \
     imagecolorpickerwidget.ui \
     mainwindow.ui \
@@ -498,7 +504,6 @@ FORMS += aboutdialog.ui \
     noeditorwidget.ui \
     objecttypeseditor.ui \
     offsetmapdialog.ui \
-    patreondialog.ui \
     preferencesdialog.ui \
     resizedialog.ui \
     shortcutsettingspage.ui \

@@ -25,6 +25,7 @@
 #include "editabletileset.h"
 #include "scriptmanager.h"
 
+#include <QCoreApplication>
 #include <QUndoStack>
 
 namespace Tiled {
@@ -32,9 +33,11 @@ namespace Tiled {
 EditableAsset::EditableAsset(Document *document, Object *object, QObject *parent)
     : EditableObject(this, object, parent)
     , mDocument(document)
-    , mUndoStack(new QUndoStack(this))
 {
-    connect(mUndoStack, &QUndoStack::cleanChanged, this, &EditableAsset::modifiedChanged);
+    if (document) {
+        connect(document, &Document::modifiedChanged,
+                this, &EditableAsset::modifiedChanged);
+    }
 }
 
 QString EditableAsset::fileName() const
@@ -52,6 +55,11 @@ bool EditableAsset::isMap() const
 bool EditableAsset::isTileset() const
 {
     return qobject_cast<const EditableTileset*>(this) != nullptr;
+}
+
+QUndoStack *EditableAsset::undoStack() const
+{
+    return document() ? document()->undoStack() : nullptr;
 }
 
 /**
@@ -79,7 +87,7 @@ bool EditableAsset::push(std::unique_ptr<QUndoCommand> &&command)
 QJSValue EditableAsset::macro(const QString &text, QJSValue callback)
 {
     if (!callback.isCallable()) {
-        ScriptManager::instance().throwError(tr("Invalid callback"));
+        ScriptManager::instance().throwError(QCoreApplication::translate("Script Errors", "Invalid callback"));
         return QJSValue();
     }
 
@@ -88,15 +96,6 @@ QJSValue EditableAsset::macro(const QString &text, QJSValue callback)
     ScriptManager::instance().checkError(result);
     undoStack()->endMacro();
     return result;
-}
-
-bool EditableAsset::checkReadOnly() const
-{
-    if (isReadOnly()) {
-        ScriptManager::instance().throwError(tr("Asset is read-only"));
-        return true;
-    }
-    return false;
 }
 
 void EditableAsset::undo()

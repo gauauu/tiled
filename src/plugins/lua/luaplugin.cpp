@@ -111,7 +111,7 @@ bool LuaMapFormat::write(const Map *map,
     SaveFile file(fileName);
 
     if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
-        mError = tr("Could not open file for writing.");
+        mError = QCoreApplication::translate("File Errors", "Could not open file for writing.");
         return false;
     }
 
@@ -156,7 +156,7 @@ bool LuaTilesetFormat::write(const Tileset &tileset,
     SaveFile file(fileName);
 
     if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
-        mError = tr("Could not open file for writing.");
+        mError = QCoreApplication::translate("File Errors", "Could not open file for writing.");
         return false;
     }
 
@@ -506,11 +506,6 @@ void LuaWriter::writeTileLayer(const TileLayer *tileLayer,
     }
 
     if (tileLayer->map()->infinite()) {
-        if (chunkSize.width() != CHUNK_SIZE || chunkSize.height() != CHUNK_SIZE) {
-            mWriter.writeKeyAndValue("outputchunkwidth", chunkSize.width());
-            mWriter.writeKeyAndValue("outputchunkheight", chunkSize.height());
-        }
-
         mWriter.writeStartTable("chunks");
         const auto chunks = tileLayer->sortedChunksToWrite(chunkSize);
         for (const QRect &rect : chunks) {
