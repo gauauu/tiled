@@ -40,9 +40,10 @@ class EditableTile : public EditableObject
     Q_PROPERTY(int height READ height)
     Q_PROPERTY(QSize size READ size)
     Q_PROPERTY(QString type READ type WRITE setType)
+    Q_PROPERTY(QString imageFileName READ imageFileName WRITE setImageFileName)
     Q_PROPERTY(QJSValue terrain READ terrain WRITE setTerrain)
     Q_PROPERTY(qreal probability READ probability WRITE setProbability)
-    Q_PROPERTY(Tiled::EditableObjectGroup *objectGroup READ objectGroup)
+    Q_PROPERTY(Tiled::EditableObjectGroup *objectGroup READ objectGroup WRITE setObjectGroup)
     Q_PROPERTY(QJSValue frames READ frames WRITE setFrames)
     Q_PROPERTY(bool animated READ isAnimated)
     Q_PROPERTY(Tiled::EditableTileset *tileset READ tileset)
@@ -74,6 +75,7 @@ public:
     int height() const;
     QSize size() const;
     const QString &type() const;
+    QString imageFileName() const;
     QJSValue terrain() const;
     qreal probability() const;
     EditableObjectGroup *objectGroup() const;
@@ -89,12 +91,15 @@ public:
     void detach();
     void attach(EditableTileset *tileset);
 
+    const ObjectGroup *attachedObjectGroup() const { return mAttachedObjectGroup; }
     void detachObjectGroup();
 
 public slots:
     void setType(const QString &type);
+    void setImageFileName(const QString &fileName);
     void setTerrain(QJSValue value);
     void setProbability(qreal probability);
+    void setObjectGroup(EditableObjectGroup *editableObjectGroup);
     void setFrames(QJSValue value);
 
 private:
@@ -126,6 +131,11 @@ inline QSize EditableTile::size() const
 inline const QString &EditableTile::type() const
 {
     return tile()->type();
+}
+
+inline QString EditableTile::imageFileName() const
+{
+    return tile()->imageSource().toString(QUrl::PreferLocalFile);
 }
 
 inline qreal EditableTile::probability() const

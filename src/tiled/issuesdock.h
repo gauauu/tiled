@@ -1,6 +1,6 @@
 /*
- * patreondialog.h
- * Copyright 2015, Thorbjørn Lindeijer <thorbjorn@lindeijer.nl>
+ * issuesdock.h
+ * Copyright 2019, Thorbjørn Lindeijer <bjorn@lindeijer.nl>
  *
  * This file is part of Tiled.
  *
@@ -20,29 +20,38 @@
 
 #pragma once
 
-#include <QDialog>
+#include <QDockWidget>
 
-namespace Ui {
-class PatreonDialog;
-}
+class QListView;
+class QSortFilterProxyModel;
 
 namespace Tiled {
 
-class PatreonDialog : public QDialog
+class FilterEdit;
+class Issue;
+class IssueFilterModel;
+
+/**
+ * A dock widget that shows errors and warnings, along with the ability to
+ * filter them.
+ */
+class IssuesDock : public QDockWidget
 {
     Q_OBJECT
 
 public:
-    explicit PatreonDialog(QWidget *parent = nullptr);
-    ~PatreonDialog();
+    IssuesDock(QWidget *parent = nullptr);
 
-private slots:
-    void openPatreonPage();
-    void sayThanks();
-    void maybeLater(QAction *action);
+protected:
+    void changeEvent(QEvent *e) override;
 
 private:
-    Ui::PatreonDialog *ui;
+    void activated(const QModelIndex &index);
+    void retranslateUi();
+
+    IssueFilterModel *mProxyModel;
+    FilterEdit *mFilterEdit;
+    QListView *mIssuesView;
 };
 
 } // namespace Tiled

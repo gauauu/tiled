@@ -51,7 +51,7 @@ class Document : public QObject,
     Q_OBJECT
 
     Q_PROPERTY(QString fileName READ fileName NOTIFY fileNameChanged)
-    Q_PROPERTY(bool modified READ isModified)
+    Q_PROPERTY(bool modified READ isModified NOTIFY modifiedChanged)
 
 public:
     enum DocumentType {
@@ -91,7 +91,7 @@ public:
 
     QDateTime lastSaved() const { return mLastSaved; }
 
-    QUndoStack *undoStack();
+    QUndoStack *undoStack() const;
     bool isModified() const;
 
     Q_INVOKABLE virtual Tiled::EditableAsset *editable() = 0;
@@ -111,11 +111,13 @@ public:
     bool changedOnDisk() const;
     void setChangedOnDisk(bool changedOnDisk);
 
-    QString lastExportFileName() const;
-    void setLastExportFileName(const QString &fileName);
+    virtual QString lastExportFileName() const = 0;
+    virtual void setLastExportFileName(const QString &fileName) = 0;
 
     virtual FileFormat *exportFormat() const = 0;
     virtual void setExportFormat(FileFormat *format) = 0;
+
+    virtual void checkIssues() = 0;
 
     static const QHash<QString, Document *> &documentInstances();
 
@@ -125,6 +127,7 @@ signals:
 
     void fileNameChanged(const QString &fileName,
                          const QString &oldFileName);
+    void modifiedChanged();
 
     void currentObjectChanged(Object *object);
 
@@ -143,11 +146,11 @@ signals:
 protected:
     void setFileName(const QString &fileName);
 
+    void checkFilePathProperties(const Object *object) const;
+
     QDateTime mLastSaved;
 
     Object *mCurrentObject = nullptr;   /**< Current properties object. */
-
-    QString mLastExportFileName;
 
     std::unique_ptr<EditableAsset> mEditable;
 
@@ -156,6 +159,8 @@ private:
 
     QString mFileName;
     QString mCanonicalFilePath;
+
+    QUndoStack * const mUndoStack;
 
     bool mChangedOnDisk = false;
     bool mIgnoreBrokenLinks = false;
@@ -174,6 +179,15 @@ inline QString Document::canonicalFilePath() const
     return mCanonicalFilePath;
 }
 
+/**
+ * Returns the undo stack of this document. Should be used to push any commands
+ * on that modify the document.
+ */
+inline QUndoStack *Document::undoStack() const
+{
+    return mUndoStack;
+}
+
 inline bool Document::ignoreBrokenLinks() const
 {
     return mIgnoreBrokenLinks;
@@ -182,16 +196,6 @@ inline bool Document::ignoreBrokenLinks() const
 inline bool Document::changedOnDisk() const
 {
     return mChangedOnDisk;
-}
-
-inline QString Document::lastExportFileName() const
-{
-    return mLastExportFileName;
-}
-
-inline void Document::setLastExportFileName(const QString &fileName)
-{
-    mLastExportFileName = fileName;
 }
 
 inline const QHash<QString, Document *> &Document::documentInstances()

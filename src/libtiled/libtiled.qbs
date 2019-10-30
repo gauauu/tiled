@@ -50,6 +50,7 @@ DynamicLibrary {
     files: [
         "compression.cpp",
         "compression.h",
+        "containerhelpers.h",
         "fileformat.cpp",
         "fileformat.h",
         "filesystemwatcher.cpp",
@@ -72,6 +73,7 @@ DynamicLibrary {
         "isometricrenderer.h",
         "layer.cpp",
         "layer.h",
+        "logginginterface.cpp",
         "logginginterface.h",
         "map.cpp",
         "map.h",

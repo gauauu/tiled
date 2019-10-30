@@ -22,15 +22,19 @@
 
 #include "changetile.h"
 #include "changetileanimation.h"
+#include "changetileimagesource.h"
+#include "changetileobjectgroup.h"
 #include "changetileprobability.h"
 #include "changetileterrain.h"
 #include "editablemanager.h"
 #include "editableobjectgroup.h"
 #include "editableterrain.h"
 #include "editabletileset.h"
+#include "imagecache.h"
 #include "objectgroup.h"
 #include "scriptmanager.h"
 
+#include <QCoreApplication>
 #include <QJSEngine>
 
 namespace Tiled {
@@ -104,7 +108,7 @@ void EditableTile::setTerrainAtCorner(Corner corner, EditableTerrain *editableTe
 
     if (asset())
         asset()->push(new ChangeTileTerrain(tileset()->tilesetDocument(), tile(), terrain));
-    else
+    else if (!checkReadOnly())
         tile()->setTerrain(terrain);
 }
 
@@ -152,14 +156,31 @@ void EditableTile::setType(const QString &type)
 {
     if (asset())
         asset()->push(new ChangeTileType(tileset()->tilesetDocument(), { tile() }, type));
-    else
+    else if (!checkReadOnly())
         tile()->setType(type);
+}
+
+void EditableTile::setImageFileName(const QString &fileName)
+{
+    if (asset()) {
+        if (!tileset()->tileset()->isCollection()) {
+            ScriptManager::instance().throwError(QCoreApplication::translate("Script Errors", "Tileset needs to be an image collection"));
+            return;
+        }
+
+        asset()->push(new ChangeTileImageSource(tileset()->tilesetDocument(),
+                                                tile(),
+                                                QUrl::fromLocalFile(fileName)));
+    } else if (!checkReadOnly()) {
+        tile()->setImage(ImageCache::loadPixmap(fileName));
+        tile()->setImageSource(QUrl::fromLocalFile(fileName));
+    }
 }
 
 void EditableTile::setTerrain(QJSValue value)
 {
     if (!value.isObject() && !value.isNumber()) {
-        ScriptManager::instance().throwError(tr("Terrain object or number expected"));
+        ScriptManager::instance().throwError(QCoreApplication::translate("Script Errors", "Terrain object or number expected"));
         return;
     }
 
@@ -180,7 +201,7 @@ void EditableTile::setTerrain(QJSValue value)
 
     if (asset())
         asset()->push(new ChangeTileTerrain(tileset()->tilesetDocument(), tile(), terrain));
-    else
+    else if (!checkReadOnly())
         tile()->setTerrain(terrain);
 }
 
@@ -188,16 +209,49 @@ void EditableTile::setProbability(qreal probability)
 {
     if (asset())
         asset()->push(new ChangeTileProbability(tileset()->tilesetDocument(), { tile() }, probability));
-    else
+    else if (!checkReadOnly())
         tile()->setProbability(probability);
+}
+
+void EditableTile::setObjectGroup(EditableObjectGroup *editableObjectGroup)
+{
+    if (!editableObjectGroup) {
+        ScriptManager::instance().throwError(QCoreApplication::translate("Script Errors", "Invalid argument"));
+        return;
+    }
+
+    if (!editableObjectGroup->isOwning()) {
+        ScriptManager::instance().throwError(QCoreApplication::translate("Script Errors", "ObjectGroup is in use"));
+        return;
+    }
+
+    if (checkReadOnly())
+        return;
+
+    std::unique_ptr<ObjectGroup> og(static_cast<ObjectGroup*>(editableObjectGroup->release()));
+
+    if (asset()) {
+        asset()->push(new ChangeTileObjectGroup(tileset()->tilesetDocument(),
+                                                tile(),
+                                                std::move(og)));
+    } else {
+        detachObjectGroup();
+        tile()->setObjectGroup(std::move(og));
+    }
+
+    Q_ASSERT(editableObjectGroup->objectGroup() == tile()->objectGroup());
+    Q_ASSERT(!editableObjectGroup->isOwning());
 }
 
 void EditableTile::setFrames(QJSValue value)
 {
     if (!value.isArray()) {
-        ScriptManager::instance().throwError(tr("Array expected"));
+        ScriptManager::instance().throwError(QCoreApplication::translate("Script Errors", "Array expected"));
         return;
     }
+
+    if (checkReadOnly())
+        return;
 
     QVector<Frame> frames;
     const int length = value.property(QStringLiteral("length")).toInt();
@@ -210,7 +264,7 @@ void EditableTile::setFrames(QJSValue value)
         };
 
         if (frame.tileId < 0 || frame.duration < 0) {
-            ScriptManager::instance().throwError(tr("Invalid value (negative)"));
+            ScriptManager::instance().throwError(QCoreApplication::translate("Script Errors", "Invalid value (negative)"));
             return;
         }
 

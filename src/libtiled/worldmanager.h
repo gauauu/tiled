@@ -72,11 +72,18 @@ struct TILEDSHARED_EXPORT World
     QVector<MapEntry> allMaps() const;
     QVector<MapEntry> mapsInRect(const QRect &rect) const;
     QVector<MapEntry> contextMaps(const QString &fileName) const;
+
+    void error(const QString &message) const;
+    void warning(const QString &message) const;
+    void clearErrorsAndWarnings() const;
 };
 
 class TILEDSHARED_EXPORT WorldManager : public QObject
 {
     Q_OBJECT
+
+    WorldManager();
+    ~WorldManager();
 
 public:
     static WorldManager &instance();
@@ -93,12 +100,8 @@ public:
 signals:
     void worldsChanged();
 
-private slots:
-    void reloadWorldFiles(const QStringList &fileNames);
-
 private:
-    WorldManager();
-    ~WorldManager();
+    void reloadWorldFiles(const QStringList &fileNames);
 
     std::unique_ptr<World> privateLoadWorld(const QString &fileName,
                                             QString *errorString = nullptr);

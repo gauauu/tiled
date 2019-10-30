@@ -46,7 +46,6 @@ using namespace Tiled;
 
 MapView::MapView(QWidget *parent, Mode mode)
     : QGraphicsView(parent)
-    , mHandScrolling(false)
     , mMode(mode)
     , mZoomable(new Zoomable(this))
 {
@@ -109,6 +108,24 @@ void MapView::setScene(MapScene *scene)
 MapScene *MapView::mapScene() const
 {
     return static_cast<MapScene*>(scene());
+}
+
+qreal MapView::scale() const
+{
+    return mZoomable->scale();
+}
+
+void MapView::setScale(qreal scale)
+{
+    mZoomable->setScale(scale);
+}
+
+void MapView::fitMapInView()
+{
+    // Scale and center map to fit in view
+    QRectF rect = mapScene()->mapBoundingRect();
+    centerOn(rect.center());
+    setScale(std::min(width() / rect.width(), height() / rect.height()) * 0.95);
 }
 
 void MapView::adjustScale(qreal scale)
@@ -232,7 +249,7 @@ void MapView::forceCenterOn(const QPointF &pos)
 {
     // This is only to make it update QGraphicsViewPrivate::lastCenterPoint,
     // just in case this is important.
-    centerOn(pos);
+    QGraphicsView::centerOn(pos);
 
     auto hBar = static_cast<FlexibleScrollBar*>(horizontalScrollBar());
     auto vBar = static_cast<FlexibleScrollBar*>(verticalScrollBar());
@@ -284,6 +301,16 @@ bool MapView::event(QEvent *e)
     }
 
     return QGraphicsView::event(e);
+}
+
+void MapView::showEvent(QShowEvent *event)
+{
+    if (!mViewInitialized) {
+        fitMapInView();
+        mViewInitialized = true;
+    }
+
+    QGraphicsView::showEvent(event);
 }
 
 void MapView::hideEvent(QHideEvent *event)
@@ -440,12 +467,12 @@ void MapView::handlePinchGesture(QPinchGesture *pinch)
     setTransformationAnchor(QGraphicsView::AnchorViewCenter);
 }
 
-void MapView::adjustCenterFromMousePosition(QPoint &mousePos)
+void MapView::adjustCenterFromMousePosition(QPoint mousePos)
 {
     // Place the last known mouse scene pos below the mouse again
     QWidget *view = viewport();
     QPointF viewCenterScenePos = mapToScene(view->rect().center());
     QPointF mouseScenePos = mapToScene(view->mapFromGlobal(mousePos));
     QPointF diff = viewCenterScenePos - mouseScenePos;
-    centerOn(mLastMouseScenePos + diff);
+    QGraphicsView::centerOn(mLastMouseScenePos + diff);
 }

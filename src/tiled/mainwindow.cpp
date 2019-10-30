@@ -38,6 +38,7 @@
 #include "documentmanager.h"
 #include "exportasimagedialog.h"
 #include "exporthelper.h"
+#include "issuesdock.h"
 #include "languagemanager.h"
 #include "layer.h"
 #include "map.h"
@@ -55,7 +56,7 @@
 #include "objectgroup.h"
 #include "objecttypeseditor.h"
 #include "offsetmapdialog.h"
-#include "patreondialog.h"
+#include "donationdialog.h"
 #include "pluginmanager.h"
 #include "resizedialog.h"
 #include "scriptmanager.h"
@@ -189,16 +190,22 @@ ExportDetails<Format> chooseExportDetails(const QString &fileName,
 } // namespace
 
 
+MainWindow *MainWindow::mInstance;
+
 MainWindow::MainWindow(QWidget *parent, Qt::WindowFlags flags)
     : QMainWindow(parent, flags)
     , mActionManager(new ActionManager(this))
     , mUi(new Ui::MainWindow)
     , mActionHandler(new MapDocumentActionHandler(this))
     , mConsoleDock(new ConsoleDock(this))
+    , mIssuesDock(new IssuesDock(this))
     , mObjectTypesEditor(new ObjectTypesEditor(this))
     , mAutomappingManager(new AutomappingManager(this))
     , mDocumentManager(DocumentManager::instance())
 {
+    Q_ASSERT(!mInstance);
+    mInstance = this;
+
     mUi->setupUi(this);
 
     ActionManager::registerMenu(mUi->menuFile, "File");
@@ -219,7 +226,7 @@ MainWindow::MainWindow(QWidget *parent, Qt::WindowFlags flags)
     ActionManager::registerAction(mUi->actionAddExternalTileset, "AddExternalTileset");
     ActionManager::registerAction(mUi->actionAutoMap, "AutoMap");
     ActionManager::registerAction(mUi->actionAutoMapWhileDrawing, "AutoMapWhileDrawing");
-    ActionManager::registerAction(mUi->actionBecomePatron, "BecomePatron");
+    ActionManager::registerAction(mUi->actionDonate, "Donate");
     ActionManager::registerAction(mUi->actionClearRecentFiles, "ClearRecentFiles");
     ActionManager::registerAction(mUi->actionClearView, "ClearView");
     ActionManager::registerAction(mUi->actionClose, "Close");
@@ -264,17 +271,18 @@ MainWindow::MainWindow(QWidget *parent, Qt::WindowFlags flags)
     ActionManager::registerAction(mUi->actionSnapToPixels, "SnapToPixels");
     ActionManager::registerAction(mUi->actionTilesetProperties, "TilesetProperties");
     ActionManager::registerAction(mUi->actionZoomIn, "ZoomIn");
-    ActionManager::registerAction(mUi->actionZoomNormal, "ZoomNormal");
     ActionManager::registerAction(mUi->actionZoomOut, "ZoomOut");
+    ActionManager::registerAction(mUi->actionZoomNormal, "ZoomNormal");
+    ActionManager::registerAction(mUi->actionFitInView, "FitInView");
 
-    auto *mapEditor = new MapEditor;
-    auto *tilesetEditor = new TilesetEditor;
+    mMapEditor = new MapEditor;
+    mTilesetEditor = new TilesetEditor;
 
-    connect(mapEditor, &Editor::enabledStandardActionsChanged, this, &MainWindow::updateActions);
-    connect(tilesetEditor, &Editor::enabledStandardActionsChanged, this, &MainWindow::updateActions);
+    connect(mMapEditor, &Editor::enabledStandardActionsChanged, this, &MainWindow::updateActions);
+    connect(mTilesetEditor, &Editor::enabledStandardActionsChanged, this, &MainWindow::updateActions);
 
-    mDocumentManager->setEditor(Document::MapDocumentType, mapEditor);
-    mDocumentManager->setEditor(Document::TilesetDocumentType, tilesetEditor);
+    mDocumentManager->setEditor(Document::MapDocumentType, mMapEditor);
+    mDocumentManager->setEditor(Document::TilesetDocumentType, mTilesetEditor);
 
     setCentralWidget(mDocumentManager->widget());
 
@@ -286,14 +294,14 @@ MainWindow::MainWindow(QWidget *parent, Qt::WindowFlags flags)
 
     Preferences *preferences = Preferences::instance();
 
-    QIcon redoIcon(QLatin1String(":images/16x16/edit-redo.png"));
-    QIcon undoIcon(QLatin1String(":images/16x16/edit-undo.png"));
+    QIcon redoIcon(QLatin1String(":images/16/edit-redo.png"));
+    QIcon undoIcon(QLatin1String(":images/16/edit-undo.png"));
     QIcon highlightCurrentLayerIcon(QLatin1String("://images/scalable/highlight-current-layer-16.svg"));
     highlightCurrentLayerIcon.addFile(QLatin1String("://images/scalable/highlight-current-layer-24.svg"));
 
 #ifndef Q_OS_MAC
-    QIcon tiledIcon(QLatin1String(":images/16x16/tiled.png"));
-    tiledIcon.addFile(QLatin1String(":images/32x32/tiled.png"));
+    QIcon tiledIcon(QLatin1String(":images/16/tiled.png"));
+    tiledIcon.addFile(QLatin1String(":images/32/tiled.png"));
     setWindowIcon(tiledIcon);
 #endif
 
@@ -305,14 +313,17 @@ MainWindow::MainWindow(QWidget *parent, Qt::WindowFlags flags)
     connect(undoGroup, &QUndoGroup::cleanChanged, this, &MainWindow::updateWindowTitle);
 
     addDockWidget(Qt::BottomDockWidgetArea, mConsoleDock);
+    addDockWidget(Qt::BottomDockWidgetArea, mIssuesDock);
+    tabifyDockWidget(mConsoleDock, mIssuesDock);
 
     mConsoleDock->setVisible(false);
+    mIssuesDock->setVisible(false);
 
     mUi->actionNewMap->setShortcuts(QKeySequence::New);
     mUi->actionOpen->setShortcuts(QKeySequence::Open);
     mUi->actionSave->setShortcuts(QKeySequence::Save);
     mUi->actionClose->setShortcuts(QKeySequence::Close);
-    mUi->actionQuit->setShortcut(QKeySequence(tr("Ctrl+Q")));
+    mUi->actionQuit->setShortcut(Qt::CTRL + Qt::Key_Q);
     mUi->actionCut->setShortcuts(QKeySequence::Cut);
     mUi->actionCopy->setShortcuts(QKeySequence::Copy);
     mUi->actionPaste->setShortcuts(QKeySequence::Paste);
@@ -382,17 +393,17 @@ MainWindow::MainWindow(QWidget *parent, Qt::WindowFlags flags)
     connect(mUi->actionLabelForHoveredObject, &QAction::triggered,
             preferences, &Preferences::setLabelForHoveredObject);
 
-    QShortcut *reloadTilesetsShortcut = new QShortcut(QKeySequence(tr("Ctrl+T")), this);
+    QShortcut *reloadTilesetsShortcut = new QShortcut(Qt::CTRL + Qt::Key_T, this);
     connect(reloadTilesetsShortcut, &QShortcut::activated,
             this, &MainWindow::reloadTilesetImages);
 
     // Make sure Ctrl+= also works for zooming in
     QList<QKeySequence> keys = QKeySequence::keyBindings(QKeySequence::ZoomIn);
-    keys += QKeySequence(tr("Ctrl+="));
-    keys += QKeySequence(tr("+"));
+    keys += QKeySequence(Qt::CTRL + Qt::Key_Equal);
+    keys += QKeySequence(Qt::Key_Plus);
     mUi->actionZoomIn->setShortcuts(keys);
     keys = QKeySequence::keyBindings(QKeySequence::ZoomOut);
-    keys += QKeySequence(tr("-"));
+    keys += QKeySequence(Qt::Key_Minus);
     mUi->actionZoomOut->setShortcuts(keys);
 
     mUi->menuEdit->insertAction(mUi->actionCut, undoAction);
@@ -408,9 +419,14 @@ MainWindow::MainWindow(QWidget *parent, Qt::WindowFlags flags)
 
     mUi->menuMap->insertAction(mUi->actionOffsetMap,
                                mActionHandler->actionCropToSelection());
-
     mUi->menuMap->insertAction(mUi->actionOffsetMap,
                                mActionHandler->actionAutocrop());
+
+    mUi->menuMap->insertAction(mUi->actionMapProperties,
+                               mMapEditor->actionSelectNextTileset());
+    mUi->menuMap->insertAction(mUi->actionMapProperties,
+                               mMapEditor->actionSelectPreviousTileset());
+    mUi->menuMap->insertSeparator(mUi->actionMapProperties);
 
     mLayerMenu = new QMenu(tr("&Layer"), this);
     mNewLayerMenu = mActionHandler->createNewLayerMenu(mLayerMenu);
@@ -482,6 +498,7 @@ MainWindow::MainWindow(QWidget *parent, Qt::WindowFlags flags)
     connect(mUi->actionZoomIn, &QAction::triggered, this, &MainWindow::zoomIn);
     connect(mUi->actionZoomOut, &QAction::triggered, this, &MainWindow::zoomOut);
     connect(mUi->actionZoomNormal, &QAction::triggered, this, &MainWindow::zoomNormal);
+    connect(mUi->actionFitInView, &QAction::triggered, this, &MainWindow::fitInView);
     connect(mUi->actionFullScreen, &QAction::toggled, this, &MainWindow::setFullScreen);
     connect(mUi->actionClearView, &QAction::toggled, this, &MainWindow::toggleClearView);
 
@@ -536,7 +553,8 @@ MainWindow::MainWindow(QWidget *parent, Qt::WindowFlags flags)
             this, &MainWindow::editTilesetProperties);
 
     connect(mUi->actionDocumentation, &QAction::triggered, this, &MainWindow::openDocumentation);
-    connect(mUi->actionBecomePatron, &QAction::triggered, this, &MainWindow::becomePatron);
+    connect(mUi->actionForum, &QAction::triggered, this, &MainWindow::openForum);
+    connect(mUi->actionDonate, &QAction::triggered, this, &MainWindow::showDonationDialog);
     connect(mUi->actionAbout, &QAction::triggered, this, &MainWindow::aboutTiled);
     connect(mUi->actionAboutQt, &QAction::triggered, qApp, &QApplication::aboutQt);
 
@@ -571,6 +589,7 @@ MainWindow::MainWindow(QWidget *parent, Qt::WindowFlags flags)
     setThemeIcon(mUi->actionZoomIn, "zoom-in");
     setThemeIcon(mUi->actionZoomOut, "zoom-out");
     setThemeIcon(mUi->actionZoomNormal, "zoom-original");
+    setThemeIcon(mUi->actionFitInView, "zoom-fit-best");
     setThemeIcon(mUi->actionResizeMap, "document-page-setup");
     setThemeIcon(mUi->actionMapProperties, "document-properties");
     setThemeIcon(mUi->actionDocumentation, "help-contents");
@@ -591,12 +610,12 @@ MainWindow::MainWindow(QWidget *parent, Qt::WindowFlags flags)
     mUi->menuView->insertAction(mUi->actionShowGrid, mShowObjectTypesEditor);
     mUi->menuView->insertSeparator(mUi->actionShowGrid);
 
-    mUi->menuTileset->insertAction(mUi->actionTilesetProperties, tilesetEditor->showAnimationEditor());
-    mUi->menuTileset->insertAction(mUi->actionTilesetProperties, tilesetEditor->editCollisionAction());
-    mUi->menuTileset->insertAction(mUi->actionTilesetProperties, tilesetEditor->editTerrainAction());
+    mUi->menuTileset->insertAction(mUi->actionTilesetProperties, mTilesetEditor->showAnimationEditor());
+    mUi->menuTileset->insertAction(mUi->actionTilesetProperties, mTilesetEditor->editCollisionAction());
+    mUi->menuTileset->insertAction(mUi->actionTilesetProperties, mTilesetEditor->editTerrainAction());
     mUi->menuTileset->insertSeparator(mUi->actionTilesetProperties);
-    mUi->menuTileset->insertAction(mUi->actionTilesetProperties, tilesetEditor->addTilesAction());
-    mUi->menuTileset->insertAction(mUi->actionTilesetProperties, tilesetEditor->removeTilesAction());
+    mUi->menuTileset->insertAction(mUi->actionTilesetProperties, mTilesetEditor->addTilesAction());
+    mUi->menuTileset->insertAction(mUi->actionTilesetProperties, mTilesetEditor->removeTilesAction());
     mUi->menuTileset->insertSeparator(mUi->actionTilesetProperties);
 
     connect(mViewsAndToolbarsMenu, &QMenu::aboutToShow,
@@ -622,26 +641,28 @@ MainWindow::MainWindow(QWidget *parent, Qt::WindowFlags flags)
             this, &MainWindow::closeDocument);
     connect(mDocumentManager, &DocumentManager::reloadError,
             this, &MainWindow::reloadError);
+    connect(mDocumentManager, &DocumentManager::documentSaved,
+            this, &MainWindow::documentSaved);
 
     connect(mResetToDefaultLayout, &QAction::triggered, this, &MainWindow::resetToDefaultLayout);
 
-    QShortcut *switchToLeftDocument = new QShortcut(tr("Alt+Left"), this);
+    QShortcut *switchToLeftDocument = new QShortcut(Qt::ALT + Qt::Key_Left, this);
     connect(switchToLeftDocument, &QShortcut::activated,
             mDocumentManager, &DocumentManager::switchToLeftDocument);
-    QShortcut *switchToLeftDocument1 = new QShortcut(tr("Ctrl+Shift+Tab"), this);
+    QShortcut *switchToLeftDocument1 = new QShortcut(Qt::CTRL + Qt::SHIFT + Qt::Key_Tab, this);
     connect(switchToLeftDocument1, &QShortcut::activated,
             mDocumentManager, &DocumentManager::switchToLeftDocument);
 
-    QShortcut *switchToRightDocument = new QShortcut(tr("Alt+Right"), this);
+    QShortcut *switchToRightDocument = new QShortcut(Qt::ALT + Qt::Key_Right, this);
     connect(switchToRightDocument, &QShortcut::activated,
             mDocumentManager, &DocumentManager::switchToRightDocument);
-    QShortcut *switchToRightDocument1 = new QShortcut(tr("Ctrl+Tab"), this);
+    QShortcut *switchToRightDocument1 = new QShortcut(Qt::CTRL + Qt::Key_Tab, this);
     connect(switchToRightDocument1, &QShortcut::activated,
             mDocumentManager, &DocumentManager::switchToRightDocument);
 
     connect(qApp, &QApplication::commitDataRequest, this, &MainWindow::commitData);
 
-    QShortcut *copyPositionShortcut = new QShortcut(tr("Alt+C"), this);
+    QShortcut *copyPositionShortcut = new QShortcut(Qt::ALT + Qt::Key_C, this);
     connect(copyPositionShortcut, &QShortcut::activated,
             mActionHandler, &MapDocumentActionHandler::copyPosition);
 
@@ -661,8 +682,8 @@ MainWindow::MainWindow(QWidget *parent, Qt::WindowFlags flags)
     connect(preferences, &Preferences::recentFilesChanged, this, &MainWindow::updateRecentFilesMenu);
 
     QTimer::singleShot(500, this, [this,preferences] {
-        if (preferences->shouldShowPatreonDialog())
-            becomePatron();
+        if (preferences->shouldShowDonationDialog())
+            showDonationDialog();
     });
 }
 
@@ -687,6 +708,9 @@ MainWindow::~MainWindow()
     CommandManager::deleteInstance();
 
     delete mUi;
+
+    Q_ASSERT(mInstance == this);
+    mInstance = nullptr;
 }
 
 void MainWindow::commitData(QSessionManager &manager)
@@ -978,35 +1002,58 @@ bool MainWindow::confirmAllSave()
 
 void MainWindow::export_()
 {
-    auto mapDocument = qobject_cast<MapDocument*>(mDocument);
-    if (!mapDocument)
-        return;
+    if (!exportDocument(mDocument)) {
+        // fall back when previous export could not be repeated
+        exportAs();
+    }
+}
 
-    QString exportFileName = mapDocument->lastExportFileName();
+/**
+ * Exports the given document to the previously used export file name and the
+ * previously used export format.
+ *
+ * @return `false` when no previous file name and export format could be de
+ *          determined. Otherwise, `true` is returned, even if an error
+ *          happened during export.
+ */
+bool MainWindow::exportDocument(Document *document)
+{
+    const QString exportFileName = document->lastExportFileName();
+    if (exportFileName.isEmpty())
+        return false;
 
-    if (!exportFileName.isEmpty()) {
-        MapFormat *exportFormat = mapDocument->exportFormat();
-        TmxMapFormat tmxFormat;
+    if (auto mapDocument = qobject_cast<MapDocument*>(document)) {
+        if (MapFormat *exportFormat = mapDocument->exportFormat()) {
+            std::unique_ptr<Map> exportMap;
+            ExportHelper exportHelper;
+            const Map *map = exportHelper.prepareExportMap(mapDocument->map(), exportMap);
 
-        if (!exportFormat)
-            exportFormat = &tmxFormat;
+            if (exportFormat->write(map, exportFileName, exportHelper.formatOptions())) {
+                mMapEditor->showMessage(tr("Exported to %1").arg(exportFileName), 3000);
+                return true;
+            }
 
-        std::unique_ptr<Map> exportMap;
-        ExportHelper exportHelper;
-        const Map *map = exportHelper.prepareExportMap(mapDocument->map(), exportMap);
-
-        if (exportFormat->write(map, exportFileName, exportHelper.formatOptions())) {
-            auto *editor = static_cast<MapEditor*>(mDocumentManager->editor(Document::MapDocumentType));
-            editor->showMessage(tr("Exported to %1").arg(exportFileName), 3000);
-            return;
+            QMessageBox::critical(this, tr("Error Exporting Map"),
+                                  exportFormat->errorString());
+            return true;
         }
+    } else if (auto tilesetDocument = qobject_cast<TilesetDocument*>(document)) {
+        if (TilesetFormat *exportFormat = tilesetDocument->exportFormat()) {
+            ExportHelper exportHelper;
+            const SharedTileset tileset = exportHelper.prepareExportTileset(tilesetDocument->tileset());
 
-        QMessageBox::critical(this, tr("Error Exporting Map"),
-                              exportFormat->errorString());
+            if (exportFormat->write(*tileset, exportFileName, exportHelper.formatOptions())) {
+                mMapEditor->showMessage(tr("Exported to %1").arg(exportFileName), 3000);
+                return true;
+            }
+
+            QMessageBox::critical(this, tr("Error Exporting Tileset"),
+                                  exportFormat->errorString());
+            return true;
+        }
     }
 
-    // fall back when no successful export happened
-    exportAs();
+    return false;
 }
 
 void MainWindow::exportAs()
@@ -1120,6 +1167,12 @@ void MainWindow::zoomNormal()
 {
     if (mZoomable)
         mZoomable->resetZoom();
+}
+
+void MainWindow::fitInView()
+{
+    if (MapView *mapView = mDocumentManager->currentMapView())
+        mapView->fitMapInView();
 }
 
 void MainWindow::setFullScreen(bool fullScreen)
@@ -1345,8 +1398,7 @@ void MainWindow::autoMappingError(bool automatic)
     QString error = mAutomappingManager->errorString();
     if (!error.isEmpty()) {
         if (automatic) {
-            auto *editor = static_cast<MapEditor*>(mDocumentManager->editor(Document::MapDocumentType));
-            editor->showMessage(error, 3000);
+            mMapEditor->showMessage(error, 3000);
         } else {
             QMessageBox::critical(this, tr("Automatic Mapping Error"), error);
         }
@@ -1358,8 +1410,7 @@ void MainWindow::autoMappingWarning(bool automatic)
     QString warning = mAutomappingManager->warningString();
     if (!warning.isEmpty()) {
         if (automatic) {
-            auto *editor = static_cast<MapEditor*>(mDocumentManager->editor(Document::MapDocumentType));
-            editor->showMessage(warning, 3000);
+            mMapEditor->showMessage(warning, 3000);
         } else {
             QMessageBox::warning(this, tr("Automatic Mapping Warning"), warning);
         }
@@ -1430,9 +1481,12 @@ void MainWindow::resetToDefaultLayout()
     // Make sure we're not in Clear View mode
     mUi->actionClearView->setChecked(false);
 
-    // Reset the Console dock
+    // Reset the Console and Issues dock
     addDockWidget(Qt::BottomDockWidgetArea, mConsoleDock);
+    addDockWidget(Qt::BottomDockWidgetArea, mIssuesDock);
     mConsoleDock->setVisible(false);
+    mIssuesDock->setVisible(false);
+    tabifyDockWidget(mConsoleDock, mIssuesDock);
 
     // Reset the layout of the current editor
     mDocumentManager->currentEditor()->resetLayout();
@@ -1443,6 +1497,7 @@ void MainWindow::updateViewsAndToolbarsMenu()
     mViewsAndToolbarsMenu->clear();
 
     mViewsAndToolbarsMenu->addAction(mConsoleDock->toggleViewAction());
+    mViewsAndToolbarsMenu->addAction(mIssuesDock->toggleViewAction());
 
     if (Editor *editor = mDocumentManager->currentEditor()) {
         mViewsAndToolbarsMenu->addSeparator();
@@ -1532,6 +1587,7 @@ void MainWindow::updateZoomActions()
     mUi->actionZoomIn->setEnabled(mZoomable && mZoomable->canZoomIn());
     mUi->actionZoomOut->setEnabled(mZoomable && mZoomable->canZoomOut());
     mUi->actionZoomNormal->setEnabled(scale != 1);
+    mUi->actionFitInView->setEnabled(mDocument && mDocument->type() == Document::MapDocumentType);
 }
 
 void MainWindow::openDocumentation()
@@ -1541,6 +1597,11 @@ void MainWindow::openDocumentation()
 #else
     QDesktopServices::openUrl(QUrl(QLatin1String("https://docs.mapeditor.org")));
 #endif
+}
+
+void MainWindow::openForum()
+{
+    QDesktopServices::openUrl(QUrl(QLatin1String("https://discourse.mapeditor.org")));
 }
 
 void MainWindow::writeSettings()
@@ -1605,10 +1666,10 @@ void MainWindow::updateWindowTitle()
     }
 }
 
-void MainWindow::becomePatron()
+void MainWindow::showDonationDialog()
 {
-    PatreonDialog patreonDialog(this);
-    patreonDialog.exec();
+    DonationDialog donationDialog(this);
+    donationDialog.exec();
 }
 
 void MainWindow::aboutTiled()
@@ -1765,6 +1826,12 @@ void MainWindow::documentChanged(Document *document)
     updateWindowTitle();
     updateActions();
     updateZoomable();
+}
+
+void MainWindow::documentSaved(Document *document)
+{
+    if (Preferences::instance()->exportOnSave())
+        exportDocument(document);
 }
 
 void MainWindow::closeDocument(int index)

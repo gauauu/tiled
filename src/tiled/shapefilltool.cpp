@@ -38,8 +38,8 @@ using namespace Tiled;
 ShapeFillTool::ShapeFillTool(QObject *parent)
     : AbstractTileFillTool(tr("Shape Fill Tool"),
                            QIcon(QLatin1String(
-                                     ":images/22x22/rectangle-fill.png")),
-                           QKeySequence(tr("P")),
+                                     ":images/22/rectangle-fill.png")),
+                           QKeySequence(Qt::Key_P),
                            nullptr,
                            parent)
     , mToolBehavior(Free)
@@ -47,8 +47,8 @@ ShapeFillTool::ShapeFillTool(QObject *parent)
     , mRectFill(new QAction(this))
     , mCircleFill(new QAction(this))
 {
-    QIcon rectFillIcon(QLatin1String(":images/22x22/rectangle-fill.png"));
-    QIcon circleFillIcon(QLatin1String(":images/22x22/ellipse-fill.png"));
+    QIcon rectFillIcon(QLatin1String(":images/22/rectangle-fill.png"));
+    QIcon circleFillIcon(QLatin1String(":images/22/ellipse-fill.png"));
 
     mRectFill->setIcon(rectFillIcon);
     mRectFill->setCheckable(true);
@@ -114,7 +114,6 @@ void ShapeFillTool::modifiersChanged(Qt::KeyboardModifiers)
 void ShapeFillTool::languageChanged()
 {
     setName(tr("Shape Fill Tool"));
-    setShortcut(QKeySequence(tr("P")));
 
     mRectFill->setToolTip(tr("Rectangle Fill"));
     mCircleFill->setToolTip(tr("Circle Fill"));

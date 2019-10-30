@@ -80,6 +80,10 @@ class TILEDSHARED_EXPORT Map : public Object
     };
 
 public:
+    QString fileName;
+    QString exportFileName;
+    QString exportFormat;
+
     /**
      * The orientation of the map determines how it should be rendered. An
      * Orthogonal map is using rectangular tiles that are aligned on a
@@ -156,9 +160,6 @@ public:
         QSize tileSize,
         bool infinite = false);
 
-    /**
-     * Destructor.
-     */
     ~Map();
 
     /**
@@ -442,7 +443,7 @@ public:
      */
     bool isTilesetUsed(const Tileset *tileset) const;
 
-    Map *clone() const;
+    std::unique_ptr<Map> clone() const;
 
     /**
      * Returns whether the map is staggered
@@ -463,6 +464,9 @@ public:
     int nextObjectId() const;
     int takeNextObjectId();
     void initializeObjectIds(ObjectGroup &objectGroup);
+
+    Layer *findLayerById(int layerId) const;
+    MapObject *findObjectById(int objectId) const;
 
     QRegion tileRegion() const;
 

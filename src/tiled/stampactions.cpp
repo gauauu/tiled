@@ -27,25 +27,25 @@ using namespace Tiled;
 
 StampActions::StampActions(QObject *parent) : QObject(parent)
 {
-    QIcon diceIcon(QLatin1String(":images/24x24/dice.png"));
-    QIcon wangIcon(QLatin1String(":images/24x24/wangtile.png"));
-    QIcon flipHorizontalIcon(QLatin1String(":images/24x24/flip-horizontal.png"));
-    QIcon flipVerticalIcon(QLatin1String(":images/24x24/flip-vertical.png"));
-    QIcon rotateLeftIcon(QLatin1String(":images/24x24/rotate-left.png"));
-    QIcon rotateRightIcon(QLatin1String(":images/24x24/rotate-right.png"));
+    QIcon diceIcon(QLatin1String(":images/24/dice.png"));
+    QIcon wangIcon(QLatin1String(":images/24/wangtile.png"));
+    QIcon flipHorizontalIcon(QLatin1String(":images/24/flip-horizontal.png"));
+    QIcon flipVerticalIcon(QLatin1String(":images/24/flip-vertical.png"));
+    QIcon rotateLeftIcon(QLatin1String(":images/24/rotate-left.png"));
+    QIcon rotateRightIcon(QLatin1String(":images/24/rotate-right.png"));
 
-    diceIcon.addFile(QLatin1String(":images/32x32/dice.png"));
-    wangIcon.addFile(QLatin1String(":images/32x32/wangtile.png"));
-    flipHorizontalIcon.addFile(QLatin1String(":images/32x32/flip-horizontal.png"));
-    flipVerticalIcon.addFile(QLatin1String(":images/32x32/flip-vertical.png"));
-    rotateLeftIcon.addFile(QLatin1String(":images/32x32/rotate-left.png"));
-    rotateRightIcon.addFile(QLatin1String(":images/32x32/rotate-right.png"));
+    diceIcon.addFile(QLatin1String(":images/32/dice.png"));
+    wangIcon.addFile(QLatin1String(":images/32/wangtile.png"));
+    flipHorizontalIcon.addFile(QLatin1String(":images/32/flip-horizontal.png"));
+    flipVerticalIcon.addFile(QLatin1String(":images/32/flip-vertical.png"));
+    rotateLeftIcon.addFile(QLatin1String(":images/32/rotate-left.png"));
+    rotateRightIcon.addFile(QLatin1String(":images/32/rotate-right.png"));
 
     mRandom = new QAction(this);
     mRandom->setIcon(diceIcon);
     mRandom->setCheckable(true);
     mRandom->setToolTip(tr("Random Mode"));
-    mRandom->setShortcut(QKeySequence(tr("D")));
+    mRandom->setShortcut(Qt::Key_D);
 
     mWangFill = new QAction(this);
     mWangFill->setIcon(wangIcon);
@@ -76,11 +76,11 @@ void StampActions::languageChanged()
     mRotateLeft->setToolTip(tr("Rotate Left"));
     mRotateRight->setToolTip(tr("Rotate Right"));
 
-    mRandom->setShortcut(QKeySequence(tr("D")));
-    mFlipHorizontal->setShortcut(QKeySequence(tr("X")));
-    mFlipVertical->setShortcut(QKeySequence(tr("Y")));
-    mRotateLeft->setShortcut(QKeySequence(tr("Shift+Z")));
-    mRotateRight->setShortcut(QKeySequence(tr("Z")));
+    mRandom->setShortcut(Qt::Key_D);
+    mFlipHorizontal->setShortcut(Qt::Key_X);
+    mFlipVertical->setShortcut(Qt::Key_Y);
+    mRotateLeft->setShortcut(Qt::SHIFT + Qt::Key_Z);
+    mRotateRight->setShortcut(Qt::Key_Z);
 }
 
 void StampActions::populateToolBar(QToolBar *toolBar, bool isRandom, bool isWangFill)
