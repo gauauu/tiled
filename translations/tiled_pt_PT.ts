@@ -197,7 +197,7 @@
     <message>
         <location line="+5"/>
         <source>Export the map with tilesets embedded</source>
-        <translation>Exportar o mapa com tilesets incluídos</translation>
+        <translation>Exportar o mapa com tilesets incorporados</translation>
     </message>
     <message>
         <location line="+5"/>
@@ -676,22 +676,12 @@
         <translation>Ajustar Mapa na Vista</translation>
     </message>
     <message>
-        <location line="+3"/>
-        <source>Ctrl+Shift+J</source>
-        <translation>Ctrl+Shift+J</translation>
-    </message>
-    <message>
-        <location line="+5"/>
+        <location line="+8"/>
         <source>Community Forum ↗</source>
         <translation>Fórum da Comunidade ↗</translation>
     </message>
     <message>
-        <location line="-371"/>
-        <source>Ctrl+G</source>
-        <translation></translation>
-    </message>
-    <message>
-        <location line="+201"/>
+        <location line="-170"/>
         <source>Support Tiled Development</source>
         <translation>Apoie o Desenvolvimento do Tiled</translation>
     </message>
@@ -736,27 +726,12 @@
         <translation>Limpar Vista</translation>
     </message>
     <message>
-        <location line="+3"/>
-        <source>Tab</source>
-        <translation>Tab</translation>
-    </message>
-    <message>
-        <location line="-266"/>
-        <source>Ctrl+0</source>
-        <translation></translation>
-    </message>
-    <message>
-        <location line="+147"/>
+        <location line="-116"/>
         <source>Save All</source>
         <translation>Guardar Tudo</translation>
     </message>
     <message>
-        <location line="+3"/>
-        <source>Ctrl+Shift+S</source>
-        <translation>Ctrl+Shift+S</translation>
-    </message>
-    <message>
-        <location line="+5"/>
+        <location line="+8"/>
         <source>User Manual ↗</source>
         <translation>Manual do Utilizador ↗</translation>
     </message>
@@ -791,62 +766,27 @@
         <translation>Colar na Pos&amp;ição</translation>
     </message>
     <message>
-        <location line="+3"/>
-        <source>Ctrl+Shift+V</source>
-        <translation>Ctrl+Shift+V</translation>
-    </message>
-    <message>
-        <location line="+8"/>
+        <location line="+11"/>
         <source>Full Screen</source>
         <translation>Ecrã completo</translation>
     </message>
     <message>
-        <location line="+3"/>
-        <source>F11</source>
-        <translation>F11</translation>
-    </message>
-    <message>
-        <location line="-88"/>
-        <source>Ctrl+R</source>
-        <translation>Ctrl+R</translation>
-    </message>
-    <message>
-        <location line="+5"/>
+        <location line="-80"/>
         <source>&amp;Export</source>
         <translation>&amp;Exportar</translation>
     </message>
     <message>
-        <location line="+3"/>
-        <source>Ctrl+E</source>
-        <translation></translation>
-    </message>
-    <message>
-        <location line="-82"/>
+        <location line="-79"/>
         <source>&amp;Add External Tileset...</source>
         <translation>&amp;Adicionar Tileset Externo...</translation>
     </message>
     <message>
-        <location line="-125"/>
-        <source>Ctrl+M</source>
-        <translation>Ctrl+M</translation>
-    </message>
-    <message>
-        <location line="+23"/>
-        <source>Ctrl+Alt+S</source>
-        <translation>Ctrl+Alt+S</translation>
-    </message>
-    <message>
-        <location line="+94"/>
+        <location line="-8"/>
         <source>E&amp;xport As...</source>
         <translation>E&amp;xportar Como...</translation>
     </message>
     <message>
-        <location line="+3"/>
-        <source>Ctrl+Shift+E</source>
-        <translation>Ctrl+Shift+E</translation>
-    </message>
-    <message>
-        <location line="+13"/>
+        <location line="+16"/>
         <source>&amp;Snap to Grid</source>
         <translation>&amp;Ajustar à Grade</translation>
     </message>
@@ -856,12 +796,7 @@
         <translation>Fechar &amp;Tudo</translation>
     </message>
     <message>
-        <location line="+3"/>
-        <source>Ctrl+Shift+W</source>
-        <translation></translation>
-    </message>
-    <message>
-        <location line="+12"/>
+        <location line="+15"/>
         <source>&amp;Delete</source>
         <translation>&amp;Apagar</translation>
     </message>
@@ -876,12 +811,7 @@
         <translation>&amp;Destaque a camada atual</translation>
     </message>
     <message>
-        <location line="+3"/>
-        <source>H</source>
-        <translation>H</translation>
-    </message>
-    <message>
-        <location line="+8"/>
+        <location line="+11"/>
         <source>Show Tile Object &amp;Outlines</source>
         <translation>Mostrar &amp;Contornos dos Objectos Tile</translation>
     </message>
@@ -971,7 +901,7 @@
         <translation>Limpar Ficheiros Recentes</translation>
     </message>
     <message>
-        <location filename="../src/tiled/propertybrowser.cpp" line="+798"/>
+        <location filename="../src/tiled/propertybrowser.cpp" line="+799"/>
         <source>All Files (*)</source>
         <translation>Todos os Ficheiros (*)</translation>
     </message>
@@ -2374,155 +2304,155 @@ Linha %1, coluna %2</translation>
     <message>
         <location filename="../src/tiled/editabletile.cpp" line="-82"/>
         <source>Tileset needs to be an image collection</source>
-        <translation type="unfinished"></translation>
+        <translation>Tilesets têm de ser uma coleção de imagens</translation>
     </message>
     <message>
         <location line="+16"/>
         <source>Terrain object or number expected</source>
-        <translation type="unfinished"></translation>
+        <translation>Esperado objeto terreno ou número</translation>
     </message>
     <message>
         <location line="+41"/>
         <source>ObjectGroup is in use</source>
-        <translation type="unfinished"></translation>
+        <translation>ObjectGroup está em uso</translation>
     </message>
     <message>
         <location line="+43"/>
         <source>Invalid value (negative)</source>
-        <translation type="unfinished"></translation>
+        <translation>Valor inválido (negativo)</translation>
     </message>
     <message>
         <location filename="../src/tiled/editabletileset.cpp" line="+72"/>
         <source>Invalid tile ID</source>
-        <translation type="unfinished"></translation>
+        <translation>Tile ID inválido</translation>
     </message>
     <message>
         <location line="+55"/>
         <source>Can only add tiles to an image collection tileset</source>
-        <translation type="unfinished"></translation>
+        <translation>Apenas se podem adicionar tiles a um tileset coleção de imagens</translation>
     </message>
     <message>
         <location line="+19"/>
         <source>Can only remove tiles from an image collection tileset</source>
-        <translation type="unfinished"></translation>
+        <translation>Apenas se podem remover tiles de um tileset coleção de imagens</translation>
     </message>
     <message>
         <location line="+32"/>
         <source>Can&apos;t set the image of an image collection tileset</source>
-        <translation type="unfinished"></translation>
+        <translation>Não se consegue definir a imagem de um tileset coleção de imagens</translation>
     </message>
     <message>
         <location line="+20"/>
         <source>Can&apos;t set tile size on an image collection tileset</source>
-        <translation type="unfinished"></translation>
+        <translation>Não se consegue definir o tamanho do tile de um tileset coleção de imagens</translation>
     </message>
     <message>
         <location line="+38"/>
         <source>Not a tile</source>
-        <translation type="unfinished"></translation>
+        <translation>Não é um tile</translation>
     </message>
     <message>
         <location line="+4"/>
         <source>Tile not from this tileset</source>
-        <translation type="unfinished"></translation>
+        <translation>Tile não é deste tileset</translation>
     </message>
     <message>
         <location filename="../src/tiled/scriptedfileformat.cpp" line="-11"/>
         <source>Invalid return value for &apos;write&apos; (string or ArrayBuffer expected)</source>
-        <translation type="unfinished"></translation>
+        <translation>Valor de retorno inválido para &apos;write&apos; (esperado string ou ArrayBuffer)</translation>
     </message>
     <message>
         <location line="+38"/>
         <source>Invalid file format object (requires string &apos;name&apos; property)</source>
-        <translation type="unfinished"></translation>
+        <translation>Objeto formato de ficheiro inválido (requer propriedade string &apos;name&apos;)</translation>
     </message>
     <message>
         <location line="+5"/>
         <source>Invalid file format object (requires string &apos;extension&apos; property)</source>
-        <translation type="unfinished"></translation>
+        <translation>Objeto formato de ficheiro inválido (requer propriedade string &apos;extension&apos;)</translation>
     </message>
     <message>
         <location line="+5"/>
         <source>Invalid file format object (requires a &apos;write&apos; and/or &apos;read&apos; function property)</source>
-        <translation type="unfinished"></translation>
+        <translation>Objeto formato de ficheiro inválido (requer uma propriedade função &apos;write&apos; e/ou &apos;read&apos;)</translation>
     </message>
     <message>
         <location line="+50"/>
         <source>Invalid return value for &apos;outputFiles&apos; (string or array expected)</source>
-        <translation type="unfinished"></translation>
+        <translation>Valor de retorno inválido para &apos;outputFiles&apos; (esperado string ou array)</translation>
     </message>
     <message>
         <location filename="../src/tiled/scriptedtool.cpp" line="+207"/>
         <source>Invalid tool object (requires string &apos;name&apos; property)</source>
-        <translation type="unfinished"></translation>
+        <translation>Objeto ferramenta inválido (requer propriedade string &apos;name&apos;)</translation>
     </message>
     <message>
         <location filename="../src/tiled/scriptmodule.cpp" line="+174"/>
         <location line="+14"/>
         <source>Not an open asset</source>
-        <translation type="unfinished"></translation>
+        <translation>Não é um recurso aberto</translation>
     </message>
     <message>
         <location line="+6"/>
         <source>Can&apos;t reload an embedded tileset</source>
-        <translation type="unfinished"></translation>
+        <translation>Não consigo recarregar um tileset incorporado</translation>
     </message>
     <message>
         <location line="+21"/>
         <source>Invalid ID</source>
-        <translation type="unfinished"></translation>
+        <translation>ID inválido</translation>
     </message>
     <message>
         <location line="+5"/>
         <source>Invalid callback function</source>
-        <translation type="unfinished"></translation>
+        <translation>Função de retorno inválida</translation>
     </message>
     <message>
         <location line="+11"/>
         <source>Reserved ID</source>
-        <translation type="unfinished"></translation>
+        <translation>ID reservado</translation>
     </message>
     <message>
         <location line="+12"/>
         <location line="+14"/>
         <location line="+14"/>
         <source>Invalid shortName</source>
-        <translation type="unfinished"></translation>
+        <translation>Nome curto inválido</translation>
     </message>
     <message>
         <location line="+31"/>
         <source>Unknown menu</source>
-        <translation type="unfinished"></translation>
+        <translation>Menu desconhecido</translation>
     </message>
     <message>
         <location line="+15"/>
         <source>Separators can&apos;t have actions</source>
-        <translation type="unfinished"></translation>
+        <translation>Separadores não podem ter ações</translation>
     </message>
     <message>
         <location line="+5"/>
         <source>Unknown action: &apos;%1&apos;</source>
-        <translation type="unfinished"></translation>
+        <translation>Ação desconhecida: &apos;%1&apos;</translation>
     </message>
     <message>
         <location line="+5"/>
         <source>Non-separator item without action</source>
-        <translation type="unfinished"></translation>
+        <translation>Item não-separador sem ação</translation>
     </message>
     <message>
         <location line="+40"/>
         <source>Unknown action</source>
-        <translation type="unfinished"></translation>
+        <translation>Ação desconhecida</translation>
     </message>
     <message>
         <location line="+14"/>
         <source>Unknown command</source>
-        <translation type="unfinished"></translation>
+        <translation>Comando desconhecido</translation>
     </message>
     <message>
         <location filename="../src/tiled/tilecollisiondock.cpp" line="-12"/>
         <source>Object not from this asset</source>
-        <translation type="unfinished"></translation>
+        <translation>Objeto não é deste recurso</translation>
     </message>
 </context>
 <context>
@@ -2530,7 +2460,7 @@ Linha %1, coluna %2</translation>
     <message>
         <location filename="../src/plugins/tbin/tbinplugin.cpp" line="+11"/>
         <source>Map contains no layers.</source>
-        <translation type="unfinished"></translation>
+        <translation>Mapa não contem camadas.</translation>
     </message>
     <message>
         <location line="+18"/>
@@ -2676,9 +2606,9 @@ Linha %1, coluna %2</translation>
     <message numerus="yes">
         <location line="-13"/>
         <source>Duplicate %n Object(s)</source>
-        <translation type="unfinished">
-            <numerusform></numerusform>
-            <numerusform></numerusform>
+        <translation>
+            <numerusform>Duplicar %n Objeto</numerusform>
+            <numerusform>Duplicar %n Objetos</numerusform>
         </translation>
     </message>
     <message numerus="yes">
@@ -2720,24 +2650,9 @@ Linha %1, coluna %2</translation>
         <translation>Repor Instância(s) do Modelo</translation>
     </message>
     <message>
-        <location line="+7"/>
-        <source>X</source>
-        <translation>X</translation>
-    </message>
-    <message>
-        <location line="+1"/>
-        <source>Y</source>
-        <translation>Y</translation>
-    </message>
-    <message>
-        <location line="+5"/>
+        <location line="+13"/>
         <source>Raise Object</source>
         <translation>Elevar Objeto</translation>
-    </message>
-    <message>
-        <location line="+0"/>
-        <source>PgUp</source>
-        <translation type="unfinished"></translation>
     </message>
     <message>
         <location line="+1"/>
@@ -2745,29 +2660,14 @@ Linha %1, coluna %2</translation>
         <translation>Descer Objeto</translation>
     </message>
     <message>
-        <location line="+0"/>
-        <source>PgDown</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
         <location line="+1"/>
         <source>Raise Object to Top</source>
         <translation>Elevar Objeto ao Topo</translation>
     </message>
     <message>
-        <location line="+0"/>
-        <source>Home</source>
-        <translation>Home</translation>
-    </message>
-    <message>
         <location line="+1"/>
         <source>Lower Object to Bottom</source>
         <translation>Descer Objeto ao Fundo</translation>
-    </message>
-    <message>
-        <location line="+0"/>
-        <source>End</source>
-        <translation type="unfinished"></translation>
     </message>
     <message numerus="yes">
         <location line="+6"/>
@@ -2819,7 +2719,7 @@ Linha %1, coluna %2</translation>
     <message>
         <location filename="../src/tiled/shortcutsettingspage.cpp" line="-400"/>
         <source>Action</source>
-        <translation type="unfinished"></translation>
+        <translation>Ação</translation>
     </message>
     <message>
         <location line="+2"/>
@@ -2837,12 +2737,12 @@ Linha %1, coluna %2</translation>
     <message>
         <location filename="../src/tiled/automapper.cpp" line="+140"/>
         <source>Ignoring unknown property &apos;%2&apos; = &apos;%3&apos; (rule map &apos;%1&apos;)</source>
-        <translation type="unfinished"></translation>
+        <translation>A ignorar propriedade desconhecida &apos;%2&apos; = &apos;%3&apos; (mapa de regras &apos;%1&apos;)</translation>
     </message>
     <message>
         <location line="+40"/>
         <source>Ignoring unknown property &apos;%2&apos; = &apos;%3&apos; on layer &apos;%4&apos; (rule map &apos;%1&apos;)</source>
-        <translation type="unfinished"></translation>
+        <translation>A ignorar propriedade desconhecida &apos;%2&apos; = &apos;%3&apos; na camada &apos;%4&apos; (mapa de regras &apos;%1&apos;)</translation>
     </message>
     <message>
         <location line="+29"/>
@@ -2906,22 +2806,22 @@ Linha %1, coluna %2</translation>
     <message>
         <location line="+24"/>
         <source>No rules file found at &apos;%1&apos;</source>
-        <translation type="unfinished"></translation>
+        <translation>Ficheiro de regras não encontrado em &apos;%1&apos;</translation>
     </message>
     <message>
         <location line="+8"/>
         <source>Error opening rules file &apos;%1&apos;</source>
-        <translation type="unfinished"></translation>
+        <translation>Erro ao abrir ficheiro de regras &apos;%1&apos;</translation>
     </message>
     <message>
         <location line="+28"/>
         <source>File not found: &apos;%1&apos; (referenced by &apos;%2&apos;)</source>
-        <translation type="unfinished"></translation>
+        <translation>Ficheiro não encontrado: &apos;%1&apos; (referenciado por &apos;%2&apos;)</translation>
     </message>
     <message>
         <location line="+14"/>
         <source>Opening rules map &apos;%1&apos; failed: %2</source>
-        <translation type="unfinished"></translation>
+        <translation>Abertura de mapa de regras &apos;%1&apos; falhou: %2</translation>
     </message>
 </context>
 <context>
@@ -2999,7 +2899,7 @@ Linha %1, coluna %2</translation>
     <message>
         <location line="+36"/>
         <source>Locate Directory for Files</source>
-        <translation type="unfinished"></translation>
+        <translation>Localizar Diretoria para Ficheiros</translation>
     </message>
     <message>
         <location line="+85"/>
@@ -3045,12 +2945,6 @@ Linha %1, coluna %2</translation>
         <location line="+135"/>
         <source>Bucket Fill Tool</source>
         <translation>Ferramenta de Preenchimento</translation>
-    </message>
-    <message>
-        <location line="-132"/>
-        <location line="+133"/>
-        <source>F</source>
-        <translation>F</translation>
     </message>
 </context>
 <context>
@@ -3242,51 +3136,36 @@ Linha %1, coluna %2</translation>
     <message>
         <location filename="../src/tiled/consoledock.cpp" line="+167"/>
         <source>Console</source>
-        <translation type="unfinished"></translation>
+        <translation>Consola</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Execute script</source>
-        <translation type="unfinished"></translation>
+        <translation>Executar script</translation>
     </message>
 </context>
 <context>
     <name>Tiled::CreateEllipseObjectTool</name>
     <message>
-        <location filename="../src/tiled/createellipseobjecttool.cpp" line="+46"/>
+        <location filename="../src/tiled/createellipseobjecttool.cpp" line="+47"/>
         <source>Insert Ellipse</source>
         <translation>Inserir Elipse</translation>
-    </message>
-    <message>
-        <location line="+1"/>
-        <source>C</source>
-        <translation>C</translation>
     </message>
 </context>
 <context>
     <name>Tiled::CreatePointObjectTool</name>
     <message>
-        <location filename="../src/tiled/createpointobjecttool.cpp" line="+50"/>
+        <location filename="../src/tiled/createpointobjecttool.cpp" line="+51"/>
         <source>Insert Point</source>
         <translation>Inserir Ponto</translation>
-    </message>
-    <message>
-        <location line="+1"/>
-        <source>I</source>
-        <translation>I</translation>
     </message>
 </context>
 <context>
     <name>Tiled::CreatePolygonObjectTool</name>
     <message>
-        <location filename="../src/tiled/createpolygonobjecttool.cpp" line="+159"/>
+        <location filename="../src/tiled/createpolygonobjecttool.cpp" line="+161"/>
         <source>Insert Polygon</source>
         <translation>Inserir Polígono</translation>
-    </message>
-    <message>
-        <location line="+1"/>
-        <source>P</source>
-        <translation>P</translation>
     </message>
     <message>
         <location line="+122"/>
@@ -3302,40 +3181,25 @@ Linha %1, coluna %2</translation>
 <context>
     <name>Tiled::CreateRectangleObjectTool</name>
     <message>
-        <location filename="../src/tiled/createrectangleobjecttool.cpp" line="+46"/>
+        <location filename="../src/tiled/createrectangleobjecttool.cpp" line="+47"/>
         <source>Insert Rectangle</source>
         <translation>Inserir Retângulo</translation>
-    </message>
-    <message>
-        <location line="+1"/>
-        <source>R</source>
-        <translation>R</translation>
     </message>
 </context>
 <context>
     <name>Tiled::CreateTemplateTool</name>
     <message>
-        <location filename="../src/tiled/createtemplatetool.cpp" line="+52"/>
+        <location filename="../src/tiled/createtemplatetool.cpp" line="+53"/>
         <source>Insert Template</source>
         <translation>Inserir Modelo</translation>
-    </message>
-    <message>
-        <location line="+1"/>
-        <source>V</source>
-        <translation>V</translation>
     </message>
 </context>
 <context>
     <name>Tiled::CreateTextObjectTool</name>
     <message>
-        <location filename="../src/tiled/createtextobjecttool.cpp" line="+64"/>
+        <location filename="../src/tiled/createtextobjecttool.cpp" line="+65"/>
         <source>Insert Text</source>
         <translation>Inserir Texto</translation>
-    </message>
-    <message>
-        <location line="+1"/>
-        <source>E</source>
-        <translation>E</translation>
     </message>
     <message>
         <location line="+6"/>
@@ -3346,14 +3210,9 @@ Linha %1, coluna %2</translation>
 <context>
     <name>Tiled::CreateTileObjectTool</name>
     <message>
-        <location filename="../src/tiled/createtileobjecttool.cpp" line="+65"/>
+        <location filename="../src/tiled/createtileobjecttool.cpp" line="+66"/>
         <source>Insert Tile</source>
         <translation>Inserir Tile</translation>
-    </message>
-    <message>
-        <location line="+1"/>
-        <source>T</source>
-        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
@@ -3367,14 +3226,14 @@ Linha %1, coluna %2</translation>
 <context>
     <name>Tiled::DocumentManager</name>
     <message>
-        <location filename="../src/tiled/documentmanager.cpp" line="+595"/>
+        <location filename="../src/tiled/documentmanager.cpp" line="+592"/>
         <source>Unrecognized file format.</source>
         <translation>Formato de ficheiro não reconhecido.</translation>
     </message>
     <message>
         <location line="+69"/>
         <source>Save File As</source>
-        <translation type="unfinished"></translation>
+        <translation>Guardar Ficheiro Como</translation>
     </message>
     <message>
         <location line="+193"/>
@@ -3382,7 +3241,9 @@ Linha %1, coluna %2</translation>
         <source>%1:
 
 %2</source>
-        <translation type="unfinished"></translation>
+        <translation>%1:
+
+%2</translation>
     </message>
     <message>
         <location line="+109"/>
@@ -3447,18 +3308,12 @@ Linha %1, coluna %2</translation>
         <translation>Editar Polígonos</translation>
     </message>
     <message>
-        <location line="-280"/>
-        <location line="+281"/>
-        <source>O</source>
-        <translation>O</translation>
-    </message>
-    <message>
-        <location line="-23"/>
+        <location line="-22"/>
         <source>Split Segment</source>
         <translation>Dividir Segmento</translation>
     </message>
     <message numerus="yes">
-        <location line="+266"/>
+        <location line="+265"/>
         <source>Move %n Point(s)</source>
         <translation>
             <numerusform>Mover %n Ponto</numerusform>
@@ -3505,12 +3360,6 @@ Linha %1, coluna %2</translation>
         <location line="+58"/>
         <source>Eraser</source>
         <translation>Apagador</translation>
-    </message>
-    <message>
-        <location line="-55"/>
-        <location line="+56"/>
-        <source>E</source>
-        <translation>E</translation>
     </message>
 </context>
 <context>
@@ -3589,17 +3438,17 @@ Deseja substituí-lo?</translation>
     <message numerus="yes">
         <location filename="../src/tiled/issuescounter.cpp" line="+109"/>
         <source>%n error(s)</source>
-        <translation type="unfinished">
-            <numerusform></numerusform>
-            <numerusform></numerusform>
+        <translation>
+            <numerusform>%n erro</numerusform>
+            <numerusform>%n erros</numerusform>
         </translation>
     </message>
     <message numerus="yes">
         <location line="+1"/>
         <source>%n warning(s)</source>
-        <translation type="unfinished">
-            <numerusform></numerusform>
-            <numerusform></numerusform>
+        <translation>
+            <numerusform>%n aviso</numerusform>
+            <numerusform>%n avisos</numerusform>
         </translation>
     </message>
 </context>
@@ -3608,7 +3457,7 @@ Deseja substituí-lo?</translation>
     <message>
         <location filename="../src/tiled/issuesdock.cpp" line="+176"/>
         <source>Show warnings</source>
-        <translation type="unfinished"></translation>
+        <translation>Mostrar avisos</translation>
     </message>
     <message>
         <location line="+3"/>
@@ -3618,7 +3467,7 @@ Deseja substituí-lo?</translation>
     <message>
         <location line="+50"/>
         <source>Issues</source>
-        <translation type="unfinished"></translation>
+        <translation>Problemas</translation>
     </message>
     <message>
         <location line="+1"/>
@@ -3672,22 +3521,22 @@ Deseja substituí-lo?</translation>
     <message>
         <location line="+142"/>
         <source>Show Layers</source>
-        <translation type="unfinished"></translation>
+        <translation>Mostrar Camadas</translation>
     </message>
     <message>
         <location line="+2"/>
         <source>Hide Layers</source>
-        <translation type="unfinished"></translation>
+        <translation>Esconder Camadas</translation>
     </message>
     <message>
         <location line="+22"/>
         <source>Lock Layers</source>
-        <translation type="unfinished"></translation>
+        <translation>Bloquear Camadas</translation>
     </message>
     <message>
         <location line="+2"/>
         <source>Unlock Layers</source>
-        <translation type="unfinished"></translation>
+        <translation>Desbloquear Camadas</translation>
     </message>
     <message>
         <location line="+61"/>
@@ -3718,12 +3567,6 @@ Deseja substituí-lo?</translation>
         <source>Offset Layers</source>
         <translation>Deslocamento das Camadas</translation>
     </message>
-    <message>
-        <location line="-97"/>
-        <location line="+98"/>
-        <source>M</source>
-        <translation>M</translation>
-    </message>
 </context>
 <context>
     <name>Tiled::MagicWandTool</name>
@@ -3732,12 +3575,6 @@ Deseja substituí-lo?</translation>
         <location line="+22"/>
         <source>Magic Wand</source>
         <translation>Varinha Mágica</translation>
-    </message>
-    <message>
-        <location line="-19"/>
-        <location line="+20"/>
-        <source>W</source>
-        <translation>W</translation>
     </message>
 </context>
 <context>
@@ -3860,32 +3697,7 @@ Por favor, selecione um formato específico.</translation>
         <translation>Refazer</translation>
     </message>
     <message>
-        <location line="+16"/>
-        <source>Ctrl+Q</source>
-        <translation>Ctrl+Q</translation>
-    </message>
-    <message>
-        <location line="+70"/>
-        <source>Ctrl+T</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location line="+6"/>
-        <source>Ctrl+=</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location line="+1"/>
-        <source>+</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location line="+3"/>
-        <source>-</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location line="+25"/>
+        <location line="+121"/>
         <location line="+1254"/>
         <source>&amp;Layer</source>
         <translation>Camada</translation>
@@ -3893,12 +3705,12 @@ Por favor, selecione um formato específico.</translation>
     <message>
         <location line="-1174"/>
         <source>All Files (*);;</source>
-        <translation type="unfinished"></translation>
+        <translation>Todos os Ficheiros (*);;</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>World files (*.world)</source>
-        <translation type="unfinished"></translation>
+        <translation>Ficheiros Mundo (*.world)</translation>
     </message>
     <message>
         <location line="+2"/>
@@ -3927,32 +3739,7 @@ Por favor, selecione um formato específico.</translation>
         <translation>Editor de Tipos de Objeto</translation>
     </message>
     <message>
-        <location line="+42"/>
-        <source>Alt+Left</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location line="+3"/>
-        <source>Ctrl+Shift+Tab</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location line="+4"/>
-        <source>Alt+Right</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location line="+3"/>
-        <source>Ctrl+Tab</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location line="+6"/>
-        <source>Alt+C</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location line="+159"/>
+        <location line="+217"/>
         <source>Error Opening File</source>
         <translation>Erro ao Abrir Ficheiro</translation>
     </message>
@@ -4053,11 +3840,6 @@ Por favor, selecione um formato específico.</translation>
         <location filename="../src/tiled/tilecollisiondock.cpp" line="+349"/>
         <source>Tile Collision Editor</source>
         <translation>Editor de Colisões de Tile</translation>
-    </message>
-    <message>
-        <location filename="../src/tiled/tileseteditor.cpp" line="+639"/>
-        <source>Ctrl+Shift+O</source>
-        <translation>Ctrl+Shift+O</translation>
     </message>
 </context>
 <context>
@@ -4172,9 +3954,9 @@ Por favor, selecione um formato específico.</translation>
     <message numerus="yes">
         <location line="+78"/>
         <source>Duplicate %n Object(s)</source>
-        <translation type="unfinished">
-            <numerusform></numerusform>
-            <numerusform></numerusform>
+        <translation>
+            <numerusform>Duplicar %n Objeto</numerusform>
+            <numerusform>Duplicar %n Objetos</numerusform>
         </translation>
     </message>
     <message numerus="yes">
@@ -4213,72 +3995,7 @@ Por favor, selecione um formato específico.</translation>
 <context>
     <name>Tiled::MapDocumentActionHandler</name>
     <message>
-        <location filename="../src/tiled/mapdocumentactionhandler.cpp" line="+68"/>
-        <source>Ctrl+I</source>
-        <translation>Ctrl+I</translation>
-    </message>
-    <message>
-        <location line="+2"/>
-        <source>Ctrl+Shift+A</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location line="+22"/>
-        <source>Ctrl+J</source>
-        <translation>Ctrl+J</translation>
-    </message>
-    <message>
-        <location line="+3"/>
-        <source>Ctrl+Shift+J</source>
-        <translation>Ctrl+Shift+J</translation>
-    </message>
-    <message>
-        <location line="+6"/>
-        <source>Ctrl+Shift+D</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location line="+11"/>
-        <source>Ctrl+PgDown</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location line="+3"/>
-        <source>Ctrl+PgUp</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location line="+3"/>
-        <source>Ctrl+Shift+Up</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location line="+5"/>
-        <source>Ctrl+Shift+Down</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location line="+10"/>
-        <source>Ctrl+H</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location line="+9"/>
-        <source>Ctrl+L</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location line="+4"/>
-        <source>Ctrl+Shift+H</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location line="+5"/>
-        <source>Ctrl+Shift+L</source>
-        <translation>Ctrl+Shift+L</translation>
-    </message>
-    <message>
-        <location line="+90"/>
+        <location filename="../src/tiled/mapdocumentactionhandler.cpp" line="+241"/>
         <source>Select &amp;All</source>
         <translation>Selecion&amp;ar Tudo</translation>
     </message>
@@ -4382,22 +4099,22 @@ Por favor, selecione um formato específico.</translation>
     <message>
         <location line="+1"/>
         <source>Show/&amp;Hide Layers</source>
-        <translation type="unfinished"></translation>
+        <translation>Mostrar/Esconder Camadas</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Lock/&amp;Unlock Layers</source>
-        <translation type="unfinished"></translation>
+        <translation>Bloquear/Desbloq&amp;uear Camadas</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Show/&amp;Hide Other Layers</source>
-        <translation type="unfinished"></translation>
+        <translation>Mostrar/Esconder Outras Camadas</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Lock/&amp;Unlock Other Layers</source>
-        <translation type="unfinished"></translation>
+        <translation>Bloquear/Desbloq&amp;uear Outras Camadas</translation>
     </message>
     <message>
         <location line="+1"/>
@@ -4427,9 +4144,9 @@ Por favor, selecione um formato específico.</translation>
     <message numerus="yes">
         <location line="+423"/>
         <source>Duplicate %n Object(s)</source>
-        <translation type="unfinished">
-            <numerusform></numerusform>
-            <numerusform></numerusform>
+        <translation>
+            <numerusform>Duplicar %n Objeto</numerusform>
+            <numerusform>Duplicar %n Objetos</numerusform>
         </translation>
     </message>
     <message numerus="yes">
@@ -4454,7 +4171,7 @@ Por favor, selecione um formato específico.</translation>
 <context>
     <name>Tiled::MapEditor</name>
     <message>
-        <location filename="../src/tiled/mapeditor.cpp" line="+701"/>
+        <location filename="../src/tiled/mapeditor.cpp" line="+704"/>
         <source>Paste in Place</source>
         <translation>Colar na Posição</translation>
     </message>
@@ -4634,17 +4351,17 @@ Por favor, selecione um formato específico.</translation>
     <message>
         <location filename="../src/tiled/newversionbutton.cpp" line="+43"/>
         <source>Up to date</source>
-        <translation type="unfinished"></translation>
+        <translation>Atualizado</translation>
     </message>
     <message>
         <location line="+30"/>
         <source>Update Available</source>
-        <translation type="unfinished"></translation>
+        <translation>Atualização Disponível</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>%1 %2 is available</source>
-        <translation type="unfinished"></translation>
+        <translation>%1 %2 está disponível</translation>
     </message>
     <message>
         <location line="+15"/>
@@ -4657,27 +4374,27 @@ Por favor, selecione um formato específico.</translation>
     <message>
         <location filename="../src/tiled/newversiondialog.ui" line="+14"/>
         <source>Update Available</source>
-        <translation type="unfinished"></translation>
+        <translation>Atualização Disponível</translation>
     </message>
     <message>
         <location line="+30"/>
         <source>Download ↗</source>
-        <translation type="unfinished"></translation>
+        <translation>Descarregar ↗</translation>
     </message>
     <message>
         <location line="+7"/>
         <source>Release Notes ↗</source>
-        <translation type="unfinished"></translation>
+        <translation>Notas de Lançamento ↗</translation>
     </message>
     <message>
         <location line="+48"/>
         <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Tiled 1.2.5&lt;/span&gt; is available!&lt;br/&gt;&lt;br/&gt;Current version is Tiled 1.2.3.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
-        <translation type="unfinished"></translation>
+        <translation>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Tiled 1.2.5&lt;/span&gt; está disponível!&lt;br/&gt;&lt;br/&gt;Versão atual é Tiled 1.2.3.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</translation>
     </message>
     <message>
         <location filename="../src/tiled/newversiondialog.cpp" line="+47"/>
         <source>&lt;p&gt;&lt;b&gt;%1 %2&lt;/b&gt; is available!&lt;br/&gt;&lt;br/&gt;Current version is %1 %3.&lt;/p&gt;</source>
-        <translation type="unfinished"></translation>
+        <translation>&lt;p&gt;&lt;b&gt;%1 %2&lt;/b&gt; está disponível!&lt;br/&gt;&lt;br/&gt;Versão atual é %1 %3.&lt;/p&gt;</translation>
     </message>
 </context>
 <context>
@@ -4685,7 +4402,7 @@ Por favor, selecione um formato específico.</translation>
     <message>
         <location filename="../src/tiled/newsbutton.cpp" line="+54"/>
         <source>Devlog</source>
-        <translation type="unfinished"></translation>
+        <translation>Devlog</translation>
     </message>
     <message>
         <location line="+2"/>
@@ -4734,15 +4451,9 @@ Por favor, selecione um formato específico.</translation>
         <source>Select Objects</source>
         <translation>Selecionar Objetos</translation>
     </message>
-    <message>
-        <location line="-410"/>
-        <location line="+411"/>
-        <source>S</source>
-        <translation>S</translation>
-    </message>
     <message numerus="yes">
-        <location line="-289"/>
-        <location line="+742"/>
+        <location line="-288"/>
+        <location line="+741"/>
         <source>Move %n Object(s)</source>
         <translation>
             <numerusform>Mover %n % Objeto</numerusform>
@@ -4750,7 +4461,7 @@ Por favor, selecione um formato específico.</translation>
         </translation>
     </message>
     <message>
-        <location line="-616"/>
+        <location line="-615"/>
         <source>Unnamed object</source>
         <translation>Objeto sem Nome</translation>
     </message>
@@ -4770,7 +4481,7 @@ Por favor, selecione um formato específico.</translation>
         <translation>%1) %2</translation>
     </message>
     <message numerus="yes">
-        <location line="+699"/>
+        <location line="+698"/>
         <source>Rotate %n Object(s)</source>
         <translation>
             <numerusform>Rodar %n Objeto</numerusform>
@@ -5089,7 +4800,7 @@ Por favor, selecione um formato específico.</translation>
     <message>
         <location line="+3"/>
         <source>Compression level</source>
-        <translation type="unfinished"></translation>
+        <translation>Nível de Compressão</translation>
     </message>
     <message>
         <location line="+4"/>
@@ -5380,12 +5091,12 @@ Por favor, selecione um formato específico.</translation>
     <message>
         <location filename="../src/tiled/scriptmanager.cpp" line="+159"/>
         <source>Error opening file: %1</source>
-        <translation type="unfinished"></translation>
+        <translation>Erro ao abrir ficheiro: %1</translation>
     </message>
     <message>
         <location line="+9"/>
         <source>Evaluating &apos;%1&apos;</source>
-        <translation type="unfinished"></translation>
+        <translation>A Avaliar &apos;%1&apos;</translation>
     </message>
     <message>
         <location line="+50"/>
@@ -5395,7 +5106,7 @@ Por favor, selecione um formato específico.</translation>
     <message>
         <location line="+12"/>
         <source>At line %1: %2</source>
-        <translation type="unfinished"></translation>
+        <translation>Na linha %1: %2</translation>
     </message>
     <message>
         <location line="+20"/>
@@ -5416,12 +5127,6 @@ Por favor, selecione um formato específico.</translation>
         <source>Select Same Tile</source>
         <translation>Selecionar o Mesmo Tile</translation>
     </message>
-    <message>
-        <location line="-23"/>
-        <location line="+24"/>
-        <source>S</source>
-        <translation>S</translation>
-    </message>
 </context>
 <context>
     <name>Tiled::ShapeFillTool</name>
@@ -5430,12 +5135,6 @@ Por favor, selecione um formato específico.</translation>
         <location line="+77"/>
         <source>Shape Fill Tool</source>
         <translation>Ferramenta Preenchimento de Forma</translation>
-    </message>
-    <message>
-        <location line="-74"/>
-        <location line="+75"/>
-        <source>P</source>
-        <translation>P</translation>
     </message>
     <message>
         <location line="+2"/>
@@ -5453,7 +5152,7 @@ Por favor, selecione um formato específico.</translation>
     <message>
         <location filename="../src/tiled/shortcutsettingspage.cpp" line="+103"/>
         <source>Remove shortcut</source>
-        <translation type="unfinished"></translation>
+        <translation>Remover atalho</translation>
     </message>
     <message>
         <location line="+7"/>
@@ -5466,7 +5165,7 @@ Por favor, selecione um formato específico.</translation>
     <message>
         <location filename="../src/tiled/shortcutsettingspage.ui" line="+17"/>
         <source>Keyboard Shortcuts</source>
-        <translation type="unfinished"></translation>
+        <translation>Atalhos de Teclado</translation>
     </message>
     <message>
         <location line="+11"/>
@@ -5476,7 +5175,7 @@ Por favor, selecione um formato específico.</translation>
     <message>
         <location line="+41"/>
         <source>&amp;Import...</source>
-        <translation type="unfinished"></translation>
+        <translation>&amp;Importar...</translation>
     </message>
     <message>
         <location line="+7"/>
@@ -5486,7 +5185,7 @@ Por favor, selecione um formato específico.</translation>
     <message>
         <location line="+20"/>
         <source>&amp;Export...</source>
-        <translation type="unfinished"></translation>
+        <translation>&amp;Exportar...</translation>
     </message>
     <message>
         <location line="+7"/>
@@ -5502,29 +5201,29 @@ Por favor, selecione um formato específico.</translation>
     <message>
         <location line="-51"/>
         <source>Import Shortcuts</source>
-        <translation type="unfinished"></translation>
+        <translation>Importar Atalhos</translation>
     </message>
     <message>
         <location line="+9"/>
         <location line="+9"/>
         <source>Error Loading Shortcuts</source>
-        <translation type="unfinished"></translation>
+        <translation>Erro ao Carregar Atalhos</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Invalid shortcuts file.</source>
-        <translation type="unfinished"></translation>
+        <translation>Ficheiro de atalhos inválido.</translation>
     </message>
     <message>
         <location line="+33"/>
         <source>Export Shortcuts</source>
-        <translation type="unfinished"></translation>
+        <translation>Exportar Atalhos</translation>
     </message>
     <message>
         <location line="+10"/>
         <location line="+41"/>
         <source>Error Saving Shortcuts</source>
-        <translation type="unfinished"></translation>
+        <translation>Erro ao Guardar Atalhos</translation>
     </message>
 </context>
 <context>
@@ -5542,43 +5241,13 @@ Por favor, selecione um formato específico.</translation>
         <translation>Rodar Direita</translation>
     </message>
     <message>
-        <location line="+2"/>
-        <location filename="../src/tiled/stampactions.cpp" line="+3"/>
-        <source>X</source>
-        <translation>X</translation>
-    </message>
-    <message>
-        <location line="+1"/>
-        <location filename="../src/tiled/stampactions.cpp" line="+1"/>
-        <source>Y</source>
-        <translation>Y</translation>
-    </message>
-    <message>
-        <location line="+1"/>
-        <location filename="../src/tiled/stampactions.cpp" line="+1"/>
-        <source>Shift+Z</source>
-        <translation>Shift+Z</translation>
-    </message>
-    <message>
-        <location line="+1"/>
-        <location filename="../src/tiled/stampactions.cpp" line="+1"/>
-        <source>Z</source>
-        <translation>Z</translation>
-    </message>
-    <message>
-        <location filename="../src/tiled/stampactions.cpp" line="-36"/>
+        <location filename="../src/tiled/stampactions.cpp" line="-30"/>
         <location line="+25"/>
         <source>Random Mode</source>
         <translation>Modo Aleatório</translation>
     </message>
     <message>
-        <location line="-24"/>
-        <location line="+31"/>
-        <source>D</source>
-        <translation>D</translation>
-    </message>
-    <message>
-        <location line="-26"/>
+        <location line="-19"/>
         <location line="+20"/>
         <source>Wang Fill Mode</source>
         <translation>Modo Preenchimento de Wang</translation>
@@ -5601,12 +5270,6 @@ Por favor, selecione um formato específico.</translation>
         <location line="+162"/>
         <source>Stamp Brush</source>
         <translation>Pincel de Carimbo</translation>
-    </message>
-    <message>
-        <location line="-159"/>
-        <location line="+160"/>
-        <source>B</source>
-        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
@@ -5674,12 +5337,6 @@ Por favor, selecione um formato específico.</translation>
         <source>Terrain Brush</source>
         <translation>Pincel de Terreno</translation>
     </message>
-    <message>
-        <location line="-119"/>
-        <location line="+120"/>
-        <source>T</source>
-        <translation type="unfinished"></translation>
-    </message>
 </context>
 <context>
     <name>Tiled::TerrainDock</name>
@@ -5743,22 +5400,22 @@ Por favor, selecione um formato específico.</translation>
     <message>
         <location filename="../src/tiled/tilecollisiondock.cpp" line="-512"/>
         <source>Hidden</source>
-        <translation type="unfinished"></translation>
+        <translation>Escondido</translation>
     </message>
     <message>
         <location line="+5"/>
         <source>Show Right</source>
-        <translation type="unfinished"></translation>
+        <translation>Mostrar Direita</translation>
     </message>
     <message>
         <location line="+4"/>
         <source>Show Bottom</source>
-        <translation type="unfinished"></translation>
+        <translation>Mostrar Baixo</translation>
     </message>
     <message>
         <location line="+20"/>
         <source>Objects list</source>
-        <translation type="unfinished"></translation>
+        <translation>Lista de Objetos</translation>
     </message>
     <message>
         <location line="+377"/>
@@ -5805,13 +5462,7 @@ Por favor, selecione um formato específico.</translation>
         <translation>Seleção Retangular</translation>
     </message>
     <message>
-        <location line="-108"/>
-        <location line="+109"/>
-        <source>R</source>
-        <translation>R</translation>
-    </message>
-    <message>
-        <location line="-86"/>
+        <location line="-85"/>
         <source>%1, %2 - Rectangle: (%3 x %4)</source>
         <translation>%1, %2 - Retângulo: (%3 x %4)</translation>
     </message>
@@ -5885,7 +5536,7 @@ Por favor, selecione um formato específico.</translation>
 <context>
     <name>Tiled::TilesetDock</name>
     <message>
-        <location filename="../src/tiled/tilesetdock.cpp" line="+603"/>
+        <location filename="../src/tiled/tilesetdock.cpp" line="+606"/>
         <source>Remove Tileset</source>
         <translation>Remover Tileset</translation>
     </message>
@@ -5902,7 +5553,7 @@ Por favor, selecione um formato específico.</translation>
     <message>
         <location line="+65"/>
         <source>Tilesets</source>
-        <translation type="unfinished"></translation>
+        <translation>Tilesets</translation>
     </message>
     <message>
         <location line="+1"/>
@@ -5932,22 +5583,12 @@ Por favor, selecione um formato específico.</translation>
     <message>
         <location line="+1"/>
         <source>Select Next Tileset</source>
-        <translation type="unfinished"></translation>
+        <translation>Selecionar Próximo Tileset</translation>
     </message>
     <message>
-        <location line="+2"/>
+        <location line="+1"/>
         <source>Select Previous Tileset</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location line="-1"/>
-        <source>]</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location line="+2"/>
-        <source>[</source>
-        <translation type="unfinished"></translation>
+        <translation>Selecionar Tileset Anterior</translation>
     </message>
     <message>
         <location line="+1"/>
@@ -5987,7 +5628,7 @@ Por favor, selecione um formato específico.</translation>
 <context>
     <name>Tiled::TilesetEditor</name>
     <message>
-        <location filename="../src/tiled/tileseteditor.cpp" line="-454"/>
+        <location filename="../src/tiled/tileseteditor.cpp" line="+185"/>
         <location line="+447"/>
         <source>Tileset</source>
         <translation>Tileset</translation>
@@ -6190,12 +5831,6 @@ Por favor, selecione um formato específico.</translation>
         <location line="+68"/>
         <source>Wang Brush</source>
         <translation>Pincel Wang</translation>
-    </message>
-    <message>
-        <location line="-65"/>
-        <location line="+66"/>
-        <source>G</source>
-        <translation>G</translation>
     </message>
     <message>
         <location line="+149"/>
@@ -6456,7 +6091,7 @@ Por favor, selecione um formato específico.</translation>
         <translation>Mudificar Propriedades da Camada de Objectos</translation>
     </message>
     <message>
-        <location filename="../src/tiled/bucketfilltool.cpp" line="-17"/>
+        <location filename="../src/tiled/bucketfilltool.cpp" line="-16"/>
         <source>Fill Area</source>
         <translation>Área de Preenchimento</translation>
     </message>
@@ -6581,6 +6216,11 @@ Por favor, selecione um formato específico.</translation>
         <location filename="../src/tiled/layeroffsettool.cpp" line="+93"/>
         <source>Change Layer Offset</source>
         <translation>Alterar Deslocamento da Camada</translation>
+    </message>
+    <message>
+        <location line="+19"/>
+        <source>Change Tile Layer Size</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../src/tiled/changemapobject.cpp" line="+12"/>
@@ -6838,7 +6478,7 @@ Por favor, selecione um formato específico.</translation>
         <translation>Substituir Modelo</translation>
     </message>
     <message>
-        <location filename="../src/tiled/shapefilltool.cpp" line="-20"/>
+        <location filename="../src/tiled/shapefilltool.cpp" line="-19"/>
         <source>Shape Fill</source>
         <translation>Preencher Shape</translation>
     </message>
@@ -6986,7 +6626,7 @@ Por favor, selecione um formato específico.</translation>
         <location filename="../src/tiledquick/qml/main.qml" line="+46"/>
         <location line="+20"/>
         <source>Open...</source>
-        <translation type="unfinished">Abrir...</translation>
+        <translation>Abrir...</translation>
     </message>
     <message>
         <location line="+65"/>
@@ -6998,7 +6638,7 @@ Por favor, selecione um formato específico.</translation>
         <location filename="../src/tiledquick/qml/main.qml" line="-126"/>
         <location line="+17"/>
         <source>Exit</source>
-        <translation type="unfinished"></translation>
+        <translation>Sair</translation>
     </message>
     <message>
         <location line="-10"/>
@@ -7008,12 +6648,12 @@ Por favor, selecione um formato específico.</translation>
     <message>
         <location line="+16"/>
         <source>Help</source>
-        <translation type="unfinished"></translation>
+        <translation>Ajuda</translation>
     </message>
     <message>
         <location line="+2"/>
         <source>About Tiled Quick</source>
-        <translation type="unfinished"></translation>
+        <translation>Acerca de Tiled Quick</translation>
     </message>
 </context>
 </TS>
