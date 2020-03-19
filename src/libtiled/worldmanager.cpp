@@ -260,8 +260,8 @@ QRect World::mapRect(const QString &fileName) const
     for (const World::Pattern &pattern : patterns) {
         QRegularExpressionMatch match = pattern.regexp.match(fileName);
         if (match.hasMatch()) {
-            const int x = match.capturedRef(1).toInt();
-            const int y = match.capturedRef(2).toInt();
+            const int x = match.capturedRef(2).toInt();
+            const int y = match.capturedRef(1).toInt();
 
             return QRect(QPoint(x * pattern.multiplierX,
                                 y * pattern.multiplierY) + pattern.offset,
