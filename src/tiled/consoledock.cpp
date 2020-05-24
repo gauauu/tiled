@@ -22,20 +22,50 @@
 #include "consoledock.h"
 
 #include "logginginterface.h"
-#include "preferences.h"
 #include "scriptmanager.h"
+#include "session.h"
+#include "utils.h"
 
+#include <QCoreApplication>
 #include <QLineEdit>
+#include <QMenu>
 #include <QPlainTextEdit>
-#include <QSettings>
+#include <QPushButton>
 #include <QShortcut>
 #include <QVBoxLayout>
 
 namespace Tiled {
 
+namespace session {
+static SessionOption<QStringList> commandHistory { "console.history" };
+} // namespace session
+
+class ConsoleOutputWidget : public QPlainTextEdit
+{
+public:
+    using QPlainTextEdit::QPlainTextEdit;
+
+protected:
+    void contextMenuEvent(QContextMenuEvent *event) override;
+};
+
+void ConsoleOutputWidget::contextMenuEvent(QContextMenuEvent *event)
+{
+    std::unique_ptr<QMenu> menu { createStandardContextMenu(event->pos()) };
+
+    auto clearIcon = QIcon::fromTheme(QStringLiteral("edit-clear"));
+    menu->addSeparator();
+    menu->addAction(clearIcon,
+                    QCoreApplication::translate("Tiled::ConsoleDock", "Clear Console"),
+                    this, &QPlainTextEdit::clear);
+
+    menu->exec(event->globalPos());
+}
+
+
 ConsoleDock::ConsoleDock(QWidget *parent)
     : QDockWidget(parent)
-    , mPlainTextEdit(new QPlainTextEdit)
+    , mPlainTextEdit(new ConsoleOutputWidget)
     , mLineEdit(new QLineEdit)
 {
     setObjectName(QLatin1String("ConsoleDock"));
@@ -62,8 +92,16 @@ ConsoleDock::ConsoleDock(QWidget *parent)
     auto nextShortcut = new QShortcut(Qt::Key_Down, mLineEdit, nullptr, nullptr, Qt::WidgetShortcut);
     connect(nextShortcut, &QShortcut::activated, [this] { moveHistory(1); });
 
+    auto clearButton = new QPushButton(tr("Clear Console"));
+    connect(clearButton, &QPushButton::clicked, mPlainTextEdit, &QPlainTextEdit::clear);
+
+    auto bottomBar = new QHBoxLayout;
+    bottomBar->addWidget(mLineEdit);
+    bottomBar->addWidget(clearButton);
+    bottomBar->setSpacing(Utils::dpiScaled(7));
+
     layout->addWidget(mPlainTextEdit);
-    layout->addWidget(mLineEdit);
+    layout->addLayout(bottomBar);
 
     auto& logger = LoggingInterface::instance();
     connect(&logger, &LoggingInterface::info, this, &ConsoleDock::appendInfo);
@@ -72,8 +110,7 @@ ConsoleDock::ConsoleDock(QWidget *parent)
 
     setWidget(widget);
 
-    QSettings *settings = Preferences::instance()->settings();
-    mHistory = settings->value(QStringLiteral("Console/History")).toStringList();
+    mHistory = session::commandHistory;
     mHistoryPosition = mHistory.size();
 
     connect(this, &QDockWidget::visibilityChanged, this, [this](bool visible) {
@@ -112,6 +149,13 @@ void ConsoleDock::appendScript(const QString &str)
                                QLatin1String("</pre>"));
 }
 
+void ConsoleDock::appendScriptResult(const QString &tempName, const QString &result)
+{
+    mPlainTextEdit->appendHtml(QLatin1String("<pre><span style='color:gray'>") + tempName.toHtmlEscaped() +
+                               QLatin1String("&nbsp;=&nbsp;</span>") + result.toHtmlEscaped() +
+                               QLatin1String("</pre>"));
+}
+
 void ConsoleDock::executeScript()
 {
     const QString script = mLineEdit->text();
@@ -121,8 +165,10 @@ void ConsoleDock::executeScript()
     appendScript(script);
 
     const QJSValue result = ScriptManager::instance().evaluate(script);
-    if (!result.isError() && !result.isUndefined())
-        appendInfo(result.toString());
+    if (!result.isError() && !result.isUndefined()) {
+        auto name = ScriptManager::instance().createTempValue(result);
+        appendScriptResult(name, result.toString());
+    }
 
     mLineEdit->clear();
 
@@ -130,9 +176,7 @@ void ConsoleDock::executeScript()
     mHistoryPosition = mHistory.size();
 
     // Remember the last few script lines
-    QSettings *settings = Preferences::instance()->settings();
-    settings->setValue(QStringLiteral("Console/History"),
-                       QStringList(mHistory.mid(mHistory.size() - 10)));
+    session::commandHistory = mHistory.mid(mHistory.size() - 10);
 }
 
 void ConsoleDock::moveHistory(int direction)

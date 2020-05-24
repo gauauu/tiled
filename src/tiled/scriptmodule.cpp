@@ -21,7 +21,6 @@
 #include "scriptmodule.h"
 
 #include "actionmanager.h"
-#include "commanddatamodel.h"
 #include "commandmanager.h"
 #include "editabletileset.h"
 #include "issuesmodel.h"
@@ -31,6 +30,7 @@
 #include "scriptedaction.h"
 #include "scriptedfileformat.h"
 #include "scriptedtool.h"
+#include "scriptfileformatwrappers.h"
 #include "scriptmanager.h"
 #include "tilesetdocument.h"
 #include "tileseteditor.h"
@@ -40,6 +40,7 @@
 #include <QInputDialog>
 #include <QMenu>
 #include <QMessageBox>
+#include <QQmlEngine>
 
 namespace Tiled {
 
@@ -58,7 +59,7 @@ ScriptModule::ScriptModule(QObject *parent)
 ScriptModule::~ScriptModule()
 {
     for (const auto &pair : mRegisteredActions)
-        ActionManager::unregisterAction(pair.second->id());
+        ActionManager::unregisterAction(pair.second.get(), pair.first);
 
     IssuesModel::instance().removeIssuesWithContext(this);
 }
@@ -113,6 +114,28 @@ QStringList ScriptModule::menus() const
     return idsToNames(ActionManager::menus());
 }
 
+QStringList ScriptModule::mapFormats() const
+{
+    const auto formats = PluginManager::objects<MapFormat>();
+    QStringList ret;
+    ret.reserve(formats.length());
+    for (auto format : formats)
+        ret.append(format->shortName());
+
+    return ret;
+}
+
+QStringList ScriptModule::tilesetFormats() const
+{
+    const auto formats = PluginManager::objects<TilesetFormat>();
+    QStringList ret;
+    ret.reserve(formats.length());
+    for (auto format : formats)
+        ret.append(format->shortName());
+
+    return ret;
+}
+
 EditableAsset *ScriptModule::activeAsset() const
 {
     auto documentManager = DocumentManager::instance();
@@ -124,6 +147,10 @@ EditableAsset *ScriptModule::activeAsset() const
 
 bool ScriptModule::setActiveAsset(EditableAsset *asset) const
 {
+    if (!asset) {
+        ScriptManager::instance().throwNullArgError(0);
+        return false;
+    }
     auto documentManager = DocumentManager::instance();
     for (const DocumentPtr &document : documentManager->documents())
         if (document->editable() == asset)
@@ -151,6 +178,16 @@ MapEditor *ScriptModule::mapEditor() const
     return static_cast<MapEditor*>(DocumentManager::instance()->editor(Document::MapDocumentType));
 }
 
+FilePath ScriptModule::filePath(const QUrl &path) const
+{
+    return { path };
+}
+
+ObjectRef ScriptModule::objectRef(int id) const
+{
+    return { id };
+}
+
 EditableAsset *ScriptModule::open(const QString &fileName) const
 {
     auto documentManager = DocumentManager::instance();
@@ -167,6 +204,10 @@ EditableAsset *ScriptModule::open(const QString &fileName) const
 
 bool ScriptModule::close(EditableAsset *asset) const
 {
+    if (!asset) {
+        ScriptManager::instance().throwNullArgError(0);
+        return false;
+    }
     auto documentManager = DocumentManager::instance();
 
     int index = documentManager->findDocument(asset->document());
@@ -181,6 +222,10 @@ bool ScriptModule::close(EditableAsset *asset) const
 
 EditableAsset *ScriptModule::reload(EditableAsset *asset) const
 {
+    if (!asset) {
+        ScriptManager::instance().throwNullArgError(0);
+        return nullptr;
+    }
     auto documentManager = DocumentManager::instance();
 
     int index = documentManager->findDocument(asset->document());
@@ -221,12 +266,12 @@ ScriptedAction *ScriptModule::registerAction(const QByteArray &idName, QJSValue 
         return nullptr;
     }
 
-    Id id(idName);
-    auto &action = mRegisteredActions[idName];
+    Id id { idName };
+    auto &action = mRegisteredActions[id];
 
     // Remove any previously registered action with the same name
     if (action) {
-        ActionManager::unregisterAction(id);
+        ActionManager::unregisterAction(action.get(), id);
     } else if (ActionManager::findAction(id)) {
         ScriptManager::instance().throwError(QCoreApplication::translate("Script Errors", "Reserved ID"));
         return nullptr;
@@ -275,11 +320,57 @@ QJSValue ScriptModule::registerTool(const QString &shortName, QJSValue toolObjec
     if (!ScriptedTool::validateToolObject(toolObject))
         return QJSValue();
 
-    auto &tool = mRegisteredTools[shortName];
+    Id id { shortName.toUtf8() };
+    auto &tool = mRegisteredTools[id];
 
-    tool = std::make_unique<ScriptedTool>(toolObject, this);
+    tool = std::make_unique<ScriptedTool>(id, toolObject, this);
     return toolObject;
 }
+
+ScriptMapFormatWrapper *ScriptModule::mapFormat(const QString &shortName) const
+{
+    const auto formats = PluginManager::objects<MapFormat>();
+    for (auto format : formats) {
+        if (format->shortName() == shortName)
+            return new ScriptMapFormatWrapper(format);
+    }
+
+    return nullptr;
+}
+
+ScriptMapFormatWrapper *ScriptModule::mapFormatForFile(const QString &fileName) const
+{
+    const auto formats = PluginManager::objects<MapFormat>();
+    for (auto format : formats) {
+        if (format->supportsFile(fileName))
+            return new ScriptMapFormatWrapper(format);
+    }
+
+    return nullptr;
+}
+
+ScriptTilesetFormatWrapper *ScriptModule::tilesetFormat(const QString &shortName) const
+{
+    const auto formats = PluginManager::objects<TilesetFormat>();
+    for (auto format : formats) {
+        if (format->shortName() == shortName)
+            return new ScriptTilesetFormatWrapper(format);
+    }
+
+    return nullptr;
+}
+
+ScriptTilesetFormatWrapper *ScriptModule::tilesetFormatForFile(const QString &fileName) const
+{
+    const auto formats = PluginManager::objects<TilesetFormat>();
+    for (auto format : formats) {
+        if (format->supportsFile(fileName))
+            return new ScriptTilesetFormatWrapper(format);
+    }
+
+    return nullptr;
+}
+
 
 static QString toString(QJSValue value)
 {
@@ -369,9 +460,9 @@ void ScriptModule::trigger(const QByteArray &actionName) const
 
 void ScriptModule::executeCommand(const QString &name, bool inTerminal) const
 {
-    auto commandDataModel = CommandManager::instance()->commandDataModel();
+    const auto commands = CommandManager::instance()->allCommands();
 
-    for (const Command &command : commandDataModel->allCommands()) {
+    for (const Command &command : commands) {
         if (command.name == name) {
             command.execute(inTerminal);
             return;

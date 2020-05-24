@@ -46,7 +46,6 @@
 #include <QImageReader>
 #include <QLabel>
 #include <QMessageBox>
-#include <QSettings>
 #include <QSortFilterProxyModel>
 #include <QStackedLayout>
 #include <QTreeView>
@@ -531,9 +530,14 @@ void LinkFixer::tryFixLinks(const QVector<BrokenLink> &links)
     startingLocation = directory;
 
     const QDir dir(directory);
-    const auto files = dir.entryList(QDir::Files |
-                                     QDir::Readable |
-                                     QDir::NoDotAndDotDot).toSet();
+    const auto entryList = dir.entryList(QDir::Files |
+                                         QDir::Readable |
+                                         QDir::NoDotAndDotDot);
+#if QT_VERSION < QT_VERSION_CHECK(5, 14, 0)
+    const auto files = entryList.toSet();
+#else
+    const QSet<QString> files { entryList.begin(), entryList.end() };
+#endif
 
     // See if any of the links we're looking for is located in this directory
     for (const BrokenLink &link : links) {

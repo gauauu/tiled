@@ -22,9 +22,11 @@
 
 #include "automapperwrapper.h"
 #include "logginginterface.h"
+#include "mainwindow.h"
 #include "map.h"
 #include "mapdocument.h"
 #include "preferences.h"
+#include "project.h"
 #include "tilelayer.h"
 
 #include <QDir>
@@ -35,6 +37,8 @@
 #include "qtcompat_p.h"
 
 using namespace Tiled;
+
+SessionOption<bool> AutomappingManager::automappingWhileDrawing { "automapping.whileDrawing", false };
 
 AutomappingManager::AutomappingManager(QObject *parent)
     : QObject(parent)
@@ -85,7 +89,7 @@ void AutomappingManager::autoMapRegion(const QRegion &region)
 
 void AutomappingManager::onRegionEdited(const QRegion &where, Layer *touchedLayer)
 {
-    if (Preferences::instance()->automappingDrawing())
+    if (automappingWhileDrawing)
         autoMapInternal(where, touchedLayer);
 }
 
@@ -258,6 +262,11 @@ void AutomappingManager::refreshRulesFile(const QString &ruleFileOverride)
     if (rulesFile.isEmpty() && mMapDocument) {
         const QString mapPath = QFileInfo(mMapDocument->fileName()).path();
         rulesFile = mapPath + QLatin1String("/rules.txt");
+
+        if (!QFileInfo::exists(rulesFile)) {
+            auto &project = MainWindow::instance()->project();
+            rulesFile = project.mAutomappingRulesFile;
+        }
     }
 
     if (mRulesFile != rulesFile) {

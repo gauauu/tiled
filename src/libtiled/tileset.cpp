@@ -59,6 +59,7 @@ Tileset::Tileset(QString name, int tileWidth, int tileHeight,
     mTileHeight(tileHeight),
     mTileSpacing(tileSpacing),
     mMargin(margin),
+    mObjectAlignment(Unspecified),
     mOrientation(Orthogonal),
     mGridSize(tileWidth, tileHeight),
     mColumnCount(0),
@@ -98,7 +99,6 @@ TilesetFormat *Tileset::format() const
  */
 void Tileset::setTileSize(QSize tileSize)
 {
-    Q_ASSERT(!tileSize.isEmpty());
     mTileWidth = tileSize.width();
     mTileHeight = tileSize.height();
 }
@@ -204,11 +204,11 @@ bool Tileset::loadFromImage(const QImage &image, const QUrl &source)
     }
 
     const QSize tileSize = this->tileSize();
+    if (tileSize.isEmpty())
+        return false;
+
     const int margin = this->margin();
     const int spacing = this->tileSpacing();
-
-    Q_ASSERT(tileSize.width() > 0 && tileSize.height() > 0);
-
     const int stopWidth = image.width() - tileSize.width();
     const int stopHeight = image.height() - tileSize.height();
 
@@ -669,7 +669,7 @@ void Tileset::addWangSet(WangSet *wangSet)
     mWangSets.append(wangSet);
 }
 
-void Tileset::addWangSet(std::unique_ptr<WangSet> &&wangSet)
+void Tileset::addWangSet(std::unique_ptr<WangSet> wangSet)
 {
     addWangSet(wangSet.release());
 }
@@ -857,6 +857,7 @@ SharedTileset Tileset::clone() const
 
     // mFileName stays empty
     c->mTileOffset = mTileOffset;
+    c->mObjectAlignment = mObjectAlignment;
     c->mOrientation = mOrientation;
     c->mGridSize = mGridSize;
     c->mColumnCount = mColumnCount;

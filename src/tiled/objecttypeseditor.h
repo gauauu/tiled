@@ -22,7 +22,7 @@
 
 #include "properties.h"
 
-#include <QMainWindow>
+#include <QDialog>
 
 namespace Ui {
 class ObjectTypesEditor;
@@ -38,7 +38,7 @@ namespace Tiled {
 
 class ObjectTypesModel;
 
-class ObjectTypesEditor : public QMainWindow
+class ObjectTypesEditor : public QDialog
 {
     Q_OBJECT
 
@@ -59,10 +59,10 @@ private:
     void removeSelectedObjectTypes();
     void objectTypeIndexClicked(const QModelIndex &index);
     void applyObjectTypes();
+    void objectTypesChanged();
     void applyPropertyToSelectedTypes(const QString &name, const QVariant &value);
     void removePropertyFromSelectedTypes(const QString &name);
 
-    void chooseObjectTypesFile();
     void importObjectTypes();
     void exportObjectTypes();
 
@@ -92,7 +92,8 @@ private:
     QHash<QString, QtVariantProperty *> mNameToProperty;
 
     AggregatedProperties mProperties;
-    bool mUpdating;
+    bool mUpdating = false;
+    bool mSettingPrefObjectTypes = false;
 
     QAction *mAddObjectTypeAction;
     QAction *mRemoveObjectTypeAction;

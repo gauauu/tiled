@@ -79,6 +79,7 @@ public:
     void setExportFormat(FileFormat *format) override;
 
     QString displayName() const override;
+    QString externalOrEmbeddedFileName() const;
 
     void swapTileset(SharedTileset &tileset);
     const SharedTileset &tileset() const;
@@ -94,6 +95,7 @@ public:
 
     void setTilesetName(const QString &name);
     void setTilesetTileOffset(QPoint tileOffset);
+    void setTilesetObjectAlignment(Alignment objectAlignment);
 
     void addTiles(const QList<Tile*> &tiles);
     void removeTiles(const QList<Tile*> &tiles);
@@ -132,6 +134,7 @@ signals:
 
     void tilesetNameChanged(Tileset *tileset);
     void tilesetTileOffsetChanged(Tileset *tileset);
+    void tilesetObjectAlignmentChanged(Tileset *tileset);
 
     void tileTypeChanged(Tile *tile);
     void tileImageSourceChanged(Tile *tile);

@@ -213,8 +213,7 @@ QString TilesetDocument::displayName() const
     QString displayName;
 
     if (isEmbedded()) {
-        MapDocument *mapDocument = mMapDocuments.first();
-        displayName = mapDocument->displayName();
+        displayName = mMapDocuments.first()->displayName();
         displayName += QLatin1String("#");
         displayName += mTileset->name();
     } else {
@@ -224,6 +223,21 @@ QString TilesetDocument::displayName() const
     }
 
     return displayName;
+}
+
+QString TilesetDocument::externalOrEmbeddedFileName() const
+{
+    QString result;
+
+    if (isEmbedded()) {
+        result = mMapDocuments.first()->fileName();
+        result += QLatin1String("#");
+        result += mTileset->name();
+    } else {
+        result = fileName();
+    }
+
+    return result;
 }
 
 /**
@@ -292,7 +306,17 @@ void TilesetDocument::setTilesetTileOffset(QPoint tileOffset)
     emit tilesetTileOffsetChanged(mTileset.data());
 
     for (MapDocument *mapDocument : mapDocuments())
-        emit mapDocument->tilesetTileOffsetChanged(mTileset.data());
+        emit mapDocument->tilesetTilePositioningChanged(mTileset.data());
+}
+
+void TilesetDocument::setTilesetObjectAlignment(Alignment objectAlignment)
+{
+    mTileset->setObjectAlignment(objectAlignment);
+
+    emit tilesetObjectAlignmentChanged(mTileset.data());
+
+    for (MapDocument *mapDocument : mapDocuments())
+        emit mapDocument->tilesetTilePositioningChanged(mTileset.data());
 }
 
 void TilesetDocument::addTiles(const QList<Tile *> &tiles)
