@@ -30,6 +30,8 @@
 
 #include "tiled_global.h"
 
+#include <functional>
+
 #include <QPainter>
 
 namespace Tiled {
@@ -130,6 +132,8 @@ public:
     virtual void drawGrid(QPainter *painter, const QRectF &rect,
                           QColor gridColor = Qt::black) const = 0;
 
+    typedef std::function<void(const Cell &, const QPointF &, const QSizeF &)> RenderTileCallback;
+
     /**
      * Draws the given \a layer using the given \a painter.
      *
@@ -137,6 +141,16 @@ public:
      * only tiles that can be visible in this area will be drawn.
      */
     virtual void drawTileLayer(QPainter *painter, const TileLayer *layer,
+                               const QRectF &exposed = QRectF()) const = 0;
+
+    /**
+     * Draws the given \a layer using the given \a renderTile callback.
+     *
+     * Optionally, you can pass in the \a exposed rect (of pixels), so that
+     * only tiles that can be visible in this area will be drawn.
+     */
+    virtual void drawTileLayer(const TileLayer *layer,
+                               const RenderTileCallback &renderTile,
                                const QRectF &exposed = QRectF()) const = 0;
 
     /**
@@ -290,8 +304,8 @@ class CellRenderer
 {
 public:
     enum Origin {
-        BottomLeft,
-        BottomCenter
+        TopLeft,
+        BottomLeft
     };
 
     enum CellType {
@@ -300,11 +314,12 @@ public:
     };
 
     explicit CellRenderer(QPainter *painter, const MapRenderer *renderer,
-                          CellType cellType = OrthogonalCells);
+                          const QColor &tintColor, CellType cellType = OrthogonalCells);
 
     ~CellRenderer() { flush(); }
 
-    void render(const Cell &cell, const QPointF &pos, const QSizeF &size, Origin origin);
+    void render(const Cell &cell, const QPointF &pos, const QSizeF &size,
+                Origin origin = TopLeft);
     void flush();
 
 private:
@@ -316,6 +331,7 @@ private:
     QVector<QPainter::PixmapFragment> mFragments;
     const bool mIsOpenGL;
     const CellType mCellType;
+    const QColor mTintColor;
 };
 
 } // namespace Tiled

@@ -18,6 +18,7 @@
  * this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "abstractworldtool.h"
 #include "mapitem.h"
 
 #include "documentmanager.h"
@@ -148,7 +149,7 @@ MapItem::MapItem(const MapDocumentPtr &mapDocument, DisplayMode displayMode,
     connect(mapDocument.data(), &MapDocument::layerRemoved, this, &MapItem::layerRemoved);
     connect(mapDocument.data(), &MapDocument::imageLayerChanged, this, &MapItem::imageLayerChanged);
     connect(mapDocument.data(), &MapDocument::selectedLayersChanged, this, &MapItem::updateSelectedLayersHighlight);
-    connect(mapDocument.data(), &MapDocument::tilesetTileOffsetChanged, this, &MapItem::adaptToTilesetTileSizeChanges);
+    connect(mapDocument.data(), &MapDocument::tilesetTilePositioningChanged, this, &MapItem::adaptToTilesetTileSizeChanges);
     connect(mapDocument.data(), &MapDocument::tileImageSourceChanged, this, &MapItem::adaptToTileSizeChanges);
     connect(mapDocument.data(), &MapDocument::tileObjectGroupChanged, this, &MapItem::tileObjectGroupChanged);
     connect(mapDocument.data(), &MapDocument::tilesetReplaced, this, &MapItem::tilesetReplaced);
@@ -274,8 +275,23 @@ void MapItem::hoverLeaveEvent(QGraphicsSceneHoverEvent *)
     }
 }
 
+bool MapItem::isWorldToolSelected() const
+{
+    Editor *currentEditor = DocumentManager::instance()->currentEditor();
+    if (auto currentMapEditor = qobject_cast<MapEditor*>(currentEditor)) {
+        if (qobject_cast<AbstractWorldTool*>(currentMapEditor->selectedTool()))
+            return true;
+    }
+    return false;
+}
+
 void MapItem::mousePressEvent(QGraphicsSceneMouseEvent *event)
 {
+    if (isWorldToolSelected()) {
+        // the world tool has it's own handling for hovered maps
+        QGraphicsItem::mousePressEvent(event);
+        return;
+    }
     if (mDisplayMode != ReadOnly || event->button() != Qt::LeftButton || !mIsHovered)
         QGraphicsItem::mousePressEvent(event);
 }
@@ -290,50 +306,9 @@ void MapItem::mouseReleaseEvent(QGraphicsSceneMouseEvent *event)
         MapView *view = static_cast<MapView*>(event->widget()->parent());
         QRectF viewRect { view->viewport()->rect() };
         QRectF sceneViewRect = view->viewportTransform().inverted().mapRect(viewRect);
-
-        // Try selecting similar layers and tileset by name to the previously active mapitem
-        Document *currentDocument = DocumentManager::instance()->currentDocument();
-        SharedTileset newSimilarTileset;
-
-        if (auto currentMapDocument = qobject_cast<MapDocument*>(currentDocument)) {
-            const Layer *currentLayer = currentMapDocument->currentLayer();
-            const QList<Layer*> selectedLayers = currentMapDocument->selectedLayers();
-
-            if (currentLayer) {
-                Layer *newCurrentLayer = mapDocument()->map()->findLayer(currentLayer->name(),
-                                                                         currentLayer->layerType());
-                if (newCurrentLayer)
-                    mapDocument()->setCurrentLayer(newCurrentLayer);
-            }
-
-            QList<Layer*> newSelectedLayers;
-            for (Layer *selectedLayer : selectedLayers) {
-                Layer *newSelectedLayer = mapDocument()->map()->findLayer(selectedLayer->name(),
-                                                                          selectedLayer->layerType());
-                if (newSelectedLayer)
-                    newSelectedLayers << newSelectedLayer;
-            }
-            if (!newSelectedLayers.isEmpty())
-                mapDocument()->setSelectedLayers(newSelectedLayers);
-
-            Editor *currentEditor = DocumentManager::instance()->currentEditor();
-            if (auto currentMapEditor = qobject_cast<MapEditor*>(currentEditor)) {
-                if (SharedTileset currentTileset = currentMapEditor->currentTileset()) {
-                    if (!mapDocument()->map()->tilesets().contains(currentTileset))
-                        newSimilarTileset = currentTileset->findSimilarTileset(mapDocument()->map()->tilesets());
-                }
-            }
-        }
-
-        DocumentManager::instance()->switchToDocument(mMapDocument.data(),
-                                                      sceneViewRect.center() - pos(),
-                                                      view->zoomable()->scale());
-
-        Editor *newEditor = DocumentManager::instance()->currentEditor();
-        if (auto newMapEditor = qobject_cast<MapEditor*>(newEditor))
-            if (newSimilarTileset)
-                newMapEditor->setCurrentTileset(newSimilarTileset);
-
+        DocumentManager::instance()->switchToDocumentAndHandleSimiliarTileset(mMapDocument.data(),
+                                                                              sceneViewRect.center() - pos(),
+                                                                              view->zoomable()->scale());
         return;
     }
 
@@ -366,7 +341,7 @@ void MapItem::documentChanged(const ChangeEvent &change)
 {
     switch (change.type) {
     case ChangeEvent::LayerChanged:
-        layerChanged(static_cast<const LayerChangeEvent&>(change).layer);
+        layerChanged(static_cast<const LayerChangeEvent&>(change));
         break;
     case ChangeEvent::MapObjectsAboutToBeRemoved:
         deleteObjectItems(static_cast<const MapObjectsEvent&>(change).mapObjects);
@@ -442,11 +417,15 @@ void MapItem::layerRemoved(Layer *layer)
  * A layer has changed. This can mean that the layer visibility, opacity or
  * offset changed.
  */
-void MapItem::layerChanged(Layer *layer)
+void MapItem::layerChanged(const LayerChangeEvent &change)
 {
+    Layer *layer = change.layer;
     Preferences *prefs = Preferences::instance();
     QGraphicsItem *layerItem = mLayerItems.value(layer);
     Q_ASSERT(layerItem);
+
+    if (change.properties & LayerChangeEvent::TintColorProperty)
+        layerTintColorChanged(layer);
 
     layerItem->setVisible(layer->isVisible());
 
@@ -475,6 +454,27 @@ void MapItem::layerChanged(Layer *layer)
     layerItem->setPos(layer->offset());
 
     updateBoundingRect();   // possible layer offset change
+}
+
+void MapItem::layerTintColorChanged(Layer *layer)
+{
+    switch (layer->layerType()) {
+    case Layer::TileLayerType:
+    case Layer::ImageLayerType:
+        mLayerItems.value(layer)->update();
+        break;
+    case Layer::ObjectGroupType:
+        for (MapObject *mapObject : static_cast<const ObjectGroup&>(*layer)) {
+            if (mapObject->isTileObject())
+                mObjectItems.value(mapObject)->update();
+        }
+        break;
+    case Layer::GroupLayerType:
+        // Recurse into group layers since tint color is inherited
+        for (auto childLayer : static_cast<GroupLayer*>(layer)->layers())
+            layerTintColorChanged(childLayer);
+        break;
+    }
 }
 
 /**

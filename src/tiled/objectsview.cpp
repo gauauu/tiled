@@ -27,6 +27,7 @@
 #include "preferences.h"
 #include "reversingproxymodel.h"
 #include "utils.h"
+#include "reversingrecursivefiltermodel.h"
 
 #include <QAction>
 #include <QGuiApplication>
@@ -34,54 +35,17 @@
 #include <QKeyEvent>
 #include <QMenu>
 #include <QPainter>
-#include <QSettings>
 
 namespace Tiled {
 
-static const char FIRST_COLUMN_WIDTH_KEY[] = "ObjectsDock/FirstSectionSize";
-static const char VISIBLE_COLUMNS_KEY[] = "ObjectsDock/VisibleSections";
-
-class ObjectsFilterModel : public ReversingProxyModel
-{
-    Q_OBJECT
-
-public:
-    ObjectsFilterModel(QObject *parent = nullptr)
-        : ReversingProxyModel(parent)
-    {
-#if QT_VERSION >= QT_VERSION_CHECK(5, 10, 0)
-        setRecursiveFilteringEnabled(true);
-#endif
-    }
-
-#if QT_VERSION < QT_VERSION_CHECK(5, 10, 0)
-protected:
-    bool filterAcceptsRow(int sourceRow, const QModelIndex &sourceParent) const
-    {
-        return filterRecursiveAcceptsRow(sourceRow, sourceParent);
-    }
-
-private:
-    bool filterRecursiveAcceptsRow(int sourceRow, const QModelIndex &sourceParent) const
-    {
-        if (ReversingProxyModel::filterAcceptsRow(sourceRow, sourceParent))
-            return true;
-
-        const QModelIndex index = sourceModel()->index(sourceRow, 0, sourceParent);
-        const int count = sourceModel()->rowCount(index);
-
-        for (int i = 0; i < count; ++i)
-            if (filterRecursiveAcceptsRow(i, index))
-                return true;
-
-        return false;
-    }
-#endif
-};
+namespace preferences {
+static Preference<int> firstColumnWidth { "ObjectsDock/FirstSectionSize", 200 };
+static Preference<QVariantList> visibleColumns { "ObjectsDock/VisibleSections", { MapObjectModel::Name, MapObjectModel::Type } };
+} // namespace preferences
 
 ObjectsView::ObjectsView(QWidget *parent)
     : QTreeView(parent)
-    , mProxyModel(new ObjectsFilterModel(this))
+    , mProxyModel(new ReversingRecursiveFilterModel(this))
 {
     setMouseTracking(true);
 
@@ -123,10 +87,7 @@ void ObjectsView::setMapDocument(MapDocument *mapDoc)
     if (mMapDocument) {
         mProxyModel->setSourceModel(mMapDocument->mapObjectModel());
 
-        const QSettings *settings = Preferences::instance()->settings();
-        const int firstColumnWidth =
-                settings->value(QLatin1String(FIRST_COLUMN_WIDTH_KEY), 200).toInt();
-        setColumnWidth(0, firstColumnWidth);
+        setColumnWidth(0, preferences::firstColumnWidth);
 
         connect(mMapDocument, &MapDocument::selectedObjectsChanged,
                 this, &ObjectsView::selectedObjectsChanged);
@@ -290,9 +251,7 @@ void ObjectsView::onSectionResized(int logicalIndex)
     if (logicalIndex != 0)
         return;
 
-    QSettings *settings = Preferences::instance()->settings();
-    settings->setValue(QLatin1String(FIRST_COLUMN_WIDTH_KEY),
-                       columnWidth(0));
+    preferences::firstColumnWidth = columnWidth(0);
 }
 
 void ObjectsView::selectionChanged(const QItemSelection &selected,
@@ -367,13 +326,12 @@ void ObjectsView::setColumnVisibility(bool visible)
     int column = action->data().toInt();
     setColumnHidden(column, !visible);
 
-    QSettings *settings = Preferences::instance()->settings();
     QVariantList visibleColumns;
     for (int i = 0; i < mProxyModel->columnCount(); i++) {
         if (!isColumnHidden(i))
             visibleColumns.append(i);
     }
-    settings->setValue(QLatin1String(VISIBLE_COLUMNS_KEY), visibleColumns);
+    preferences::visibleColumns = visibleColumns;
 }
 
 void ObjectsView::showCustomHeaderContextMenu(const QPoint &point)
@@ -396,9 +354,7 @@ void ObjectsView::showCustomHeaderContextMenu(const QPoint &point)
 
 void ObjectsView::restoreVisibleColumns()
 {
-    QSettings *settings = Preferences::instance()->settings();
-    QVariantList visibleColumns = settings->value(QLatin1String(VISIBLE_COLUMNS_KEY),
-                                                  QVariantList() << MapObjectModel::Name << MapObjectModel::Type).toList();
+    const QVariantList visibleColumns = preferences::visibleColumns;
 
     for (int i = 0; i < mProxyModel->columnCount(); i++)
         setColumnHidden(i, !visibleColumns.contains(i));
@@ -450,5 +406,3 @@ void ObjectsView::updateRow(MapObject *object)
 }
 
 } // namespace Tiled
-
-#include "objectsview.moc"

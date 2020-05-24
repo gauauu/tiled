@@ -2,11 +2,12 @@ import qbs 1.0
 
 DynamicLibrary {
     targetName: "tiledquickplugin"
+    builtByDefault: false
 
     Depends { name: "libtiled" }
     Depends {
         name: "Qt"; submodules: ["qml", "quick"]
-        versionAtLeast: "5.4"
+        versionAtLeast: "5.6"
     }
 
     cpp.cxxLanguageVersion: "c++14"
@@ -29,6 +30,7 @@ DynamicLibrary {
         "mapitem.h",
         "maploader.cpp",
         "maploader.h",
+        "mapref.h",
         "tiledquickplugin.cpp",
         "tiledquickplugin.h",
         "tilelayeritem.cpp",

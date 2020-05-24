@@ -16,9 +16,6 @@
   <property name="dockOptions">
    <set>QMainWindow::AllowNestedDocks|QMainWindow::AllowTabbedDocks|QMainWindow::AnimatedDocks</set>
   </property>
-  <property name="unifiedTitleAndToolBarOnMac">
-   <bool>true</bool>
-  </property>
   <widget class="QWidget" name="centralWidget">
    <layout class="QVBoxLayout" name="verticalLayout">
     <property name="leftMargin">
@@ -41,7 +38,7 @@
      <x>0</x>
      <y>0</y>
      <width>553</width>
-     <height>31</height>
+     <height>26</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -56,6 +53,11 @@
       <iconset resource="tiled.qrc">
        <normaloff>:/images/16/document-open-recent.png</normaloff>:/images/16/document-open-recent.png</iconset>
      </property>
+     <property name="toolTipsVisible">
+      <bool>true</bool>
+     </property>
+     <addaction name="actionReopenClosedFile"/>
+     <addaction name="separator"/>
      <addaction name="actionClearRecentFiles"/>
     </widget>
     <widget class="QMenu" name="menuNew">
@@ -73,6 +75,7 @@
     </widget>
     <addaction name="menuNew"/>
     <addaction name="actionOpen"/>
+    <addaction name="actionOpenFileInProject"/>
     <addaction name="menuRecentFiles"/>
     <addaction name="separator"/>
     <addaction name="actionSave"/>
@@ -120,10 +123,17 @@
       <string>Unload World</string>
      </property>
     </widget>
+    <widget class="QMenu" name="menuSaveWorld">
+     <property name="title">
+      <string>Save World</string>
+     </property>
+    </widget>
     <addaction name="actionAddExternalTileset"/>
     <addaction name="separator"/>
+    <addaction name="actionNewWorld"/>
     <addaction name="actionLoadWorld"/>
     <addaction name="menuUnloadWorld"/>
+    <addaction name="menuSaveWorld"/>
     <addaction name="separator"/>
     <addaction name="actionResizeMap"/>
     <addaction name="actionOffsetMap"/>
@@ -158,6 +168,7 @@
     </widget>
     <addaction name="actionShowGrid"/>
     <addaction name="actionShowTileObjectOutlines"/>
+    <addaction name="actionShowObjectReferences"/>
     <addaction name="menuShowObjectNames"/>
     <addaction name="actionShowTileAnimations"/>
     <addaction name="actionShowTileCollisionShapes"/>
@@ -180,27 +191,47 @@
     </property>
     <addaction name="actionTilesetProperties"/>
    </widget>
+   <widget class="QMenu" name="menuProject">
+    <property name="title">
+     <string>&amp;Project</string>
+    </property>
+    <widget class="QMenu" name="menuRecentProjects">
+     <property name="title">
+      <string>&amp;Recent Projects</string>
+     </property>
+     <property name="icon">
+      <iconset resource="tiled.qrc">
+       <normaloff>:/images/16/document-open-recent.png</normaloff>:/images/16/document-open-recent.png</iconset>
+     </property>
+     <property name="toolTipsVisible">
+      <bool>true</bool>
+     </property>
+    </widget>
+    <addaction name="actionOpenProject"/>
+    <addaction name="menuRecentProjects"/>
+    <addaction name="separator"/>
+    <addaction name="actionSaveProjectAs"/>
+    <addaction name="actionCloseProject"/>
+    <addaction name="separator"/>
+    <addaction name="actionAddFolderToProject"/>
+    <addaction name="actionRefreshProjectFolders"/>
+    <addaction name="separator"/>
+    <addaction name="actionProjectProperties"/>
+   </widget>
    <addaction name="menuFile"/>
    <addaction name="menuEdit"/>
    <addaction name="menuView"/>
    <addaction name="menuMap"/>
    <addaction name="menuTileset"/>
+   <addaction name="menuProject"/>
    <addaction name="menuHelp"/>
   </widget>
   <action name="actionOpen">
-   <property name="icon">
-    <iconset resource="tiled.qrc">
-     <normaloff>:/images/16/document-open.png</normaloff>:/images/16/document-open.png</iconset>
-   </property>
    <property name="text">
     <string>&amp;Open...</string>
    </property>
   </action>
   <action name="actionSave">
-   <property name="icon">
-    <iconset resource="tiled.qrc">
-     <normaloff>:/images/16/document-save.png</normaloff>:/images/16/document-save.png</iconset>
-   </property>
    <property name="text">
     <string>&amp;Save</string>
    </property>
@@ -377,9 +408,6 @@
   <action name="actionOffsetMap">
    <property name="text">
     <string>&amp;Offset Map...</string>
-   </property>
-   <property name="toolTip">
-    <string>Offsets everything in a layer</string>
    </property>
   </action>
   <action name="actionPreferences">
@@ -636,6 +664,11 @@
     <string>Load World...</string>
    </property>
   </action>
+  <action name="actionNewWorld">
+   <property name="text">
+    <string>New World...</string>
+   </property>
+  </action>
   <action name="actionHighlightHoveredObject">
    <property name="checkable">
     <bool>true</bool>
@@ -661,12 +694,90 @@
     <string>Fit Map in View</string>
    </property>
    <property name="shortcut">
-    <string notr="true">Ctrl+Shift+J</string>
+    <string notr="true">Ctrl+/</string>
    </property>
   </action>
   <action name="actionForum">
    <property name="text">
     <string>Community Forum ↗</string>
+   </property>
+  </action>
+  <action name="actionOpenProject">
+   <property name="text">
+    <string>&amp;Open Project...</string>
+   </property>
+  </action>
+  <action name="actionCloseProject">
+   <property name="text">
+    <string>&amp;Close Project</string>
+   </property>
+  </action>
+  <action name="actionClearRecentProjects">
+   <property name="icon">
+    <iconset resource="tiled.qrc">
+     <normaloff>:/images/16/edit-clear.png</normaloff>:/images/16/edit-clear.png</iconset>
+   </property>
+   <property name="text">
+    <string>Clear Recent Projects</string>
+   </property>
+  </action>
+  <action name="actionAddFolderToProject">
+   <property name="text">
+    <string>Add Folder to Project...</string>
+   </property>
+  </action>
+  <action name="actionSaveProjectAs">
+   <property name="text">
+    <string>Save Project As...</string>
+   </property>
+  </action>
+  <action name="actionRefreshProjectFolders">
+   <property name="text">
+    <string>Refresh Folders</string>
+   </property>
+  </action>
+  <action name="actionShowObjectReferences">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Show Object &amp;References</string>
+   </property>
+  </action>
+  <action name="actionReopenClosedFile">
+   <property name="text">
+    <string>Reopen Closed File</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Shift+T</string>
+   </property>
+  </action>
+  <action name="actionWorldMoveMap">
+   <property name="text">
+    <string>Move Map</string>
+   </property>
+   <property name="toolTip">
+    <string>Move Map</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Shift+M</string>
+   </property>
+  </action>
+  <action name="actionProjectProperties">
+   <property name="icon">
+    <iconset resource="tiled.qrc">
+     <normaloff>:/images/16/document-properties.png</normaloff>:/images/16/document-properties.png</iconset>
+   </property>
+   <property name="text">
+    <string>Project &amp;Properties...</string>
+   </property>
+  </action>
+  <action name="actionOpenFileInProject">
+   <property name="text">
+    <string>Open File in &amp;Project...</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+P</string>
    </property>
   </action>
  </widget>

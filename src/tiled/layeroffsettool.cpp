@@ -39,7 +39,8 @@
 using namespace Tiled;
 
 LayerOffsetTool::LayerOffsetTool(QObject *parent)
-    : AbstractTool(tr("Offset Layers"),
+    : AbstractTool("LayerOffsetTool",
+                   tr("Offset Layers"),
                    QIcon(QLatin1String(":images/22/stock-tool-move-22.png")),
                    QKeySequence(Qt::Key_M),
                    parent)
@@ -55,6 +56,7 @@ void LayerOffsetTool::mouseEntered()
 
 void LayerOffsetTool::mouseLeft()
 {
+    setStatusInfo(QString());
 }
 
 void LayerOffsetTool::activate(MapScene *)

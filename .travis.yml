@@ -1,4 +1,5 @@
 language: cpp
+cache: ccache
 sudo: required
 dist: xenial
 python: 3.6
@@ -6,7 +7,7 @@ env:
   global:
   - secure: J8Y+eQD0p5YPOlhBEPFgpZzhRFjXC4phiiFtGV3JaYX34wxCsyyNhMStMqIZTBL4D9lQojfLgXODBDaqT1iSHDe1oonosnyYnGBIJElez247pjuNiSSvcAbYa9RQnwfHe8JFphQHViURbv0OfqpHHyAlHy5b8nrPYWG2xmHA5nY=
   - secure: VgouZ5cStqlgODwIuLIvIBN5gkmrP95agCS3BorLm7g/iXM4cwuaV+bov9FiSlnzcnWfpsNMsFt5xDU2Oc17N0Kyx531MIA1H5h9xdzj/IhjhLcOOqYeXt3lN2quRE2maIZDSrPVr3eY0o6xdcNkeK0jpX/mgIiSHwXOclXv+6o=
-  - QT_VERSION=5.12.5
+  - QT_VERSION=5.12.7
   - QTCREATOR_VERSION=4.10.1
 addons:
   coverity_scan:
@@ -84,11 +85,6 @@ matrix:
         tags: true
     - provider: script
       skip_cleanup: true
-      script: curl --upload-file $(ls Tiled*.AppImage) https://transfer.sh/Tiled.AppImage
-      on:
-        all_branches: true
-    - provider: script
-      skip_cleanup: true
       on:
         repo: bjorn/tiled
         branch: snapshot
@@ -129,6 +125,7 @@ matrix:
       homebrew:
         packages:
           - p7zip
+          - ccache
         update: true
     env:
       - MAKEFLAGS=-j2
@@ -146,8 +143,10 @@ matrix:
     - qbs --version
     - qbs setup-toolchains --detect
     - qbs config defaultProfile xcode
-    - qbs install --install-root install config:release qbs.installPrefix:"" projects.Tiled.version:$TILED_VERSION projects.Tiled.enableZstd:true
-    - macdeployqt install/Tiled.app
+    - ccache -zs
+    - qbs install --install-root install config:release qbs.installPrefix:"" projects.Tiled.version:$TILED_VERSION projects.Tiled.enableZstd:true modules.cpp.compilerWrapper:ccache
+    - ccache -s
+    - macdeployqt install/Tiled.app -verbose=2
     - pushd install
     - ruby ../dist/macos/fixup-install-names.rb
     - ditto -c -k --sequesterRsrc --keepParent Tiled.app ../Tiled-$TILED_VERSION-macos.zip

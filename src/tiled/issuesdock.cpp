@@ -180,16 +180,12 @@ IssuesDock::IssuesDock(QWidget *parent)
 
     connect(showWarningsCheckBox, &QCheckBox::toggled, mProxyModel, &IssueFilterModel::setShowWarnings);
     connect(clearButton, &QPushButton::clicked, &IssuesModel::instance(), &IssuesModel::clear);
-    connect(&IssuesModel::instance(), &IssuesModel::counterClicked, this, [this] {
-        show();
-        raise();
-    });
 
     auto toolBarLayout = new QHBoxLayout;
     toolBarLayout->addWidget(mFilterEdit);
     toolBarLayout->addWidget(showWarningsCheckBox);
     toolBarLayout->addWidget(clearButton);
-    toolBarLayout->setSpacing(10);
+    toolBarLayout->setSpacing(Utils::dpiScaled(7));
 
     auto widget = new QWidget(this);
     auto layout = new QVBoxLayout(widget);

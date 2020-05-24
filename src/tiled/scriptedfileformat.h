@@ -29,26 +29,6 @@ namespace Tiled {
 
 class EditableAsset;
 
-class ScriptFile : public QObject
-{
-    Q_OBJECT
-
-    Q_PROPERTY(QString filePath MEMBER mFilePath CONSTANT)
-    Q_PROPERTY(QString errorString MEMBER mError CONSTANT)
-
-public:
-    ScriptFile(const QString &filePath)
-        : mFilePath(filePath)
-    {}
-
-    Q_INVOKABLE QString readAsText();
-    Q_INVOKABLE QByteArray readAsBinary();
-
-private:
-    QString mFilePath;
-    QString mError;
-};
-
 class ScriptedFileFormat
 {
 public:
@@ -61,6 +41,8 @@ public:
     QJSValue read(const QString &fileName);
     bool write(EditableAsset *asset, const QString &fileName,
                FileFormat::Options options, QString &error);
+
+    QStringList outputFiles(EditableAsset *asset, const QString &fileName) const;
 
     static bool validateFileFormatObject(const QJSValue &value);
 
@@ -86,9 +68,7 @@ public:
     QString errorString() const override { return mError; }
 
     // MapFormat interface
-#if 0
     QStringList outputFiles(const Map *map, const QString &fileName) const override;
-#endif
     std::unique_ptr<Map> read(const QString &fileName) override;
     bool write(const Map *map, const QString &fileName, Options options) override;
 
@@ -126,5 +106,3 @@ private:
 };
 
 } // namespace Tiled
-
-Q_DECLARE_METATYPE(Tiled::ScriptFile*)

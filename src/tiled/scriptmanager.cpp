@@ -30,12 +30,17 @@
 #include "editabletilelayer.h"
 #include "editabletileset.h"
 #include "logginginterface.h"
+#include "mainwindow.h"
 #include "mapeditor.h"
 #include "mapview.h"
+#include "preferences.h"
+#include "project.h"
 #include "regionvaluetype.h"
 #include "scriptedaction.h"
 #include "scriptedfileformat.h"
 #include "scriptedtool.h"
+#include "scriptfile.h"
+#include "scriptfileformatwrappers.h"
 #include "scriptmodule.h"
 #include "tilecollisiondock.h"
 #include "tilelayer.h"
@@ -49,25 +54,27 @@
 #include <QStandardPaths>
 #include <QTextCodec>
 #include <QtDebug>
+#include <QCoreApplication>
 
 namespace Tiled {
 
-std::unique_ptr<ScriptManager> ScriptManager::mInstance;
+ScriptManager *ScriptManager::mInstance;
 
 ScriptManager &ScriptManager::instance()
 {
     if (!mInstance)
-        mInstance.reset(new ScriptManager);
+        mInstance = new ScriptManager;
     return *mInstance;
 }
 
 void ScriptManager::deleteInstance()
 {
-    mInstance.reset();
+    delete mInstance;
+    mInstance = nullptr;
 }
 
 /*
- * mJSEngine needs to be QQmlEngine for the "Qt" module to be available, which
+ * mEngine needs to be QQmlEngine for the "Qt" module to be available, which
  * is necessary to pass things like QSize or QPoint to some API functions
  * (using Qt.size and Qt.point).
  *
@@ -77,8 +84,6 @@ void ScriptManager::deleteInstance()
 
 ScriptManager::ScriptManager(QObject *parent)
     : QObject(parent)
-    , mEngine(new QQmlEngine(this))
-    , mModule(new ScriptModule(this))
 {
     qRegisterMetaType<Cell>();
     qRegisterMetaType<EditableAsset*>();
@@ -95,51 +100,48 @@ ScriptManager::ScriptManager(QObject *parent)
     qRegisterMetaType<MapEditor*>();
     qRegisterMetaType<MapView*>();
     qRegisterMetaType<RegionValueType>();
-    qRegisterMetaType<ScriptFile*>();
+    qRegisterMetaType<ScriptBinaryFile*>();
+    qRegisterMetaType<ScriptTextFile*>();
     qRegisterMetaType<ScriptedAction*>();
     qRegisterMetaType<ScriptedTool*>();
     qRegisterMetaType<TileCollisionDock*>();
     qRegisterMetaType<TileLayerEdit*>();
     qRegisterMetaType<TilesetDock*>();
     qRegisterMetaType<TilesetEditor*>();
+    qRegisterMetaType<ScriptMapFormatWrapper*>();
+    qRegisterMetaType<ScriptTilesetFormatWrapper*>();
 
-    connect(&mWatcher, &FileSystemWatcher::filesChanged,
+    connect(&mWatcher, &FileSystemWatcher::pathsChanged,
             this, &ScriptManager::scriptFilesChanged);
 
-    const QString configLocation { QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation) };
+    const QString configLocation { Preferences::configLocation() };
     if (!configLocation.isEmpty()) {
         mExtensionsPath = QDir{configLocation}.filePath(QStringLiteral("extensions"));
 
         if (!QFile::exists(mExtensionsPath))
             QDir().mkpath(mExtensionsPath);
-
-        mExtensionsPaths.append(mExtensionsPath);
     }
 }
 
-void ScriptManager::initialize()
+void ScriptManager::ensureInitialized()
 {
-    QJSValue globalObject = mEngine->globalObject();
-    globalObject.setProperty(QStringLiteral("tiled"), mEngine->newQObject(mModule));
-#if QT_VERSION >= 0x050800
-    globalObject.setProperty(QStringLiteral("Layer"), mEngine->newQMetaObject<EditableLayer>());
-    globalObject.setProperty(QStringLiteral("MapObject"), mEngine->newQMetaObject<EditableMapObject>());
-    globalObject.setProperty(QStringLiteral("ObjectGroup"), mEngine->newQMetaObject<EditableObjectGroup>());
-    globalObject.setProperty(QStringLiteral("Terrain"), mEngine->newQMetaObject<EditableTerrain>());
-    globalObject.setProperty(QStringLiteral("Tile"), mEngine->newQMetaObject<EditableTile>());
-    globalObject.setProperty(QStringLiteral("TileLayer"), mEngine->newQMetaObject<EditableTileLayer>());
-    globalObject.setProperty(QStringLiteral("TileMap"), mEngine->newQMetaObject<EditableMap>());
-    globalObject.setProperty(QStringLiteral("Tileset"), mEngine->newQMetaObject<EditableTileset>());
-#endif
-
-    loadExtensions();
+    if (!mEngine) {
+        refreshExtensionsPaths();
+        initialize();
+    }
 }
 
 QJSValue ScriptManager::evaluate(const QString &program,
                                  const QString &fileName, int lineNumber)
 {
+    QJSValue globalObject = mEngine->globalObject();
+    if (!fileName.isEmpty())
+        globalObject.setProperty(QStringLiteral("__filename"), fileName);
+
     QJSValue result = mEngine->evaluate(program, fileName, lineNumber);
     checkError(result, program);
+
+    globalObject.deleteProperty(QStringLiteral("__filename"));
     return result;
 }
 
@@ -169,6 +171,13 @@ QJSValue ScriptManager::evaluateFile(const QString &fileName)
     return evaluate(script, fileName);
 }
 
+QString ScriptManager::createTempValue(const QJSValue &value)
+{
+    auto name = QLatin1Char('$') + QString::number(mTempCount++);
+    mEngine->globalObject().setProperty(name, value);
+    return name;
+}
+
 void ScriptManager::loadExtensions()
 {
     QStringList extensionSearchPaths;
@@ -192,6 +201,8 @@ void ScriptManager::loadExtensions()
 
 void ScriptManager::loadExtension(const QString &path)
 {
+    mWatcher.addPath(path);
+
     const QDir dir(path);
     const QStringList jsFiles = dir.entryList({ QLatin1String("*.js") },
                                               QDir::Files | QDir::Readable);
@@ -245,24 +256,84 @@ void ScriptManager::throwError(const QString &message)
 #endif
 }
 
+void ScriptManager::throwNullArgError(int argNumber)
+{
+    throwError(QCoreApplication::translate("Script Errors",
+                                           "Argument %1 is undefined or the wrong type").arg(argNumber));
+}
+
 void ScriptManager::reset()
 {
     Tiled::INFO(tr("Resetting script engine"));
 
     mWatcher.clear();
+
     delete mEngine;
     delete mModule;
 
+    mEngine = nullptr;
+    mModule = nullptr;
+    mTempCount = 0;
+
+    initialize();
+}
+
+void ScriptManager::initialize()
+{
     mEngine = new QQmlEngine(this);
     mModule = new ScriptModule(this);
 
-    initialize();
+    QJSValue globalObject = mEngine->globalObject();
+    globalObject.setProperty(QStringLiteral("tiled"), mEngine->newQObject(mModule));
+#if QT_VERSION >= 0x050800
+    globalObject.setProperty(QStringLiteral("TextFile"), mEngine->newQMetaObject<ScriptTextFile>());
+    globalObject.setProperty(QStringLiteral("BinaryFile"), mEngine->newQMetaObject<ScriptBinaryFile>());
+    globalObject.setProperty(QStringLiteral("Layer"), mEngine->newQMetaObject<EditableLayer>());
+    globalObject.setProperty(QStringLiteral("MapObject"), mEngine->newQMetaObject<EditableMapObject>());
+    globalObject.setProperty(QStringLiteral("ObjectGroup"), mEngine->newQMetaObject<EditableObjectGroup>());
+    globalObject.setProperty(QStringLiteral("Terrain"), mEngine->newQMetaObject<EditableTerrain>());
+    globalObject.setProperty(QStringLiteral("Tile"), mEngine->newQMetaObject<EditableTile>());
+    globalObject.setProperty(QStringLiteral("TileLayer"), mEngine->newQMetaObject<EditableTileLayer>());
+    globalObject.setProperty(QStringLiteral("TileMap"), mEngine->newQMetaObject<EditableMap>());
+    globalObject.setProperty(QStringLiteral("Tileset"), mEngine->newQMetaObject<EditableTileset>());
+#endif
+
+    loadExtensions();
 }
 
 void ScriptManager::scriptFilesChanged(const QStringList &scriptFiles)
 {
     Tiled::INFO(tr("Script files changed: %1").arg(scriptFiles.join(QLatin1String(", "))));
     reset();
+}
+
+void ScriptManager::refreshExtensionsPaths()
+{
+    QStringList extensionsPaths;
+
+    if (!mExtensionsPath.isEmpty())
+        extensionsPaths.append(mExtensionsPath);
+
+    // Add extensions path from project
+    auto &projectExtensionsPath = MainWindow::instance()->project().mExtensionsPath;
+    if (!projectExtensionsPath.isEmpty()) {
+        const QFileInfo info(projectExtensionsPath);
+        if (info.exists() && info.isDir())
+            extensionsPaths.append(projectExtensionsPath);
+    }
+
+    extensionsPaths.sort();
+    extensionsPaths.removeDuplicates();
+
+    if (extensionsPaths == mExtensionsPaths)
+        return;
+
+    mExtensionsPaths.swap(extensionsPaths);
+
+    if (mEngine) {
+        Tiled::INFO(tr("Extensions paths changed: %1").arg(mExtensionsPaths.join(QLatin1String(", "))));
+        reset();
+    }
 }
 
 } // namespace Tiled

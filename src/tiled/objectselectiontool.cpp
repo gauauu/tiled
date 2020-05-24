@@ -312,10 +312,11 @@ void ResizeHandle::paint(QPainter *painter,
 
 
 ObjectSelectionTool::ObjectSelectionTool(QObject *parent)
-    : AbstractObjectTool(tr("Select Objects"),
-          QIcon(QLatin1String(":images/22/tool-select-objects.png")),
-          QKeySequence(Qt::Key_S),
-          parent)
+    : AbstractObjectTool("ObjectSelectionTool",
+                         tr("Select Objects"),
+                         QIcon(QLatin1String(":images/22/tool-select-objects.png")),
+                         QKeySequence(Qt::Key_S),
+                         parent)
     , mSelectionRectangle(new SelectionRectangle)
     , mOriginIndicator(new OriginIndicator)
     , mMousePressed(false)
@@ -354,7 +355,7 @@ void ObjectSelectionTool::activate(MapScene *scene)
             this, &ObjectSelectionTool::updateHandlesAndOrigin);
     connect(mapDocument(), &MapDocument::selectedObjectsChanged,
             this, &ObjectSelectionTool::updateHandlesAndOrigin);
-    connect(mapDocument(), &MapDocument::tilesetTileOffsetChanged,
+    connect(mapDocument(), &MapDocument::tilesetTilePositioningChanged,
             this, &ObjectSelectionTool::updateHandlesAndOrigin);
 
     scene->addItem(mOriginIndicator.get());
@@ -376,7 +377,7 @@ void ObjectSelectionTool::deactivate(MapScene *scene)
                this, &ObjectSelectionTool::updateHandlesAndOrigin);
     disconnect(mapDocument(), &MapDocument::selectedObjectsChanged,
                this, &ObjectSelectionTool::updateHandlesAndOrigin);
-    disconnect(mapDocument(), &MapDocument::tilesetTileOffsetChanged,
+    disconnect(mapDocument(), &MapDocument::tilesetTilePositioningChanged,
                this, &ObjectSelectionTool::updateHandlesAndOrigin);
 
     abortCurrentAction(Deactivated);
@@ -454,6 +455,7 @@ void ObjectSelectionTool::mouseEntered()
 void ObjectSelectionTool::mouseLeft()
 {
     mapDocument()->setHoveredMapObject(nullptr);
+    AbstractObjectTool::mouseLeft();
 }
 
 void ObjectSelectionTool::mouseMoved(const QPointF &pos,

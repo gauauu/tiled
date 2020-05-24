@@ -45,8 +45,6 @@ static const char * const TMX_MIMETYPE = "text/tmx";
 
 using namespace Tiled;
 
-ClipboardManager *ClipboardManager::mInstance;
-
 ClipboardManager::ClipboardManager()
     : mClipboard(QApplication::clipboard())
     , mHasMap(false)
@@ -62,18 +60,8 @@ ClipboardManager::ClipboardManager()
  */
 ClipboardManager *ClipboardManager::instance()
 {
-    if (!mInstance)
-        mInstance = new ClipboardManager;
-    return mInstance;
-}
-
-/**
- * Deletes the clipboard manager instance if it exists.
- */
-void ClipboardManager::deleteInstance()
-{
-    delete mInstance;
-    mInstance = nullptr;
+    static ClipboardManager instance;
+    return &instance;
 }
 
 /**
@@ -110,12 +98,12 @@ Properties ClipboardManager::properties() const
     const QByteArray data = mimeData->data(QLatin1String(PROPERTIES_MIMETYPE));
     const QJsonDocument document = QJsonDocument::fromBinaryData(data);
 
-    return Properties::fromJson(document.array());
+    return propertiesFromJson(document.array());
 }
 
 void ClipboardManager::setProperties(const Properties &properties)
 {
-    const QJsonDocument document(properties.toJson());
+    const QJsonDocument document(propertiesToJson(properties));
 
     QMimeData *mimeData = new QMimeData;
     mimeData->setData(QLatin1String(PROPERTIES_MIMETYPE), document.toBinaryData());

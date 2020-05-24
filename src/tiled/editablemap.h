@@ -38,11 +38,11 @@ class EditableMap : public EditableAsset
 {
     Q_OBJECT
 
-    Q_PROPERTY(int width READ width WRITE setWidth NOTIFY sizeChanged)
-    Q_PROPERTY(int height READ height WRITE setHeight NOTIFY sizeChanged)
-    Q_PROPERTY(QSize size READ size NOTIFY sizeChanged)
-    Q_PROPERTY(int tileWidth READ tileWidth WRITE setTileWidth NOTIFY tileWidthChanged)
-    Q_PROPERTY(int tileHeight READ tileHeight WRITE setTileHeight NOTIFY tileHeightChanged)
+    Q_PROPERTY(int width READ width WRITE setWidth)
+    Q_PROPERTY(int height READ height WRITE setHeight)
+    Q_PROPERTY(QSize size READ size)
+    Q_PROPERTY(int tileWidth READ tileWidth WRITE setTileWidth)
+    Q_PROPERTY(int tileHeight READ tileHeight WRITE setTileHeight)
     Q_PROPERTY(bool infinite READ infinite WRITE setInfinite)
     Q_PROPERTY(int hexSideLength READ hexSideLength WRITE setHexSideLength)
     Q_PROPERTY(StaggerAxis staggerAxis READ staggerAxis WRITE setStaggerAxis)
@@ -154,6 +154,19 @@ public:
     Q_INVOKABLE void autoMap(const QRectF &region, const QString &rulesFile = QString());
     Q_INVOKABLE void autoMap(const Tiled::RegionValueType &region, const QString &rulesFile = QString());
 
+    Q_INVOKABLE QPointF screenToTile(qreal x, qreal y) const;
+    Q_INVOKABLE QPointF screenToTile(const QPointF &position) const;
+    Q_INVOKABLE QPointF tileToScreen(qreal x, qreal y) const;
+    Q_INVOKABLE QPointF tileToScreen(const QPointF &position) const;
+    Q_INVOKABLE QPointF screenToPixel(qreal x, qreal y) const;
+    Q_INVOKABLE QPointF screenToPixel(const QPointF &position) const;
+    Q_INVOKABLE QPointF pixelToScreen(qreal x, qreal y) const;
+    Q_INVOKABLE QPointF pixelToScreen(const QPointF &position) const;
+    Q_INVOKABLE QPointF pixelToTile(qreal x, qreal y) const;
+    Q_INVOKABLE QPointF pixelToTile(const QPointF &position) const;
+    Q_INVOKABLE QPointF tileToPixel(qreal x, qreal y) const;
+    Q_INVOKABLE QPointF tileToPixel(const QPointF &position) const;
+
     void setWidth(int width);
     void setHeight(int height);
     Q_INVOKABLE void setSize(int width, int height);
@@ -176,10 +189,6 @@ public:
     MapDocument *mapDocument() const;
 
 signals:
-    void sizeChanged();
-    void tileWidthChanged();
-    void tileHeightChanged();
-
     void currentLayerChanged();
     void selectedLayersChanged();
     void selectedObjectsChanged();
@@ -297,6 +306,36 @@ inline void EditableMap::autoMap(const QRect &region, const QString &rulesFile)
 inline void EditableMap::autoMap(const QRectF &region, const QString &rulesFile)
 {
     autoMap(region.toRect(), rulesFile);
+}
+
+inline QPointF EditableMap::screenToTile(const QPointF &position) const
+{
+    return screenToTile(position.x(), position.y());
+}
+
+inline QPointF EditableMap::tileToScreen(const QPointF &position) const
+{
+    return tileToScreen(position.x(), position.y());
+}
+
+inline QPointF EditableMap::screenToPixel(const QPointF &position) const
+{
+    return screenToPixel(position.x(), position.y());
+}
+
+inline QPointF EditableMap::pixelToScreen(const QPointF &position) const
+{
+    return pixelToScreen(position.x(), position.y());
+}
+
+inline QPointF EditableMap::pixelToTile(const QPointF &position) const
+{
+    return pixelToTile(position.x(), position.y());
+}
+
+inline QPointF EditableMap::tileToPixel(const QPointF &position) const
+{
+    return tileToPixel(position.x(), position.y());
 }
 
 inline void EditableMap::setWidth(int width)
