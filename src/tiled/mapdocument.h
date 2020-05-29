@@ -282,6 +282,24 @@ signals:
     void focusMapObjectRequested(MapObject *object);
 
     /**
+     * Emitted when some part of the UI wants the user to pick an object
+     * (currently only used to set an object reference).
+     */
+    void mapObjectPickRequest();
+
+    /**
+     * Emitted to cancel a previously started request for picking an object.
+     */
+    void cancelMapObjectPickRequest();
+
+    /**
+     * Emitted when an object was picked. Response to mapObjectPickRequest.
+     *
+     * \a object can be nullptr if the picking was canceled.
+     */
+    void mapObjectPicked(MapObject *object);
+
+    /**
      * Emitted when the map size or its tile size changes.
      */
     void mapChanged();
@@ -336,7 +354,7 @@ signals:
 
     // emitted from the TilesetDocument
     void tilesetNameChanged(Tileset *tileset);
-    void tilesetTileOffsetChanged(Tileset *tileset);
+    void tilesetTilePositioningChanged(Tileset *tileset);
     void tileTypeChanged(Tile *tile);
     void tileImageSourceChanged(Tile *tile);
     void tileProbabilityChanged(Tile *tile);
@@ -374,7 +392,7 @@ private:
     QList<MapObject*> mSelectedObjects;
     MapObject *mHoveredMapObject;       /**< Map object with mouse on top. */
     std::unique_ptr<MapRenderer> mRenderer;
-    Layer *mCurrentLayer;
+    Layer *mCurrentLayer = nullptr;
     MapObjectModel *mMapObjectModel;
     bool mAllowHidingObjects = true;
     bool mAllowTileObjects = true;

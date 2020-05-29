@@ -35,8 +35,8 @@
 
 namespace Tiled {
 
-ScriptedTool::ScriptedTool(QJSValue object, QObject *parent)
-    : AbstractTileTool(QStringLiteral("<unnamed tool>"), QIcon(), QKeySequence(), nullptr, parent)
+ScriptedTool::ScriptedTool(Id id, QJSValue object, QObject *parent)
+    : AbstractTileTool(id, QStringLiteral("<unnamed tool>"), QIcon(), QKeySequence(), nullptr, parent)
     , mScriptObject(std::move(object))
 {
     const QJSValue nameProperty = mScriptObject.property(QStringLiteral("name"));
@@ -82,13 +82,21 @@ EditableTile *ScriptedTool::editableTile() const
 
 EditableMap *ScriptedTool::preview() const
 {
-    auto editableMap = new EditableMap(brushItem()->map()->clone());
+    const auto &map = brushItem()->map();
+    if (!map)
+        return nullptr;
+
+    auto editableMap = new EditableMap(map->clone());
     QQmlEngine::setObjectOwnership(editableMap, QQmlEngine::JavaScriptOwnership);
     return editableMap;
 }
 
 void ScriptedTool::setPreview(EditableMap *editableMap)
 {
+    if (!editableMap) {
+        ScriptManager::instance().throwNullArgError(0);
+        return;
+    }
     // todo: filter any non-tilelayers out of the map?
     auto map = editableMap->map()->clone();
     brushItem()->setMap(SharedMap { map.release() });

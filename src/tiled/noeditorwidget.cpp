@@ -34,6 +34,12 @@ NoEditorWidget::NoEditorWidget(QWidget *parent) :
 {
     ui->setupUi(this);
 
+    // Transfer margin and spacing to the internal layout
+    ui->verticalLayout->setMargin(ui->gridLayout->margin());
+    ui->verticalLayout->setSpacing(ui->gridLayout->spacing());
+    ui->gridLayout->setMargin(0);
+    ui->gridLayout->setSpacing(0);
+
     connect(ui->newMapButton, &QPushButton::clicked, this, &NoEditorWidget::newMap);
     connect(ui->newTilesetButton, &QPushButton::clicked, this, &NoEditorWidget::newTileset);
     connect(ui->openFileButton, &QPushButton::clicked, this, &NoEditorWidget::openFile);

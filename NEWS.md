@@ -1,6 +1,117 @@
-### Tiled 1.3.0 (...)
+### Tiled 1.4.0 (...)
 
-* Added support for extending Tiled with JavaScript
+* Added support for projects (#1665)
+* Added object reference property type (with Steve Le Roy Harris and Phlosioneer, #707)
+* Added world editing tool for adding/removing and moving around maps in a world (with Nils Kübler, #2208)
+* Added a quick "Open file in Project" (Ctrl+P) action
+* Added new Object Alignment property to Tileset (with Phlosioneer, #91)
+* Added layer tint color (by Gnumaru, #2687)
+* Added support for using maps as images (with Phlosioneer, #2708)
+* Added 'Open with System Editor' action for custom file properties (#2172)
+* Added option to render object names when exporting as image (#2216)
+* Added 'Replace Tileset' action to Tilesets view
+* Added shortcut to tooltips for all registered actions
+* Added automatic reloading of object templates (by Phlosioneer, #2699)
+* Added 'Clear Console' button and context menu action (#2220)
+* Added 'Reopen Closed File' (Ctrl+Shift+T) action
+* Added status bar button to toggle the Console view
+* Added a border around the tile selection highlight
+* Switch current tileset tab if all selected tiles are from the same tileset (by Mitch Curtis, #2792)
+* Made tileset dynamic wrapping toggle persistent
+* Properties view: Added action for adding a property to context menu (#2796)
+* Optimized loading of CSV tile layer data (by Phlosioneer, #2701)
+* Improved map positioning when toggling 'Clear View'
+* Remember the preferred format used for saving
+* Removed the Maps view (replaced by Project view)
+* Removed file system hierarchy from Templates view (replaced by Project view)
+* Fixed the status bar placement to be always at the bottom of the window
+* Fixed issue where image layer images cannot be loaded from Qt resource files (by obeezzy, #2711)
+* GmxPlugin: Added support for layer tint color
+* Scripting: Assign global variables to console script evaluations (by Phlosioneer, #2724)
+* Scripting: Added coordinate conversion to TileMap
+* Scripting: Added support for custom "file" properties
+* Scripting: Added checks for nullptr arguments (by Phlosioneer, #2736)
+* Scripting: Added some missing tileset related properties
+* Scripting: Provide access to registered file formats (by Phlosioneer, #2716)
+* Scripting: Enabled scripted formats to be used on the command-line
+* Scripting: Introduced \__filename global value (with konsumer)
+* docs: Clarify "can contain" documentation and error handling (by Phlosioneer, #2702)
+* docs: Document all optional attributes, update some docs (by Phlosioneer, #2705)
+* docs: Alphabetize scripting API reference (by Phlosioneer, #2720)
+* docs: Added missing BinaryFile constructor docs (by Phlosioneer, #2732)
+* docs: Enabled Algolia powered search
+* libtiled-java: Big update to support newer TMX attributes (by Mike Thomas, #1925)
+* libtiled-java: Fixed writing of the tile type (by Phlosioneer, #2704)
+
+### Tiled 1.3.5 (27 May 2020)
+
+* Fixed initialization and restoring of map view (#2779)
+* Fixed skewed tile terrain/Wang overlays for non-square tiles (#1943)
+* Fixed link color on dark theme
+* Fixed small issue when right-clicking embedded tileset tab
+* Fixed Wang Sets toggle to also appear in the Tileset menu
+* Scripting: Fixed issue when closing/comitting BinaryFile (#2801)
+* Scripting: Fixed "Safe writing of files" when writing with TextFile
+* Updated Qt to 5.12.8 on all platforms except Windows XP and snap releases
+* Small translation updates to Bulgarian, French and Portuguese
+
+### Tiled 1.3.4 (14 April 2020)
+
+* Fixed automatic reload issues when editing object types (regression in 1.3.1, #2768)
+* Scripting: Added methods to get tileset's image size (backported from 1.4, #2733)
+* Scripting: Fixed map.tilesets when 'Embed tilesets' is enabled
+* Fixed the "Fix Tileset" button in the Template Editor
+* macOS: Disabled unified tool bar to avoid repainting issues (#2667)
+* macOS and Linux: Updated Qt from 5.12.6 to 5.12.7
+
+### Tiled 1.3.3 (3 March 2020)
+
+* Fixed loading of compression level
+* Fixed default value for Hex Side Length property
+* Fixed hiding of status bar text for some tools
+* Fixed removing of object labels when removing a group layer
+* GmxPlugin: Fixed compatibility with GameMaker 1.4.9999
+* Scripting: Made TextFile.commit and BinaryFile.commit close as well
+* Scripting: Fixed crashes when modifying certain new objects
+* Scripting: Fixed potential crash in Asset.macro/undo/redo/isModified
+* Scripting: Fixed potential crash when accessing Tool.preview
+* Scripting: Fixed loading of images from extensions folder
+* Scripting: Reload extensions also when files are added/removed
+* Updated Bulgarian translation (by Любомир Василев)
+
+### Tiled 1.3.2 (22 January 2020)
+
+* Fixed initialization of selected layers (#2719)
+* Fixed stamp action shortcuts not being configurable (#2684)
+* Fixed the tileset view to respect the 'wheel zooms by default' preference
+* Fixed insertion position when using drag-n-drop to rearrange layers
+* Fixed displayed layer data format in Properties
+* Fixed repeating of export when map is saved by a custom command (#2709)
+* Fixed issue when multiple worlds are loaded that use pattern matching
+* Issues view can now be hidden by clicking the status bar counters
+* macOS: Fixed black toolbar when enabling OpenGL rendering (#1839)
+* Windows: Fixed context menus activating first item on release (#2693)
+* Windows installer: Include the 'defoldcollection' plugin (#2677)
+* libtiled: Avoid inheriting Properties from QVariantMap (#2679)
+* docs: Added some notes to Python and JavaScript pages (#2725)
+* Updated Qt from 5.12.5 to 5.12.6
+* Updated Finnish translation (by Tuomas Lähteenmäki and odamite)
+* Updated part of Italian translation (by Katia Piazza)
+
+### Tiled 1.3.1 (20 November 2019)
+
+* Added reloading of object types when changed externally (by Jacob Coughenour, #2674)
+* Added a status bar to the startup screen
+* Made the shortcuts for the tools configurable (#2666)
+* Made Undo/Redo shortcuts configurable (#2669)
+* Fixed importing of keyboard settings (.kms files) (#2671)
+* Fixed small window showing up on startup for a split second
+* Windows: Fixed the shipped version of OpenSSL (fixes new version notification)
+* Tiled Quick: Don't compile/install by default (#2673)
+
+### Tiled 1.3.0 (13 November 2019)
+
+* Added support for extending Tiled with JavaScript (#949)
 * Added error and warning counts to the status bar
 * Added Issues view where you can see warnings and errors and interact with them
 * Added configuration of keyboard shortcuts (#215)
@@ -23,6 +134,7 @@
 * Added shortcuts for next/previous tileset (#1238)
 * Added saving of the last export target and format in the map/tileset file (#1610)
 * Added option to repeat the last export on save (#1610)
+* Added Fit Map in View action (by Mateo de Mayo, #2206)
 * Tile Collision Editor: Added objects list view
 * Changed the Type property from a text box to an editable combo box (#823)
 * Changed animation preview to follow zoom factor for tiles (by Ruslan Gainutdinov, #2050)
@@ -49,6 +161,7 @@
 * Removed option to include a DTD in the saved files
 * Removed the automappingconverter tool
 * snap: Updated from Ubuntu 16.04 to 18.04 (core18, Qt 5.9)
+* Updated Chinese, Portuguese (Portugal), Turkish and Ukrainian translations
 
 ### Tiled 1.2.5 (9 October 2019)
 

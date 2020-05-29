@@ -65,8 +65,6 @@ typedef QSharedPointer<Tileset> SharedTileset;
  */
 class TILEDSHARED_EXPORT Tileset : public Object
 {
-    Q_OBJECT
-
 public:
     /**
      * The orientation of the tileset determines the projection used in the
@@ -129,6 +127,9 @@ public:
 
     int margin() const;
     void setMargin(int margin);
+
+    Alignment objectAlignment() const;
+    void setObjectAlignment(Alignment objectAlignment);
 
     QPoint tileOffset() const;
     void setTileOffset(QPoint offset);
@@ -197,7 +198,7 @@ public:
     WangSet *wangSet(int index) const;
 
     void addWangSet(WangSet *wangSet);
-    void addWangSet(std::unique_ptr<WangSet> &&wangSet);
+    void addWangSet(std::unique_ptr<WangSet> wangSet);
     void insertWangSet(int index, WangSet *wangSet);
     WangSet *takeWangSetAt(int index);
 
@@ -259,6 +260,7 @@ private:
     int mTileSpacing;
     int mMargin;
     QPoint mTileOffset;
+    Alignment mObjectAlignment;
     Orientation mOrientation;
     QSize mGridSize;
     int mColumnCount;
@@ -358,6 +360,22 @@ inline int Tileset::tileSpacing() const
 inline int Tileset::margin() const
 {
     return mMargin;
+}
+
+/**
+ * Returns the alignment to use for tile objects.
+ */
+inline Alignment Tileset::objectAlignment() const
+{
+    return mObjectAlignment;
+}
+
+/**
+ * @see objectAlignment
+ */
+inline void Tileset::setObjectAlignment(Alignment objectAlignment)
+{
+    mObjectAlignment = objectAlignment;
 }
 
 /**
@@ -669,4 +687,5 @@ inline LoadingStatus Tileset::imageStatus() const
 
 } // namespace Tiled
 
+Q_DECLARE_METATYPE(Tiled::Tileset*)
 Q_DECLARE_METATYPE(Tiled::SharedTileset)

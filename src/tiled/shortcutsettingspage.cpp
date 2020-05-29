@@ -22,7 +22,6 @@
 #include "ui_shortcutsettingspage.h"
 
 #include "actionmanager.h"
-#include "preferences.h"
 #include "savefile.h"
 #include "utils.h"
 
@@ -30,6 +29,7 @@
 #include <QAction>
 #include <QApplication>
 #include <QCoreApplication>
+#include <QDateTime>
 #include <QFileDialog>
 #include <QItemEditorFactory>
 #include <QKeyEvent>
@@ -53,6 +53,8 @@ namespace Tiled {
  */
 class ActionsModel : public QAbstractListModel
 {
+    Q_OBJECT
+
 public:
     enum UserRoles {
         HasCustomShortcut = Qt::UserRole,
@@ -620,7 +622,7 @@ ShortcutSettingsPage::~ShortcutSettingsPage()
 QSize ShortcutSettingsPage::sizeHint() const
 {
     QSize size = QWidget::sizeHint();
-    size.setWidth(qRound(Utils::dpiScaled(500)));
+    size.setWidth(Utils::dpiScaled(500));
     return size;
 }
 
@@ -683,12 +685,12 @@ void ShortcutSettingsPage::importShortcuts()
 
     while (xml.readNextStartElement()) {
         if (xml.name() == QLatin1String("shortcut")) {
-            QStringRef id = xml.attributes().value(QLatin1String("id"));
+            const Id id { xml.attributes().value(QLatin1String("id")).toUtf8() };
 
             while (xml.readNextStartElement()) {
                 if (xml.name() == QLatin1String("key")) {
                     QString keyString = xml.attributes().value(QLatin1String("value")).toString();
-                    result.insert(Id(id.toUtf8()), QKeySequence(keyString));
+                    result.insert(id, QKeySequence(keyString));
                     xml.skipCurrentElement();   // skip out of "key" element
                     xml.skipCurrentElement();   // skip out of "shortcut" element
                     break;

@@ -27,11 +27,12 @@
 #include "document.h"
 #include "preferences.h"
 #include "preferencesdialog.h"
+#include "project.h"
+#include "session.h"
 
 #include <QMainWindow>
 #include <QPointer>
 #include <QSessionManager>
-#include <QSettings>
 
 class QComboBox;
 class QLabel;
@@ -46,17 +47,20 @@ class FileFormat;
 class TileLayer;
 class Terrain;
 
-class ActionManager;
 class AutomappingManager;
 class ConsoleDock;
 class DocumentManager;
+class Editor;
 class IssuesDock;
+class LocatorWidget;
 class MapDocument;
 class MapDocumentActionHandler;
 class MapEditor;
 class MapScene;
 class MapView;
 class ObjectTypesEditor;
+class ProjectDock;
+class ProjectModel;
 class TilesetDocument;
 class TilesetEditor;
 class Zoomable;
@@ -72,10 +76,12 @@ class MainWindow : public QMainWindow
     Q_OBJECT
 
 public:
-    MainWindow(QWidget *parent = nullptr, Qt::WindowFlags flags = 0);
+    MainWindow(QWidget *parent = nullptr, Qt::WindowFlags flags = {});
     ~MainWindow() override;
 
     void commitData(QSessionManager &manager);
+
+    void initializeSession();
 
     /**
      * Opens the given file. When opened successfully, the file is added to the
@@ -88,12 +94,13 @@ public:
      */
     bool openFile(const QString &fileName, FileFormat *fileFormat = nullptr);
 
-    /**
-     * Attempt to open the previously opened file.
-     */
-    void openLastFiles();
+    Project &project() const;
+    ProjectModel *projectModel() const;
 
     static MainWindow *instance();
+
+signals:
+    void projectChanged();
 
 protected:
     bool event(QEvent *event) override;
@@ -110,6 +117,7 @@ protected:
 private:
     void newMap();
     void openFileDialog();
+    void openFileInProject();
     bool saveFile();
     bool saveFileAs();
     void saveAll();
@@ -119,7 +127,15 @@ private:
     void exportAsImage();
     void reload();
     void closeFile();
-    void closeAllFiles();
+    bool closeAllFiles();
+
+    void openProject();
+    void openProjectFile(const QString &fileName);
+    void saveProjectAs();
+    void closeProject();
+    void switchProject(Project project);
+    void restoreSession();
+    void projectProperties();
 
     void cut();
     void copy();
@@ -155,10 +171,14 @@ private:
     void showDonationDialog();
     void aboutTiled();
     void openRecentFile();
+    void reopenClosedFile();
+    void openRecentProject();
 
     void documentChanged(Document *document);
     void documentSaved(Document *document);
     void closeDocument(int index);
+
+    void currentEditorChanged(Editor *editor);
 
     void reloadError(const QString &error);
     void autoMappingError(bool automatic);
@@ -188,10 +208,13 @@ private:
       */
     bool confirmAllSave();
 
+    bool confirmSaveWorld(const QString &fileName);
+
     void writeSettings();
     void readSettings();
 
     void updateRecentFilesMenu();
+    void updateRecentProjectsMenu();
     void updateViewsAndToolbarsMenu();
 
     void retranslateUi();
@@ -199,15 +222,15 @@ private:
     void exportMapAs(MapDocument *mapDocument);
     void exportTilesetAs(TilesetDocument *tilesetDocument);
 
-    ActionManager *mActionManager;
     Ui::MainWindow *mUi;
     Document *mDocument = nullptr;
     Zoomable *mZoomable = nullptr;
     MapDocumentActionHandler *mActionHandler;
     ConsoleDock *mConsoleDock;
+    ProjectDock *mProjectDock;
     IssuesDock *mIssuesDock;
     ObjectTypesEditor *mObjectTypesEditor;
-    QSettings mSettings;
+    QPointer<LocatorWidget> mLocatorWidget;
 
     QAction *mRecentFiles[Preferences::MaxRecentFiles];
 
@@ -226,10 +249,13 @@ private:
     DocumentManager *mDocumentManager;
     MapEditor *mMapEditor;
     TilesetEditor *mTilesetEditor;
+    QList<QWidget*> mEditorStatusBarWidgets;
 
     QPointer<PreferencesDialog> mPreferencesDialog;
 
     QMap<QMainWindow*, QByteArray> mMainWindowStates;
+
+    SessionOption<QStringList> mLoadedWorlds { "loadedWorlds" };
 
     static MainWindow *mInstance;
 };

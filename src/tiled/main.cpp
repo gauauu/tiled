@@ -1,6 +1,6 @@
 /*
  * main.cpp
- * Copyright 2008-2011, Thorbjørn Lindeijer <thorbjorn@lindeijer.nl>
+ * Copyright 2008-2020, Thorbjørn Lindeijer <thorbjorn@lindeijer.nl>
  * Copyright 2011, Ben Longbons <b.r.longbons@gmail.com>
  * Copyright 2011, Stefan Beller <stefanbeller@googlemail.com>
  *
@@ -42,6 +42,8 @@
 #include <QJsonDocument>
 #include <QtPlugin>
 
+#include "qtcompat_p.h"
+
 #include <memory>
 
 #ifdef Q_OS_WIN
@@ -55,9 +57,6 @@
 #endif
 #endif // Q_OS_WIN
 
-#define STRINGIFY(x) #x
-#define AS_STRING(x) STRINGIFY(x)
-
 using namespace Tiled;
 
 namespace {
@@ -69,12 +68,12 @@ class CommandLineHandler : public CommandLineParser
 public:
     CommandLineHandler();
 
-    bool quit;
-    bool showedVersion;
-    bool disableOpenGL;
-    bool exportMap;
-    bool exportTileset;
-    bool newInstance;
+    bool quit = false;
+    bool showedVersion = false;
+    bool disableOpenGL = false;
+    bool exportMap = false;
+    bool exportTileset = false;
+    bool newInstance = false;
     Preferences::ExportOptions exportOptions;
 
 private:
@@ -103,9 +102,9 @@ private:
     }
 };
 
-static const QtMessageHandler QT_DEFAULT_MESSAGE_HANDLER = qInstallMessageHandler(0);
+static const QtMessageHandler QT_DEFAULT_MESSAGE_HANDLER = qInstallMessageHandler(nullptr);
 
-void messagesToConsole(QtMsgType type, const QMessageLogContext &context, const QString &msg)
+static void messagesToConsole(QtMsgType type, const QMessageLogContext &context, const QString &msg)
 {
     QString txt;
     switch (type) {
@@ -125,6 +124,12 @@ void messagesToConsole(QtMsgType type, const QMessageLogContext &context, const 
     }
 
     (*QT_DEFAULT_MESSAGE_HANDLER)(type, context, msg);
+}
+
+static void initializePluginsAndExtensions()
+{
+    PluginManager::instance()->loadPlugins();
+    ScriptManager::instance().ensureInitialized();
 }
 
 /**
@@ -182,12 +187,6 @@ inline T *findExportFormat(const QString *filter,
 
 
 CommandLineHandler::CommandLineHandler()
-    : quit(false)
-    , showedVersion(false)
-    , disableOpenGL(false)
-    , exportMap(false)
-    , exportTileset(false)
-    , newInstance(false)
 {
     option<&CommandLineHandler::showVersion>(
                 QLatin1Char('v'),
@@ -297,7 +296,7 @@ void CommandLineHandler::setExportMinimized()
 
 void CommandLineHandler::showExportFormats()
 {
-    PluginManager::instance()->loadPlugins();
+    initializePluginsAndExtensions();
 
     QStringList formats;
     const auto mapFormats = PluginManager::objects<MapFormat>();
@@ -348,30 +347,18 @@ int main(int argc, char *argv[])
     QGuiApplication::setFallbackSessionManagementEnabled(false);
 
     // Enable support for highres images (added in Qt 5.1, but off by default)
-    QGuiApplication::setAttribute(Qt::AA_UseHighDpiPixmaps);
+    QCoreApplication::setAttribute(Qt::AA_UseHighDpiPixmaps);
 #if QT_VERSION >= QT_VERSION_CHECK(5, 10, 0)
-    QGuiApplication::setAttribute(Qt::AA_DisableWindowContextHelpButton);
+    QCoreApplication::setAttribute(Qt::AA_DisableWindowContextHelpButton);
+#endif
+
+#ifdef Q_OS_MAC
+    QCoreApplication::setAttribute(Qt::AA_DontShowIconsInMenus);
 #endif
 
     TiledApplication a(argc, argv);
 
-    a.setOrganizationDomain(QLatin1String("mapeditor.org"));
-#if defined(Q_OS_MAC) || defined(Q_OS_WIN)
-    a.setApplicationName(QLatin1String("Tiled"));
-#else
-    a.setApplicationName(QLatin1String("tiled"));
-#endif
-    a.setApplicationDisplayName(QLatin1String("Tiled"));
-    a.setApplicationVersion(QLatin1String(AS_STRING(TILED_VERSION)));
-
-#ifdef Q_OS_MAC
-    a.setAttribute(Qt::AA_DontShowIconsInMenus);
-#endif
-
-    StyleHelper::initialize();
-
-    LanguageManager *languageManager = LanguageManager::instance();
-    languageManager->installTranslators();
+    initializeMetatypes();
 
     // Add the built-in file formats
     TmxMapFormat tmxMapFormat;
@@ -399,7 +386,7 @@ int main(int argc, char *argv[])
             return 1;
         }
 
-        PluginManager::instance()->loadPlugins();
+        initializePluginsAndExtensions();
 
         int index = 0;
         const QString *filter = commandLine.filesToOpen().length() > 2 ? &commandLine.filesToOpen().at(index++) : nullptr;
@@ -443,7 +430,7 @@ int main(int argc, char *argv[])
             return 1;
         }
 
-        PluginManager::instance()->loadPlugins();
+        initializePluginsAndExtensions();
 
         int index = 0;
         const QString *filter = commandLine.filesToOpen().length() > 2 ? &commandLine.filesToOpen().at(index++) : nullptr;
@@ -479,16 +466,33 @@ int main(int argc, char *argv[])
         return 0;
     }
 
-    if (!commandLine.filesToOpen().isEmpty() && !commandLine.newInstance) {
-        // Convert files to absolute paths because the already running Tiled
+    QStringList filesToOpen;
+
+    for (const QString &fileName : commandLine.filesToOpen()) {
+        const QFileInfo fileInfo(fileName);
+        const QString filePath = QDir::cleanPath(fileInfo.absoluteFilePath());
+
+        if (fileInfo.suffix() == QLatin1String("tiled-project")) {
+            if (!fileInfo.exists()) {
+                qWarning().noquote() << QCoreApplication::translate("Command line", "Project file '%1' not found.").arg(fileName);
+                return 1;
+            }
+            Preferences::setStartupProject(filePath);
+        } else {
+            filesToOpen.append(filePath);
+        }
+    }
+
+    if (!filesToOpen.isEmpty() && !commandLine.newInstance) {
+        // Files need to be absolute paths because the already running Tiled
         // instance likely does not have the same working directory.
-        QStringList absolutePaths;
-        for (const QString &fileName : commandLine.filesToOpen())
-            absolutePaths.append(QFileInfo(fileName).absoluteFilePath());
-        QJsonDocument doc(QJsonArray::fromStringList(absolutePaths));
+        QJsonDocument doc(QJsonArray::fromStringList(filesToOpen));
         if (a.sendMessage(QLatin1String(doc.toJson())))
             return 0;
     }
+
+    StyleHelper::initialize();
+    Session::initialize();
 
     MainWindow w;
     w.show();
@@ -502,14 +506,11 @@ int main(int argc, char *argv[])
                      &w, [&] (const QString &file) { w.openFile(file); });
 
     PluginManager::instance()->loadPlugins();
-    ScriptManager::instance().initialize();
 
-    if (!commandLine.filesToOpen().isEmpty()) {
-        for (const QString &fileName : commandLine.filesToOpen())
-            w.openFile(fileName);
-    } else if (Preferences::instance()->openLastFilesOnStartup()) {
-        w.openLastFiles();
-    }
+    w.initializeSession();
+
+    for (const QString &fileName : qAsConst(filesToOpen))
+        w.openFile(fileName);
 
     return a.exec();
 }

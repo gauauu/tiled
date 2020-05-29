@@ -49,7 +49,6 @@
 #include "offsetlayer.h"
 #include "orthogonalrenderer.h"
 #include "painttilelayer.h"
-#include "preferences.h"
 #include "rangeset.h"
 #include "reparentlayers.h"
 #include "resizemap.h"
@@ -83,7 +82,11 @@ MapDocument::MapDocument(std::unique_ptr<Map> map)
 
     createRenderer();
 
-    mCurrentLayer = (mMap->layerCount() == 0) ? nullptr : mMap->layerAt(0);
+    if (mMap->layerCount() > 0) {
+        mCurrentLayer = mMap->layerAt(0);
+        mSelectedLayers.append(mCurrentLayer);
+    }
+
     mLayerModel->setMapDocument(this);
 
     // Forward signals emitted from the layer model
@@ -1092,7 +1095,7 @@ void MapDocument::unifyTilesets(Map *map)
         for (Tile *replacementTile : replacement->tiles()) {
             if (Tile *originalTile = tileset->findTile(replacementTile->id())) {
                 Properties properties = replacementTile->properties();
-                properties.merge(originalTile->properties());
+                mergeProperties(properties, originalTile->properties());
                 undoCommands.append(new ChangeProperties(this,
                                                          tr("Tile"),
                                                          replacementTile,

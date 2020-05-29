@@ -108,8 +108,6 @@ EditableObjectGroup *EditableManager::editableObjectGroup(EditableAsset *asset, 
     if (!objectGroup)
         return nullptr;
 
-    Q_ASSERT(!objectGroup->map());
-
     EditableLayer* &editableLayer = mEditableLayers[objectGroup];
     if (becomesNullValue(editableLayer)) {
         editableLayer = new EditableObjectGroup(asset, objectGroup);
@@ -133,6 +131,20 @@ EditableMapObject *EditableManager::editableMapObject(EditableAsset *asset, MapO
     }
 
     return editableMapObject;
+}
+
+EditableTileset *EditableManager::editableTileset(Tileset *tileset)
+{
+    if (!tileset)
+        return nullptr;
+
+    EditableTileset* &editableTileset = mEditableTilesets[tileset];
+    if (becomesNullValue(editableTileset)) {
+        editableTileset = new EditableTileset(tileset);
+        QQmlEngine::setObjectOwnership(editableTileset, QQmlEngine::JavaScriptOwnership);
+    }
+
+    return editableTileset;
 }
 
 EditableTile *EditableManager::editableTile(EditableTileset *tileset, Tile *tile)

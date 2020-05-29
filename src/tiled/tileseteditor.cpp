@@ -31,16 +31,14 @@
 #include "changewangsetdata.h"
 #include "documentmanager.h"
 #include "erasetiles.h"
-#include "issuescounter.h"
 #include "maintoolbar.h"
 #include "mapdocument.h"
 #include "mapobject.h"
-#include "newsbutton.h"
-#include "newversionbutton.h"
 #include "objectgroup.h"
 #include "objecttemplate.h"
 #include "preferences.h"
 #include "propertiesdock.h"
+#include "session.h"
 #include "templatesdock.h"
 #include "terrain.h"
 #include "terraindock.h"
@@ -71,18 +69,19 @@
 #include <QMainWindow>
 #include <QMessageBox>
 #include <QMimeData>
-#include <QSettings>
 #include <QStackedWidget>
-#include <QStatusBar>
+#include <QUndoGroup>
 
 #include <functional>
 
 #include <QDebug>
 
-static const char SIZE_KEY[] = "TilesetEditor/Size";
-static const char STATE_KEY[] = "TilesetEditor/State";
-
 namespace Tiled {
+
+namespace preferences {
+static Preference<QSize> tilesetEditorSize { "TilesetEditor/Size" };
+static Preference<QByteArray> tilesetEditorState { "TilesetEditor/State" };
+} // namespace preferences
 
 class TilesetEditorWindow : public QMainWindow
 {
@@ -194,12 +193,6 @@ TilesetEditor::TilesetEditor(QObject *parent)
     mTilesetToolBar->addSeparator();
     mTilesetToolBar->addAction(mDynamicWrappingToggle);
 
-    mMainWindow->statusBar()->addPermanentWidget(mZoomComboBox);
-    mMainWindow->statusBar()->addPermanentWidget(new NewsButton);
-    mMainWindow->statusBar()->addPermanentWidget(new NewVersionButton(NewVersionButton::AutoVisible));
-    mMainWindow->statusBar()->addWidget(new IssuesCounter);
-    mMainWindow->statusBar()->addWidget(mStatusInfoLabel);
-
     mTemplatesDock->setPropertiesDock(mPropertiesDock);
 
     resetLayout();
@@ -216,8 +209,12 @@ TilesetEditor::TilesetEditor(QObject *parent)
     connect(editWang, &QAction::toggled, this, &TilesetEditor::setEditWang);
     connect(mShowAnimationEditor, &QAction::toggled, mTileAnimationEditor, &TileAnimationEditor::setVisible);
     connect(mDynamicWrappingToggle, &QAction::toggled, this, [this] (bool checked) {
-        if (TilesetView *view = currentTilesetView())
+        if (TilesetView *view = currentTilesetView()) {
             view->setDynamicWrapping(checked);
+
+            const QString fileName = mCurrentTilesetDocument->externalOrEmbeddedFileName();
+            Session::current().setFileStateValue(fileName, QLatin1String("dynamicWrapping"), checked);
+        }
     });
 
     connect(mTileAnimationEditor, &TileAnimationEditor::closed, this, &TilesetEditor::onAnimationEditorClosed);
@@ -263,20 +260,18 @@ TilesetEditor::TilesetEditor(QObject *parent)
 
 void TilesetEditor::saveState()
 {
-    QSettings *settings = Preferences::instance()->settings();
-    settings->setValue(QLatin1String(SIZE_KEY), mMainWindow->size());
-    settings->setValue(QLatin1String(STATE_KEY), mMainWindow->saveState());
+    preferences::tilesetEditorSize = mMainWindow->size();
+    preferences::tilesetEditorState = mMainWindow->saveState();
 
     mTileCollisionDock->saveState();
 }
 
 void TilesetEditor::restoreState()
 {
-    QSettings *settings = Preferences::instance()->settings();
-    QSize size = settings->value(QLatin1String(SIZE_KEY)).toSize();
+    QSize size = preferences::tilesetEditorSize;
     if (!size.isEmpty()) {
-        mMainWindow->resize(size.width(), size.height());
-        mMainWindow->restoreState(settings->value(QLatin1String(STATE_KEY)).toByteArray());
+        mMainWindow->resize(size);
+        mMainWindow->restoreState(preferences::tilesetEditorState);
     }
 
     mTileCollisionDock->restoreState();
@@ -289,16 +284,10 @@ void TilesetEditor::addDocument(Document *document)
 
     TilesetView *view = new TilesetView(mWidgetStack);
     view->setTilesetDocument(tilesetDocument);
-
-    Tileset *tileset = tilesetDocument->tileset().data();
-
-    QString path = QLatin1String("TilesetEditor/TilesetScale/") + tileset->name();
-    qreal scale = Preferences::instance()->settings()->value(path, 1).toReal();
-    view->zoomable()->setScale(scale);
-
     view->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
     view->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
 
+    Tileset *tileset = tilesetDocument->tileset().data();
     TilesetModel *tilesetModel = new TilesetModel(tileset, view);
     view->setModel(tilesetModel);
 
@@ -331,6 +320,8 @@ void TilesetEditor::addDocument(Document *document)
 
     mViewForTileset.insert(tilesetDocument, view);
     mWidgetStack->addWidget(view);
+
+    restoreDocumentState(tilesetDocument);
 }
 
 void TilesetEditor::removeDocument(Document *document)
@@ -341,15 +332,9 @@ void TilesetEditor::removeDocument(Document *document)
 
     tilesetDocument->disconnect(this);
 
-    TilesetView *view = mViewForTileset.take(tilesetDocument);
+    saveDocumentState(tilesetDocument);
 
-    QString path = QLatin1String("TilesetEditor/TilesetScale/") +
-            tilesetDocument->tileset()->name();
-    QSettings *settings = Preferences::instance()->settings();
-    if (view->scale() != 1.0)
-        settings->setValue(path, view->scale());
-    else
-        settings->remove(path);
+    TilesetView *view = mViewForTileset.take(tilesetDocument);
 
     // remove first, to keep it valid while the current widget changes
     mWidgetStack->removeWidget(view);
@@ -360,6 +345,9 @@ void TilesetEditor::setCurrentDocument(Document *document)
 {
     TilesetDocument *tilesetDocument = qobject_cast<TilesetDocument*>(document);
     Q_ASSERT(tilesetDocument || !document);
+
+    if (document && DocumentManager::instance()->currentEditor() == this)
+        DocumentManager::instance()->undoGroup()->setActiveStack(document->undoStack());
 
     if (mCurrentTilesetDocument == tilesetDocument)
         return;
@@ -422,6 +410,20 @@ QList<QDockWidget *> TilesetEditor::dockWidgets() const
         mTileCollisionDock,
         mTemplatesDock,
         mWangDock
+    };
+}
+
+QList<QWidget *> TilesetEditor::statusBarWidgets() const
+{
+    return {
+        mStatusInfoLabel
+    };
+}
+
+QList<QWidget *> TilesetEditor::permanentStatusBarWidgets() const
+{
+    return {
+        mZoomComboBox
     };
 }
 
@@ -518,6 +520,11 @@ QAction *TilesetEditor::editCollisionAction() const
     return mTileCollisionDock->toggleViewAction();
 }
 
+QAction *TilesetEditor::editWangSetsAction() const
+{
+    return mWangDock->toggleViewAction();
+}
+
 void TilesetEditor::currentWidgetChanged()
 {
     auto view = static_cast<TilesetView*>(mWidgetStack->currentWidget());
@@ -563,6 +570,51 @@ void TilesetEditor::indexPressed(const QModelIndex &index)
     TilesetView *view = currentTilesetView();
     if (Tile *tile = view->tilesetModel()->tileAt(index))
         mCurrentTilesetDocument->setCurrentObject(tile);
+}
+
+void TilesetEditor::saveDocumentState(TilesetDocument *tilesetDocument) const
+{
+    TilesetView *view = mViewForTileset.value(tilesetDocument);
+    if (!view)
+        return;
+
+    const QString fileName = tilesetDocument->externalOrEmbeddedFileName();
+    Session::current().setFileStateValue(fileName, QLatin1String("scaleInEditor"), view->scale());
+
+    // Some cleanup for potentially old preferences from Tiled 1.3
+    auto preferences = Preferences::instance();
+    QString path = QLatin1String("TilesetEditor/TilesetScale/") +
+            tilesetDocument->tileset()->name();
+    preferences->remove(path);
+}
+
+void TilesetEditor::restoreDocumentState(TilesetDocument *tilesetDocument) const
+{
+    TilesetView *view = mViewForTileset.value(tilesetDocument);
+    if (!view)
+        return;
+
+    const QString fileName = tilesetDocument->externalOrEmbeddedFileName();
+    const QVariantMap fileState = Session::current().fileState(fileName);
+
+    if (fileState.isEmpty()) {
+        // Compatibility with Tiled 1.3
+        const Tileset *tileset = tilesetDocument->tileset().data();
+        const QString path = QLatin1String("TilesetEditor/TilesetScale/") + tileset->name();
+        const qreal scale = Preferences::instance()->value(path, 1).toReal();
+        view->zoomable()->setScale(scale);
+        return;
+    }
+
+    bool ok;
+    const qreal scale = fileState.value(QLatin1String("scaleInEditor")).toReal(&ok);
+    if (scale > 0 && ok)
+        view->zoomable()->setScale(scale);
+
+    if (fileState.contains(QLatin1String("dynamicWrapping"))) {
+        const bool dynamicWrapping = fileState.value(QLatin1String("dynamicWrapping")).toBool();
+        view->setDynamicWrapping(dynamicWrapping);
+    }
 }
 
 void TilesetEditor::tilesetChanged()

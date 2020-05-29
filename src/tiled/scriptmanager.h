@@ -26,8 +26,6 @@
 #include <QObject>
 #include <QStringList>
 
-#include <memory>
-
 class QJSEngine;
 
 namespace Tiled {
@@ -42,7 +40,7 @@ public:
     static ScriptManager &instance();
     static void deleteInstance();
 
-    void initialize();
+    void ensureInitialized();
 
     const QString &extensionsPath() const;
 
@@ -54,26 +52,38 @@ public:
 
     QJSValue evaluateFile(const QString &fileName);
 
+    /**
+     * Create a new global identifier ($0, $1, $2, ...) for the value. Returns
+     * the name of the identifier.
+     */
+    QString createTempValue(const QJSValue &value);
+
     bool checkError(QJSValue value, const QString &program = QString());
     void throwError(const QString &message);
+    void throwNullArgError(int argNumber);
 
-    void reset();
+    void refreshExtensionsPaths();
 
 private:
     explicit ScriptManager(QObject *parent = nullptr);
+    ~ScriptManager() = default;
+
+    void reset();
+    void initialize();
 
     void scriptFilesChanged(const QStringList &scriptFiles);
 
     void loadExtensions();
     void loadExtension(const QString &path);
 
-    QJSEngine *mEngine;
-    ScriptModule *mModule;
+    QJSEngine *mEngine = nullptr;
+    ScriptModule *mModule = nullptr;
     FileSystemWatcher mWatcher;
     QString mExtensionsPath;
     QStringList mExtensionsPaths;
+    int mTempCount = 0;
 
-    static std::unique_ptr<ScriptManager> mInstance;
+    static ScriptManager *mInstance;
 };
 
 

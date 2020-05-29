@@ -20,6 +20,7 @@
 
 #include "abstractobjecttool.h"
 
+#include "actionmanager.h"
 #include "addremovetileset.h"
 #include "changemapobject.h"
 #include "documentmanager.h"
@@ -78,11 +79,12 @@ static bool isChangedTemplateInstance(MapObject *mapObject)
 }
 
 
-AbstractObjectTool::AbstractObjectTool(const QString &name,
+AbstractObjectTool::AbstractObjectTool(Id id,
+                                       const QString &name,
                                        const QIcon &icon,
                                        const QKeySequence &shortcut,
                                        QObject *parent)
-    : AbstractTool(name, icon, shortcut, parent)
+    : AbstractTool(id, name, icon, shortcut, parent)
     , mMapScene(nullptr)
 {
     QIcon flipHorizontalIcon(QLatin1String(":images/24/flip-horizontal.png"));
@@ -97,15 +99,24 @@ AbstractObjectTool::AbstractObjectTool(const QString &name,
 
     mFlipHorizontal = new QAction(this);
     mFlipHorizontal->setIcon(flipHorizontalIcon);
+    mFlipHorizontal->setShortcut(Qt::Key_X);
 
     mFlipVertical = new QAction(this);
     mFlipVertical->setIcon(flipVerticalIcon);
+    mFlipVertical->setShortcut(Qt::Key_Y);
 
     mRotateLeft = new QAction(this);
     mRotateLeft->setIcon(rotateLeftIcon);
+    mRotateLeft->setShortcut(Qt::SHIFT + Qt::Key_Z);
 
     mRotateRight = new QAction(this);
     mRotateRight->setIcon(rotateRightIcon);
+    mRotateRight->setShortcut(Qt::Key_Z);
+
+    ActionManager::registerAction(mFlipHorizontal, "FlipHorizontal");
+    ActionManager::registerAction(mFlipVertical, "FlipVertical");
+    ActionManager::registerAction(mRotateLeft, "RotateLeft");
+    ActionManager::registerAction(mRotateRight, "RotateRight");
 
     connect(mFlipHorizontal, &QAction::triggered, this, &AbstractObjectTool::flipHorizontally);
     connect(mFlipVertical, &QAction::triggered, this, &AbstractObjectTool::flipVertically);
@@ -174,15 +185,10 @@ void AbstractObjectTool::mousePressed(QGraphicsSceneMouseEvent *event)
 
 void AbstractObjectTool::languageChanged()
 {
-    mFlipHorizontal->setToolTip(tr("Flip Horizontally"));
-    mFlipVertical->setToolTip(tr("Flip Vertically"));
-    mRotateLeft->setToolTip(QCoreApplication::translate("Tiled::StampActions", "Rotate Left"));
-    mRotateRight->setToolTip(QCoreApplication::translate("Tiled::StampActions", "Rotate Right"));
-
-    mFlipHorizontal->setShortcut(Qt::Key_X);
-    mFlipVertical->setShortcut(Qt::Key_Y);
-    mRotateLeft->setShortcut(Qt::SHIFT + Qt::Key_Z);
-    mRotateRight->setShortcut(Qt::Key_Z);
+    mFlipHorizontal->setText(tr("Flip Horizontally"));
+    mFlipVertical->setText(tr("Flip Vertically"));
+    mRotateLeft->setText(QCoreApplication::translate("Tiled::StampActions", "Rotate Left"));
+    mRotateRight->setText(QCoreApplication::translate("Tiled::StampActions", "Rotate Right"));
 }
 
 void AbstractObjectTool::populateToolBar(QToolBar *toolBar)
