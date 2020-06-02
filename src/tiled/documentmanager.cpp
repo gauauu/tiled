@@ -76,15 +76,8 @@ DocumentManager *DocumentManager::mInstance;
 
 DocumentManager *DocumentManager::instance()
 {
-    if (!mInstance)
-        mInstance = new DocumentManager;
+    Q_ASSERT(mInstance);
     return mInstance;
-}
-
-void DocumentManager::deleteInstance()
-{
-    delete mInstance;
-    mInstance = nullptr;
 }
 
 DocumentManager::DocumentManager(QObject *parent)
@@ -101,6 +94,9 @@ DocumentManager::DocumentManager(QObject *parent)
     , mFileSystemWatcher(new FileSystemWatcher(this))
     , mMultiDocumentClose(false)
 {
+    Q_ASSERT(!mInstance);
+    mInstance = this;
+
     mBrokenLinksWidget->setVisible(false);
 
     mTabBar->setExpanding(false);
@@ -134,8 +130,8 @@ DocumentManager::DocumentManager(QObject *parent)
     connect(mTabBar, &QWidget::customContextMenuRequested,
             this, &DocumentManager::tabContextMenuRequested);
 
-    connect(mFileSystemWatcher, &FileSystemWatcher::fileChanged,
-            this, &DocumentManager::fileChanged);
+    connect(mFileSystemWatcher, &FileSystemWatcher::pathsChanged,
+            this, &DocumentManager::filesChanged);
 
     connect(mBrokenLinksModel, &BrokenLinksModel::hasBrokenLinksChanged,
             mBrokenLinksWidget, &BrokenLinksWidget::setVisible);
@@ -295,6 +291,8 @@ DocumentManager::~DocumentManager()
     Q_ASSERT(mDocuments.isEmpty());
     Q_ASSERT(mTilesetDocumentsModel->rowCount() == 0);
     delete mWidget;
+
+    mInstance = nullptr;
 }
 
 /**
@@ -1095,6 +1093,12 @@ void DocumentManager::tilesetNameChanged(Tileset *tileset)
     auto *tilesetDocument = findTilesetDocument(tileset->sharedPointer());
     if (tilesetDocument->isEmbedded())
         updateDocumentTab(tilesetDocument);
+}
+
+void DocumentManager::filesChanged(const QStringList &fileNames)
+{
+    for (const QString &fileName : fileNames)
+        fileChanged(fileName);
 }
 
 void DocumentManager::fileChanged(const QString &fileName)
