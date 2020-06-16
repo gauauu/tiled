@@ -1,6 +1,6 @@
 /*
- * newsbutton.h
- * Copyright 2018, Thorbjørn Lindeijer <bjorn@lindeijer.nl>
+ * scriptfileinfo.h
+ * Copyright 2020, Thorbjørn Lindeijer <bjorn@lindeijer.nl>
  *
  * This file is part of Tiled.
  *
@@ -20,27 +20,10 @@
 
 #pragma once
 
-#include <QToolButton>
+class QJSEngine;
 
 namespace Tiled {
 
-class NewsButton : public QToolButton
-{
-    Q_OBJECT
-
-public:
-    explicit NewsButton(QWidget *parent = nullptr);
-
-protected:
-    void changeEvent(QEvent *event) override;
-
-private:
-    void refreshButton();
-    void showNewsMenu();
-    void retranslateUi();
-
-    QIcon mReadIcon;
-    QIcon mUnreadIcon;
-};
+void registerFileInfo(QJSEngine *jsEngine);
 
 } // namespace Tiled

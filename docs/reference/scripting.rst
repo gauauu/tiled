@@ -630,6 +630,57 @@ Functions
 FileFormat.supportsFile(fileName : string) : bool
     Returns whether the file is readable by this format.
 
+.. _script-fileinfo:
+
+FileInfo
+^^^^^^^^
+
+Offers various operations on file paths, such as turning absolute paths into relative ones, splitting a path into its components, and so on.
+
+Functions
+~~~~~~~~~
+
+FileInfo.baseName(filePath : string) : string
+    Returns the file name of ``filePath`` up to (but not including) the first '.' character.
+
+FileInfo.canonicalPath(filePath : string) : string
+    Returns a canonicalized ``filePath``, i.e. an absolute path without symbolic links or redundant "." or ".." elements. On Windows, drive substitutions are also resolved.
+
+    It is recommended to use ``canonicalPath`` in only those cases where canonical paths are really necessary. In most cases, ``cleanPath`` should be enough.
+
+FileInfo.cleanPath(filePath : string) : string
+    Returns ``filePath`` without redundant separators and with resolved occurrences of `.` and `..` components. For instance, ``/usr/local//../bin/`` becomes ``/usr/bin``.
+
+FileInfo.completeBaseName(filePath: string) : string
+    Returns the file name of ``filePath`` up to (but not including) the last '.' character.
+
+FileInfo.completeSuffix(filePath : string) : string
+    Returns the file suffix of ``filePath`` from (but not including) the last '.' character.
+
+FileInfo.fileName(filePath : string) : string
+    Returns the last component of ``filePath``, that is, everything after the last '/' character.
+
+FileInfo.fromNativeSeparators(filePath : string) : string
+    On Windows, returns ``filePath`` with all '\\\\' characters replaced by '/'. On other operating systems, it returns the input unmodified.
+
+FileInfo.isAbsolutePath(filePath : string) : boolean
+    Returns true if `filePath` is an absolute path and false if it is a relative one.
+
+FileInfo.joinPaths(...paths) : string
+    Concatenates the given paths using the '/' character.
+
+FileInfo.path(filePath : string) : string
+    Returns the part of ``filePath`` that is not the file name, that is, everything up to (but not including) the last '/' character. If ``filePath`` is just a file name, then '.' is returned. If ``filePath`` ends with a '/' character, then the file name is assumed to be empty for the purpose of the above definition.
+
+FileInfo.relativePath(dirPath : string, filePath : string) : string
+    Returns the path to ``filePath`` relative to the directory ``dirPath``. If necessary, '..' components are inserted.
+
+FileInfo.suffix(filePath : string) : string
+    Returns the file suffix of ``filePath`` from (but not including) the first '.' character.
+
+FileInfo.toNativeSeparators(filePath : string) : string
+    On Windows, returns ``filePath`` with all '/' characters replaced by '\\\\'. On other operating systems, it returns the input unmodified.
+
 .. _script-grouplayer:
 
 GroupLayer
@@ -849,25 +900,32 @@ Functions
 
 Object.property(name : string) : variant
     Returns the value of the custom property with the given name, or
-    ``undefined`` if no such property is set on the object.
+    ``undefined`` if no such property is set on the object. Does not include
+    inherited values (see :ref:`resolvedProperty <script-object-resolvedProperty>`).
 
-    *Note:* Currently it is not possible to inspect the value of ``file`` properties.
+    ``file`` properties are returned as :ref:`script-filepath`.
+
+    ``object`` properties are returned as :ref:`script-mapobject` when possible,
+    or :ref:`script-objectref` when the object could not be found.
 
 .. _script-object-setProperty:
 
 Object.setProperty(name : string, value : variant) : void
     Sets the value of the custom property with the given name. Supported types
-    are ``bool``, ``number`` and ``string``. When setting a ``number``, the
-    property type will be set to either ``int`` or ``float``, depending on
-    whether it is a whole number.
+    are ``bool``, ``number``, ``string``, :ref:`script-filepath`,
+    :ref:`script-objectref` and :ref:`script-mapobject`.
 
-    *Note:* Support for ``color`` and ``file`` properties is currently missing.
+    When setting a ``number``, the property type will be set to either ``int``
+    or ``float``, depending on whether it is a whole number.
+
+    *Note:* Support for setting ``color`` properties is currently missing.
 
 .. _script-object-properties:
 
 Object.properties() : object
     Returns all custom properties set on this object. Modifications to the
-    properties will not affect the original object.
+    properties will not affect the original object. Does not include inherited
+    values (see :ref:`resolvedProperties <script-object-resolvedProperties>`).
 
 .. _script-object-setProperties:
 
@@ -878,6 +936,20 @@ Object.setProperties(properties : object) : void
 
 Object.removeProperty(name : string) : void
     Removes the custom property with the given name.
+
+.. _script-object-resolvedProperty:
+
+Object.resolvedProperty(name : string) : variant
+    Returns the value of the custom property with the given name, or
+    ``undefined`` if no such property is set. Includes values inherited from
+    object types, templates and tiles where applicable.
+
+.. _script-object-resolvedProperties:
+
+Object.resolvedProperties() : object
+    Returns all custom properties set on this object. Modifications to the
+    properties will not affect the original object. Includes values inherited from
+    object types, templates and tiles where applicable.
 
 .. _script-objectgroup:
 
