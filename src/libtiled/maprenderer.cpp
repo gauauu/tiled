@@ -355,7 +355,7 @@ void CellRenderer::render(const Cell &cell, const QPointF &screenPos, const QSiz
     fragment.rotation = 0;
 
 
-    if (std::fmod(pos.y(),256) > .01) {
+    if (std::fmod(screenPos.y(),256) > .01) {
       fragment.opacity = 1;
     } else {
       fragment.height = fragment.height / 2;
