@@ -36,11 +36,6 @@ class ProjectDock final : public QDockWidget
 public:
     ProjectDock(QWidget *parent = nullptr);
 
-    Project &project() const;
-    void setProject(Project project);
-
-    ProjectModel *projectModel() const;
-
     void selectFile(const QString &filePath);
 
     void addFolderToProject();

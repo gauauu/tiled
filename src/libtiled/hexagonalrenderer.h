@@ -67,7 +67,11 @@ protected:
     };
 
 public:
-    HexagonalRenderer(const Map *map) : OrthogonalRenderer(map) {}
+    HexagonalRenderer(const Map *map)
+        : OrthogonalRenderer(map)
+    {
+        setCellType(HexagonalCells);
+    }
 
     QRect mapBoundingRect() const override;
 
@@ -76,12 +80,9 @@ public:
     void drawGrid(QPainter *painter, const QRectF &exposed,
                   QColor gridColor) const override;
 
-    void drawTileLayer(QPainter *painter, const TileLayer *layer,
-                       const QRectF &exposed = QRectF()) const override;
-
-    void drawTileLayer(const TileLayer *layer,
-                       const RenderTileCallback &renderTile,
-                       const QRectF &exposed = QRectF()) const override;
+    using MapRenderer::drawTileLayer;
+    void drawTileLayer(const RenderTileCallback &renderTile,
+                       const QRectF &exposed) const override;
 
     void drawTileSelection(QPainter *painter,
                            const QRegion &region,

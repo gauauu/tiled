@@ -1,6 +1,7 @@
 /*
  * GMX Tiled Plugin
  * Copyright 2016, Jones Blunt <mrjonesblunt@gmail.com>
+ * Copyright 2016-2020, Thorbjørn Lindeijer <bjorn@lindeijer.nl>
  *
  * This file is part of Tiled.
  *
@@ -75,7 +76,7 @@ static void writeProperty(QXmlStreamWriter &writer,
 static QString sanitizeName(QString name)
 {
     static const QRegularExpression regexp(QLatin1String("[^a-zA-Z0-9]"));
-    return name.replace(regexp, QLatin1String("_"));
+    return name.replace(regexp, QStringLiteral("_"));
 }
 
 static bool checkIfViewsDefined(const Map *map)
@@ -217,7 +218,6 @@ bool GmxPlugin::write(const Map *map, const QString &fileName, Options options)
             // The type is used to refer to the name of the object
             stream.writeAttribute("objName", sanitizeName(type));
 
-            QPointF pos = object->position();
             qreal scaleX = 1;
             qreal scaleY = 1;
 
@@ -242,10 +242,10 @@ bool GmxPlugin::write(const Map *map, const QString &fileName, Options options)
                     }
                 }
 
-                // Tile objects have bottom-left origin in Tiled, so the
-                // position needs to be translated for top-left origin in
+                // Tile objects don't necessarily have top-left origin in Tiled,
+                // so the position needs to be translated for top-left origin in
                 // GameMaker, taking into account the rotation.
-                origin += QPointF(0, -object->height());
+                origin -= alignmentOffset(object->bounds(), object->alignment());
             }
 
             // Allow overriding the scale using custom properties
@@ -255,19 +255,19 @@ bool GmxPlugin::write(const Map *map, const QString &fileName, Options options)
             // Adjust the position based on the origin
             QTransform transform;
             transform.rotate(object->rotation());
-            pos += transform.map(origin);
+            const QPointF pos = object->position() + transform.map(origin);
 
             stream.writeAttribute("x", QString::number(qRound(pos.x())));
             stream.writeAttribute("y", QString::number(qRound(pos.y())));
 
             // Include object ID in the name when necessary because duplicates are not allowed
             if (object->name().isEmpty()) {
-                stream.writeAttribute("name", QString("inst_%1").arg(object->id()));
+                stream.writeAttribute("name", QStringLiteral("inst_%1").arg(object->id()));
             } else {
                 QString name = sanitizeName(object->name());
 
                 while (usedNames.contains(name))
-                    name += QString("_%1").arg(object->id());
+                    name += QStringLiteral("_%1").arg(object->id());
 
                 usedNames.insert(name);
                 stream.writeAttribute("name", name);
@@ -327,6 +327,10 @@ bool GmxPlugin::write(const Map *map, const QString &fileName, Options options)
                             scaleY = -1;
                             pixelY += tile->height();
                         }
+                        if (cell.flippedAntiDiagonally()) {
+                            Tiled::WARNING(QStringLiteral("GMX plugin: Rotated tiles are not supported."),
+                                           Tiled::JumpToTile { tileLayer->map(), QPoint(x, y), tileLayer });
+                        }
 
                         QString bgName;
                         int xo = 0;
@@ -337,8 +341,8 @@ bool GmxPlugin::write(const Map *map, const QString &fileName, Options options)
                         } else {
                             bgName = tileset->name();
 
-                            int xInTilesetGrid = tile->id() % tileset->columnCount();
-                            int yInTilesetGrid = static_cast<int>(tile->id() / tileset->columnCount());
+                            const int xInTilesetGrid = tile->id() % tileset->columnCount();
+                            const int yInTilesetGrid = static_cast<int>(tile->id() / tileset->columnCount());
 
                             xo = tileset->margin() + (tileset->tileSpacing() + tileset->tileWidth()) * xInTilesetGrid;
                             yo = tileset->margin() + (tileset->tileSpacing() + tileset->tileHeight()) * yInTilesetGrid;
@@ -440,7 +444,7 @@ bool GmxPlugin::write(const Map *map, const QString &fileName, Options options)
 
                     stream.writeEndElement();
                 } else {
-                    Tiled::WARNING(QString(QLatin1String("GMX plugin: Ignoring non-tile object %1 without type.")).arg(object->id()),
+                    Tiled::WARNING(QStringLiteral("GMX plugin: Ignoring non-tile object %1 without type.").arg(object->id()),
                                    Tiled::JumpToObject { object });
                 }
             }
@@ -449,7 +453,7 @@ bool GmxPlugin::write(const Map *map, const QString &fileName, Options options)
 
         case Layer::ImageLayerType:
             // todo: maybe export as backgrounds?
-            Tiled::WARNING(QString(QLatin1String("GMX plugin: Ignoring image layer \"%1\" (not currently supported).")).arg(layer->name()),
+            Tiled::WARNING(QStringLiteral("GMX plugin: Ignoring image layer \"%1\" (not currently supported).").arg(layer->name()),
                            Tiled::SelectLayer { layer });
             break;
 
@@ -492,5 +496,5 @@ QString GmxPlugin::nameFilter() const
 
 QString GmxPlugin::shortName() const
 {
-    return QLatin1String("gmx");
+    return QStringLiteral("gmx");
 }

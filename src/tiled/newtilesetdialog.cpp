@@ -116,6 +116,7 @@ void NewTilesetDialog::setImagePath(const QString &path)
 
     const QFileInfo fileInfo(path);
     if (fileInfo.isFile()) {
+        mUi->tilesetType->setCurrentIndex(TilesetImage);
         mUi->image->setText(path);
         mUi->name->setText(fileInfo.completeBaseName());
     }
@@ -333,3 +334,5 @@ void NewTilesetDialog::colorSelected(QColor color)
 {
     mUi->colorButton->setColor(color);
 }
+
+#include "moc_newtilesetdialog.cpp"

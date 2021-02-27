@@ -125,12 +125,12 @@ void ActionsModel::refreshConflicts()
     if (!mConflictsDirty)
         return;
 
-    QMap<QKeySequence, Id> actionsByKey;
+    QMultiMap<QKeySequence, Id> actionsByKey;
 
     for (const auto &actionId : qAsConst(mActions)) {
         if (auto action = ActionManager::findAction(actionId))
             if (!action->shortcut().isEmpty())
-                actionsByKey.insertMulti(action->shortcut(), actionId);
+                actionsByKey.insert(action->shortcut(), actionId);
     }
 
     QVector<bool> conflicts;
@@ -386,7 +386,7 @@ ShortcutEditor::ShortcutEditor(QWidget *parent)
     mResetButton->setIcon(QIcon(QLatin1String("://images/scalable/edit-undo-symbolic.svg")));
 
     auto layout = new QHBoxLayout(this);
-    layout->setMargin(0);
+    layout->setContentsMargins(0, 0, 0, 0);
     layout->setSpacing(0);
     layout->addWidget(mKeySequenceEdit);
     layout->addWidget(clearButton);
@@ -732,11 +732,11 @@ void ShortcutSettingsPage::exportShortcuts()
 
     xml.writeStartDocument();
     xml.writeDTD(QLatin1String("<!DOCTYPE KeyboardMappingScheme>"));
-    xml.writeComment(QString::fromLatin1(" Written by %1 %2, %3. ").
+    xml.writeComment(QStringLiteral(" Written by %1 %2, %3. ").
                      arg(QApplication::applicationDisplayName(),
                          QApplication::applicationVersion(),
                          QDateTime::currentDateTime().toString(Qt::ISODate)));
-    xml.writeStartElement(QLatin1String("mapping"));
+    xml.writeStartElement(QStringLiteral("mapping"));
 
     auto actions = ActionManager::actions();
     std::sort(actions.begin(), actions.end());
@@ -745,12 +745,12 @@ void ShortcutSettingsPage::exportShortcuts()
         const auto action = ActionManager::action(actionId);
         const auto shortcut = action->shortcut();
 
-        xml.writeStartElement(QLatin1String("shortcut"));
-        xml.writeAttribute(QLatin1String("id"), actionId.toString());
+        xml.writeStartElement(QStringLiteral("shortcut"));
+        xml.writeAttribute(QStringLiteral("id"), actionId.toString());
 
         if (!shortcut.isEmpty()) {
             xml.writeEmptyElement(QLatin1String("key"));
-            xml.writeAttribute(QLatin1String("value"), shortcut.toString());
+            xml.writeAttribute(QStringLiteral("value"), shortcut.toString());
         }
 
         xml.writeEndElement();  // shortcut
@@ -769,3 +769,4 @@ void ShortcutSettingsPage::exportShortcuts()
 } // namespace Tiled
 
 #include "shortcutsettingspage.moc"
+#include "moc_shortcutsettingspage.cpp"

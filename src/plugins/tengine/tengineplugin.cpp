@@ -31,6 +31,9 @@
 #include <QCoreApplication>
 #include <QHash>
 #include <QList>
+#if QT_VERSION >= QT_VERSION_CHECK(6,0,0)
+#include <QStringView>
+#endif
 #include <QTextStream>
 
 #include <QtMath>
@@ -54,9 +57,17 @@ bool TenginePlugin::write(const Tiled::Map *map, const QString &fileName, Option
     }
     QTextStream out(file.device());
 
+#if QT_VERSION >= QT_VERSION_CHECK(5,14,0)
+    using Qt::endl;
+#endif
+
     // Write the header
     const QString header = map->property("header").toString();
+#if QT_VERSION >= QT_VERSION_CHECK(6,0,0)
+    const auto lines = QStringView(header).split(QStringLiteral("\\n"));
+#else
     const auto lines = header.splitRef("\\n");
+#endif
     for (const auto &line : lines)
         out << line << endl;
 
@@ -298,7 +309,7 @@ QString TenginePlugin::nameFilter() const
 
 QString TenginePlugin::shortName() const
 {
-    return QLatin1String("te4");
+    return QStringLiteral("te4");
 }
 
 QString TenginePlugin::errorString() const

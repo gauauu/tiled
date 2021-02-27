@@ -29,6 +29,7 @@
 #include "mapobject.h"
 #include "mapobjectitem.h"
 #include "maprenderer.h"
+#include "mapscene.h"
 #include "mapview.h"
 #include "objectgroupitem.h"
 #include "objectselectionitem.h"
@@ -80,12 +81,14 @@ public:
                 this, [this] (const ChangeEvent &change) {
             if (change.type == ChangeEvent::LayerChanged) {
                 auto &layerChange = static_cast<const LayerChangeEvent&>(change);
-                if (layerChange.properties & LayerChangeEvent::OffsetProperty)
+                if (layerChange.properties & LayerChangeEvent::PositionProperties)
                     if (Layer *currentLayer = mMapDocument->currentLayer())
                         if (currentLayer->isParentOrSelf(layerChange.layer))
-                            update();
+                            updateOffset();
             }
         });
+        connect(mapDocument, &MapDocument::currentLayerChanged,
+                this, &TileGridItem::updateOffset);
 
         setVisible(prefs->showGrid());
     }
@@ -98,22 +101,29 @@ public:
 
     void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *) override
     {
-        QPointF offset;
-
         // Take into account the offset of the current layer
-        if (Layer *layer = mMapDocument->currentLayer()) {
-            offset = layer->totalOffset();
-            painter->translate(offset);
-        }
+        painter->translate(mOffset);
 
         Preferences *prefs = Preferences::instance();
         mMapDocument->renderer()->drawGrid(painter,
-                                           option->exposedRect.translated(-offset),
+                                           option->exposedRect.translated(-mOffset),
                                            prefs->gridColor());
+    }
+
+    void updateOffset()
+    {
+        if (Layer *currentLayer = mMapDocument->currentLayer()) {
+            QPointF offset = static_cast<MapScene*>(scene())->absolutePositionForLayer(*currentLayer);
+            if (mOffset != offset) {
+                mOffset = offset;
+                update();
+            }
+        }
     }
 
 private:
     MapDocument *mMapDocument;
+    QPointF mOffset;
 };
 
 MapItem::MapItem(const MapDocumentPtr &mapDocument, DisplayMode displayMode,
@@ -248,6 +258,22 @@ void MapItem::setShowTileCollisionShapes(bool enabled)
             item->update();
 }
 
+void MapItem::updateLayerPositions()
+{
+    const MapScene *mapScene = static_cast<MapScene*>(scene());
+
+    for (LayerItem *item : qAsConst(mLayerItems)) {
+        const Layer &layer = *item->layer();
+        item->setPos(layer.offset() + mapScene->parallaxOffset(layer));
+    }
+
+    if (mDisplayMode == Editable) {
+        mTileSelectionItem->updatePosition();
+        mTileGridItem->updateOffset();
+        mObjectSelectionItem->updateItemPositions();
+    }
+}
+
 QRectF MapItem::boundingRect() const
 {
     return mBoundingRect;
@@ -343,9 +369,11 @@ void MapItem::documentChanged(const ChangeEvent &change)
     case ChangeEvent::LayerChanged:
         layerChanged(static_cast<const LayerChangeEvent&>(change));
         break;
-    case ChangeEvent::MapObjectsAboutToBeRemoved:
-        deleteObjectItems(static_cast<const MapObjectsEvent&>(change).mapObjects);
+    case ChangeEvent::MapObjectAboutToBeRemoved: {
+        auto &e = static_cast<const MapObjectEvent&>(change);
+        deleteObjectItem(e.objectGroup->objectAt(e.index));
         break;
+    }
     case ChangeEvent::MapObjectsChanged:
         syncObjectItems(static_cast<const MapObjectsChangeEvent&>(change).mapObjects);
         break;
@@ -414,8 +442,8 @@ void MapItem::layerRemoved(Layer *layer)
 }
 
 /**
- * A layer has changed. This can mean that the layer visibility, opacity or
- * offset changed.
+ * A layer has changed. This can mean that the layer visibility, opacity,
+ * offset or parallax factor changed.
  */
 void MapItem::layerChanged(const LayerChangeEvent &change)
 {
@@ -450,8 +478,10 @@ void MapItem::layerChanged(const LayerChangeEvent &change)
             multiplier = opacityFactor;
     }
 
+    const QPointF parallaxOffset = static_cast<MapScene*>(scene())->parallaxOffset(*layer);
+
     layerItem->setOpacity(layer->opacity() * multiplier);
-    layerItem->setPos(layer->offset());
+    layerItem->setPos(layer->offset() + parallaxOffset);
 
     updateBoundingRect();   // possible layer offset change
 }
@@ -563,15 +593,11 @@ void MapItem::objectsInserted(ObjectGroup *objectGroup, int first, int last)
 /**
  * Removes the map object items related to the given objects.
  */
-void MapItem::deleteObjectItems(const QList<MapObject*> &objects)
+void MapItem::deleteObjectItem(MapObject *object)
 {
-    for (MapObject *o : objects) {
-        auto i = mObjectItems.find(o);
-        Q_ASSERT(i != mObjectItems.end());
-
-        delete i.value();
-        mObjectItems.erase(i);
-    }
+    auto item = mObjectItems.take(object);
+    Q_ASSERT(item);
+    delete item;
 }
 
 /**
@@ -802,3 +828,4 @@ void MapItem::updateSelectedLayersHighlight()
 } // namespace Tiled
 
 #include "mapitem.moc"
+#include "moc_mapitem.cpp"

@@ -4,6 +4,27 @@ TMX Changelog
 Below are described the changes/additions that were made to the
 :doc:`tmx-map-format` for recent versions of Tiled.
 
+Tiled 1.5
+---------
+
+-  The colors that are part of a :ref:`tmx-wangset` are no longer separated in
+   corner colors and edge colors. Instead, there is now a single
+   :ref:`tmx-wangcolor` element to define a Wang color. This new element also
+   stores :ref:`tmx-properties`.
+
+-  The ``wangid`` attribute on the :ref:`tmx-wangtile` element is now stored as
+   a comma-separated list of values, instead of a 32-bit unsigned integer in
+   hex format. This is because the number of colors supported in a Wang set was
+   increased from 15 to 255.
+
+-  Valid transformations of tiles in a set (flipping, rotation) are specified
+   in a :ref:`tmx-tileset-transformations` element. The partial support for the
+   ``vflip``, ``hflip`` and ``dflip`` attributes on the :ref:`tmx-wangtile`
+   element has been removed.
+
+-  The :ref:`tmx-wangset` element has replaced the now deprecated
+   :ref:`tmx-terraintypes` element.
+
 Tiled 1.4
 ---------
 

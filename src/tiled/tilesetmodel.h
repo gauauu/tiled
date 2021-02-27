@@ -21,13 +21,13 @@
 
 #pragma once
 
+#include "tile.h"
+
 #include <QAbstractListModel>
 
 namespace Tiled {
 
-class Tile;
 class Tileset;
-
 
 /**
  * A model wrapping a tileset of a map. Used to display the tiles.
@@ -37,13 +37,6 @@ class TilesetModel : public QAbstractListModel
     Q_OBJECT
 
 public:
-    /**
-     * The TerrainRole allows querying the terrain info.
-     */
-    enum UserRoles {
-        TerrainRole = Qt::UserRole
-    };
-
     /**
      * Constructor.
      *
@@ -121,7 +114,7 @@ public slots:
      * Tiles that are not from the tileset displayed by this model are simply
      * ignored. All tiles in the list are assumed to be from the same tileset.
      *
-     * \sa TilesetDocument::tileTerrainChanged
+     * \sa TilesetDocument::tileWangSetChanged
      */
     void tilesChanged(const QList<Tile*> &tiles);
 

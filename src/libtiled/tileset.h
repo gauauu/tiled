@@ -36,7 +36,6 @@
 #include <QList>
 #include <QPixmap>
 #include <QPoint>
-#include <QPointer>
 #include <QSharedPointer>
 #include <QString>
 #include <QVector>
@@ -49,8 +48,6 @@ namespace Tiled {
 
 class Tile;
 class Tileset;
-class TilesetFormat;
-class Terrain;
 class WangSet;
 
 typedef QSharedPointer<Tileset> SharedTileset;
@@ -68,8 +65,7 @@ class TILEDSHARED_EXPORT Tileset : public Object
 public:
     /**
      * The orientation of the tileset determines the projection used in the
-     * TileCollisionDock and for the terrain information overlay of the
-     * TilesetView.
+     * TileCollisionDock and for the Wang color overlay of the TilesetView.
      */
     enum Orientation {
         Orthogonal,
@@ -113,8 +109,8 @@ public:
     void setFileName(const QString &fileName);
     bool isExternal() const;
 
-    void setFormat(TilesetFormat *format);
-    TilesetFormat *format() const;
+    void setFormat(const QString &format);
+    QString format() const;
 
     int tileWidth() const;
     int tileHeight() const;
@@ -181,26 +177,13 @@ public:
     int columnCountForWidth(int width) const;
     int rowCountForHeight(int height) const;
 
-    const QList<Terrain*> &terrains() const;
-    int terrainCount() const;
-    Terrain *terrain(int index) const;
-
-    Terrain *addTerrain(const QString &name, int imageTileId);
-    void insertTerrain(int index, Terrain *terrain);
-    Terrain *takeTerrainAt(int index);
-    void swapTerrains(int index, int swapIndex);
-
-    int terrainTransitionPenalty(int terrainType0, int terrainType1) const;
-    int maximumTerrainDistance() const;
-
     const QList<WangSet*> &wangSets() const;
     int wangSetCount() const;
     WangSet *wangSet(int index) const;
 
-    void addWangSet(WangSet *wangSet);
     void addWangSet(std::unique_ptr<WangSet> wangSet);
-    void insertWangSet(int index, WangSet *wangSet);
-    WangSet *takeWangSetAt(int index);
+    void insertWangSet(int index, std::unique_ptr<WangSet> wangSet);
+    std::unique_ptr<WangSet> takeWangSetAt(int index);
 
     Tile *addTile(const QPixmap &image, const QUrl &source = QUrl());
     void addTiles(const QList<Tile*> &tiles);
@@ -215,8 +198,6 @@ public:
                       const QPixmap &image,
                       const QUrl &source = QUrl());
 
-    void markTerrainDistancesDirty();
-
     SharedTileset sharedPointer() const;
 
     void setOriginalTileset(const SharedTileset &original);
@@ -226,6 +207,18 @@ public:
     void setImageStatus(LoadingStatus status);
     LoadingStatus status() const;
     LoadingStatus imageStatus() const;
+
+    enum TransformationFlag {
+        NoTransformation        = 0,
+        AllowFlipHorizontally   = 1 << 0,
+        AllowFlipVertically     = 1 << 1,
+        AllowRotate             = 1 << 2,
+        PreferUntransformed     = 1 << 3,
+    };
+    Q_DECLARE_FLAGS(TransformationFlags, TransformationFlag)
+
+    TransformationFlags transformationFlags() const;
+    void setTransformationFlags(TransformationFlags flags);
 
     void swap(Tileset &other);
 
@@ -250,7 +243,6 @@ public:
 
 private:
     void updateTileSize();
-    void recalculateTerrainDistances();
 
     QString mName;
     QString mFileName;
@@ -267,14 +259,12 @@ private:
     int mExpectedColumnCount;
     int mExpectedRowCount;
     int mNextTileId;
-    int mMaximumTerrainDistance;
     QMap<int, Tile*> mTiles;
-    QList<Terrain*> mTerrainTypes;
     QList<WangSet*> mWangSets;
-    bool mTerrainDistancesDirty;
     LoadingStatus mStatus;
     QColor mBackgroundColor;
-    QPointer<TilesetFormat> mFormat;
+    QString mFormat;
+    TransformationFlags mTransformationFlags;
 
     QWeakPointer<Tileset> mWeakPointer;
     QWeakPointer<Tileset> mOriginalTileset;
@@ -572,30 +562,6 @@ inline bool Tileset::isCollection() const
     return imageSource().isEmpty();
 }
 
-/**
- * Returns a const reference to the list of terrains in this tileset.
- */
-inline const QList<Terrain *> &Tileset::terrains() const
-{
-    return mTerrainTypes;
-}
-
-/**
- * Returns the number of terrain types in this tileset.
- */
-inline int Tileset::terrainCount() const
-{
-    return mTerrainTypes.size();
-}
-
-/**
- * Returns the terrain type at the given \a index.
- */
-inline Terrain *Tileset::terrain(int index) const
-{
-    return index >= 0 ? mTerrainTypes[index] : nullptr;
-}
-
 inline const QList<WangSet*> &Tileset::wangSets() const
 {
     return mWangSets;
@@ -634,14 +600,6 @@ inline int Tileset::nextTileId() const
 inline int Tileset::takeNextTileId()
 {
     return mNextTileId++;
-}
-
-/**
- * Used by the Tile class when its terrain information changes.
- */
-inline void Tileset::markTerrainDistancesDirty()
-{
-    mTerrainDistancesDirty = true;
 }
 
 inline SharedTileset Tileset::sharedPointer() const
@@ -685,7 +643,19 @@ inline LoadingStatus Tileset::imageStatus() const
     return mImageReference.status;
 }
 
+inline Tileset::TransformationFlags Tileset::transformationFlags() const
+{
+    return mTransformationFlags;
+}
+
+inline void Tileset::setTransformationFlags(TransformationFlags flags)
+{
+    mTransformationFlags = flags;
+}
+
 } // namespace Tiled
 
 Q_DECLARE_METATYPE(Tiled::Tileset*)
 Q_DECLARE_METATYPE(Tiled::SharedTileset)
+
+Q_DECLARE_OPERATORS_FOR_FLAGS(Tiled::Tileset::TransformationFlags)

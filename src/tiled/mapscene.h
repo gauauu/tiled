@@ -40,6 +40,7 @@ class TileLayer;
 class Tileset;
 
 class AbstractTool;
+class DebugDrawItem;
 class LayerItem;
 class MapDocument;
 class MapObjectItem;
@@ -61,6 +62,7 @@ public:
     void setMapDocument(MapDocument *map);
 
     void setShowTileCollisionShapes(bool enabled);
+    void setParallaxEnabled(bool enabled);
 
     QRectF mapBoundingRect() const;
 
@@ -68,10 +70,20 @@ public:
 
     MapItem *mapItem(MapDocument *mapDocument) const;
 
+    DebugDrawItem *debugDrawItem() const;
+
+    const QRectF &viewRect() const;
+    void setViewRect(const QRectF &rect);
+
+    QPointF absolutePositionForLayer(const Layer &layer) const;
+    QPointF parallaxOffset(const Layer &layer) const;
+
 signals:
     void mapDocumentChanged(MapDocument *mapDocument);
 
     void sceneRefreshed();
+
+    void parallaxParametersChanged();
 
 protected:
     bool event(QEvent *event) override;
@@ -106,10 +118,13 @@ private:
     MapDocument *mMapDocument = nullptr;
     QHash<MapDocument*, MapItem*> mMapItems;
     AbstractTool *mSelectedTool = nullptr;
+    DebugDrawItem *mDebugDrawItem = nullptr;
     bool mUnderMouse = false;
     bool mShowTileCollisionShapes = false;
+    bool mParallaxEnabled = true;
     Qt::KeyboardModifiers mCurrentModifiers = Qt::NoModifier;
     QPointF mLastMousePos;
+    QRectF mViewRect;
     QColor mDefaultBackgroundColor;
 };
 
@@ -127,6 +142,16 @@ inline MapDocument *MapScene::mapDocument() const
 inline MapItem *MapScene::mapItem(MapDocument *mapDocument) const
 {
     return mMapItems.value(mapDocument);
+}
+
+inline DebugDrawItem *MapScene::debugDrawItem() const
+{
+    return mDebugDrawItem;
+}
+
+inline const QRectF &MapScene::viewRect() const
+{
+    return mViewRect;
 }
 
 } // namespace Tiled

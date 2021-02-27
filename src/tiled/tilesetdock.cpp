@@ -40,7 +40,6 @@
 #include "session.h"
 #include "swaptiles.h"
 #include "tabbar.h"
-#include "terrain.h"
 #include "tile.h"
 #include "tilelayer.h"
 #include "tilesetdocument.h"
@@ -55,6 +54,7 @@
 #include "zoomable.h"
 
 #include <QAction>
+#include <QActionGroup>
 #include <QComboBox>
 #include <QDropEvent>
 #include <QFileDialog>
@@ -209,7 +209,7 @@ TilesetDock::TilesetDock(QWidget *parent)
 
     QVBoxLayout *vertical = new QVBoxLayout(w);
     vertical->setSpacing(0);
-    vertical->setMargin(0);
+    vertical->setContentsMargins(0, 0, 0, 0);
     vertical->addLayout(horizontal);
     vertical->addWidget(mSuperViewStack);
 
@@ -678,10 +678,15 @@ void TilesetDock::replaceTileset()
     if (currentIndex == -1)
         return;
 
+    replaceTilesetAt(currentIndex);
+}
+
+void TilesetDock::replaceTilesetAt(int index)
+{
     if (!mMapDocument)
         return;
 
-    auto &sharedTileset = mTilesets.at(currentIndex);
+    auto &sharedTileset = mTilesets.at(index);
     int mapTilesetIndex = mMapDocument->map()->tilesets().indexOf(sharedTileset);
     if (mapTilesetIndex == -1)
         return;
@@ -694,8 +699,8 @@ void TilesetDock::replaceTileset()
 
     FormatHelper<TilesetFormat> helper(FileFormat::Read, filter);
 
-    Preferences *prefs = Preferences::instance();
-    QString start = prefs->lastPath(Preferences::ExternalTileset);
+    Session &session = Session::current();
+    QString start = session.lastPath(Session::ExternalTileset);
 
     const auto fileName =
             QFileDialog::getOpenFileName(this, tr("Replace Tileset"),
@@ -706,7 +711,7 @@ void TilesetDock::replaceTileset()
     if (fileName.isEmpty())
         return;
 
-    prefs->setLastPath(Preferences::ExternalTileset, QFileInfo(fileName).path());
+    session.setLastPath(Session::ExternalTileset, QFileInfo(fileName).path());
 
     lastUsedTilesetFilter = selectedFilter;
 
@@ -716,6 +721,10 @@ void TilesetDock::replaceTileset()
         QMessageBox::critical(window(), tr("Error Reading Tileset"), error);
         return;
     }
+
+    // Don't try to replace a tileset with itself
+    if (tileset == sharedTileset)
+        return;
 
     QUndoCommand *command = new ReplaceTileset(mMapDocument,
                                                mapTilesetIndex,
@@ -922,8 +931,12 @@ void TilesetDock::tabContextMenuRequested(const QPoint &pos)
     const QString fileName = mTilesetDocuments.at(index)->fileName();
     Utils::addFileManagerActions(menu, fileName);
 
-    if (!menu.isEmpty())
-        menu.exec(mTabBar->mapToGlobal(pos));
+    menu.addSeparator();
+    menu.addAction(mEditTileset->icon(), mEditTileset->text(), this, [tileset = mTilesets.at(index)] {
+        DocumentManager::instance()->openTileset(tileset);
+    });
+
+    menu.exec(mTabBar->mapToGlobal(pos));
 }
 
 void TilesetDock::setCurrentTileset(const SharedTileset &tileset)
@@ -935,7 +948,7 @@ void TilesetDock::setCurrentTileset(const SharedTileset &tileset)
 
 SharedTileset TilesetDock::currentTileset() const
 {
-    const int index = mTabBar->currentIndex();
+    const int index = mViewStack->currentIndex();
     if (index == -1)
         return {};
 
@@ -944,7 +957,7 @@ SharedTileset TilesetDock::currentTileset() const
 
 TilesetDocument *TilesetDock::currentTilesetDocument() const
 {
-    const int index = mTabBar->currentIndex();
+    const int index = mViewStack->currentIndex();
     if (index == -1)
         return nullptr;
 
@@ -1065,9 +1078,9 @@ void TilesetDock::exportTileset()
 
     FormatHelper<TilesetFormat> helper(FileFormat::ReadWrite);
 
-    Preferences *prefs = Preferences::instance();
+    Session &session = Session::current();
 
-    QString suggestedFileName = prefs->lastPath(Preferences::ExternalTileset);
+    QString suggestedFileName = session.lastPath(Session::ExternalTileset);
     suggestedFileName += QLatin1Char('/');
     suggestedFileName += externalTileset->name();
 
@@ -1085,8 +1098,8 @@ void TilesetDock::exportTileset()
     if (fileName.isEmpty())
         return;
 
-    prefs->setLastPath(Preferences::ExternalTileset,
-                       QFileInfo(fileName).path());
+    session.setLastPath(Session::ExternalTileset,
+                        QFileInfo(fileName).path());
 
     TilesetFormat *format = helper.formatByNameFilter(selectedFilter);
     if (!format)
@@ -1101,7 +1114,7 @@ void TilesetDock::exportTileset()
     }
 
     externalTileset->setFileName(fileName);
-    externalTileset->setFormat(format);
+    externalTileset->setFormat(format->shortName());
 
     QUndoCommand *command = new ReplaceTileset(mMapDocument,
                                                mapTilesetIndex,
@@ -1187,6 +1200,9 @@ void TilesetDock::refreshTilesetMenu()
         if (i == currentIndex)
             action->setChecked(true);
     }
+
+    mTilesetMenu->addSeparator();
+    mTilesetMenu->addAction(ActionManager::action("AddExternalTileset"));
 }
 
 void TilesetDock::swapTiles(Tile *tileA, Tile *tileB)
@@ -1199,3 +1215,4 @@ void TilesetDock::swapTiles(Tile *tileA, Tile *tileB)
 }
 
 #include "tilesetdock.moc"
+#include "moc_tilesetdock.cpp"

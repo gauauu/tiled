@@ -31,6 +31,8 @@
 
 #include "objecttemplateformat.h"
 
+#include <QFileInfo>
+
 namespace Tiled {
 
 ObjectTemplate::ObjectTemplate()
@@ -78,14 +80,19 @@ void ObjectTemplate::setObject(std::unique_ptr<MapObject> object)
         mTileset.reset();
 }
 
-void ObjectTemplate::setFormat(ObjectTemplateFormat *format)
+bool ObjectTemplate::save()
 {
-    mFormat = format;
-}
+    auto format = findFileFormat<ObjectTemplateFormat>(mFormat);
+    if (!format)
+        return false;
+    if (mFileName.isEmpty())
+        return false;
 
-ObjectTemplateFormat *ObjectTemplate::format() const
-{
-    return mFormat;
+    const bool result = format->write(this, mFileName);
+
+    mLastSaved = QFileInfo(mFileName).lastModified();
+
+    return result;
 }
 
 } // namespace Tiled

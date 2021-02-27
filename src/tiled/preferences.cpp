@@ -134,6 +134,11 @@ bool Preferences::showObjectReferences() const
     return get("Interface/ShowObjectReferences", true);
 }
 
+bool Preferences::parallaxEnabled() const
+{
+    return get("Interface/ParallaxEnabled", true);
+}
+
 bool Preferences::snapToGrid() const
 {
     return get("Interface/SnapToGrid", false);
@@ -272,6 +277,12 @@ void Preferences::setShowObjectReferences(bool enabled)
 {
     setValue(QLatin1String("Interface/ShowObjectReferences"), enabled);
     emit showObjectReferencesChanged(enabled);
+}
+
+void Preferences::setParallaxEnabled(bool enabled)
+{
+    setValue(QLatin1String("Interface/ParallaxEnabled"), enabled);
+    emit parallaxEnabledChanged(enabled);
 }
 
 void Preferences::setSnapToGrid(bool snapToGrid)
@@ -453,76 +464,6 @@ void Preferences::setObjectTypes(const ObjectTypes &objectTypes)
     emit objectTypesChanged();
 }
 
-static QString lastPathKey(Preferences::FileType fileType)
-{
-    QString key = QLatin1String("LastPaths/");
-
-    switch (fileType) {
-    case Preferences::ExportedFile:
-        key.append(QLatin1String("ExportedFile"));
-        break;
-    case Preferences::ExternalTileset:
-        key.append(QLatin1String("ExternalTileset"));
-        break;
-    case Preferences::ImageFile:
-        key.append(QLatin1String("Images"));
-        break;
-    case Preferences::ObjectTemplateFile:
-        key.append(QLatin1String("ObjectTemplates"));
-        break;
-    case Preferences::ObjectTypesFile:
-        key.append(QLatin1String("ObjectTypes"));
-        break;
-    case Preferences::ProjectFile:
-        key.append(QLatin1String("Project"));
-        break;
-    case Preferences::WorldFile:
-        key.append(QLatin1String("WorldFile"));
-        break;
-    }
-
-    return key;
-}
-
-/**
- * Returns the last location of a file chooser for the given file type. As long
- * as it was set using setLastPath().
- *
- * When no last path for this file type exists yet, the path of the currently
- * selected map is returned.
- *
- * When no map is open, the user's 'Documents' folder is returned.
- */
-QString Preferences::lastPath(FileType fileType) const
-{
-    QString path = value(lastPathKey(fileType)).toString();
-
-    if (path.isEmpty()) {
-        DocumentManager *documentManager = DocumentManager::instance();
-        Document *document = documentManager->currentDocument();
-        if (document)
-            path = QFileInfo(document->fileName()).path();
-    }
-
-    if (path.isEmpty()) {
-        path = QStandardPaths::writableLocation(
-                    QStandardPaths::DocumentsLocation);
-    }
-
-    return path;
-}
-
-/**
- * \see lastPath()
- */
-void Preferences::setLastPath(FileType fileType, const QString &path)
-{
-    if (path.isEmpty())
-        return;
-
-    setValue(lastPathKey(fileType), path);
-}
-
 QDate Preferences::firstRun() const
 {
     return get<QDate>("Install/FirstRun");
@@ -570,18 +511,6 @@ void Preferences::setDonationDialogReminder(const QDate &date)
     setValue(QLatin1String("Install/DonationDialogTime"), date.toString(Qt::ISODate));
 }
 
-QString Preferences::fileDialogStartLocation() const
-{
-    const auto &session = Session::current();
-    if (!session.activeFile.isEmpty())
-        return QFileInfo(session.activeFile).path();
-
-    if (!session.recentFiles.isEmpty())
-        return QFileInfo(session.recentFiles.first()).path();
-
-    return QStandardPaths::writableLocation(QStandardPaths::HomeLocation);
-}
-
 /**
  * Adds the given file to the recent files list.
  */
@@ -596,10 +525,22 @@ QStringList Preferences::recentProjects() const
     return get<QStringList>("Project/RecentProjects");
 }
 
+QString Preferences::recentProjectPath() const
+{
+    QString path;
+
+    const auto recents = recentProjects();
+    if (!recents.isEmpty())
+        path = QFileInfo(recents.first()).path();
+
+    if (path.isEmpty())
+        path = homeLocation();
+
+    return path;
+}
+
 void Preferences::addRecentProject(const QString &fileName)
 {
-    setLastPath(ProjectFile, fileName);
-
     auto files = get<QStringList>("Project/RecentProjects");
     addToRecentFileList(fileName, files);
     setValue(QLatin1String("Project/RecentProjects"), files);
@@ -619,7 +560,14 @@ QString Preferences::startupSession() const
 
 void Preferences::setLastSession(const QString &fileName)
 {
-    setValue(QLatin1String("Project/LastSession"), fileName);
+    // Don't store the path to the default session, since this path may vary
+    // between restarts. For example the snap release includes the build
+    // number in the path and trying to save to a session file for a different
+    // version doesn't work.
+    if (fileName == Session::defaultFileName())
+        setValue(QLatin1String("Project/LastSession"), QString());
+    else
+        setValue(QLatin1String("Project/LastSession"), fileName);
 }
 
 bool Preferences::restoreSessionOnStartup() const
@@ -720,6 +668,11 @@ void Preferences::setWheelZoomsByDefault(bool mode)
     setValue(QLatin1String("Interface/WheelZoomsByDefault"), mode);
 }
 
+QString Preferences::homeLocation()
+{
+    return QStandardPaths::writableLocation(QStandardPaths::HomeLocation);
+}
+
 QString Preferences::dataLocation()
 {
     return QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
@@ -786,3 +739,5 @@ void Preferences::objectTypesFileChangedOnDisk()
     if (ObjectTypesSerializer().readObjectTypes(fileInfo.filePath(), objectTypes))
         setObjectTypes(objectTypes);
 }
+
+#include "moc_preferences.cpp"

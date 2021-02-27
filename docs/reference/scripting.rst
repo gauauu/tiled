@@ -1,6 +1,6 @@
 .. raw:: html
 
-   <div class="new">New in Tiled 1.3</div>
+   <div class="new new-prev">Since Tiled 1.3</div>
 
 .. |ro| replace:: *[read‑only]*
 
@@ -718,9 +718,168 @@ GroupLayer.insertLayerAt(index : int, layer : :ref:`script-layer`) : void
     Inserts the layer at the given index. The layer can't already be part of
     a map.
 
+    When adding a :ref:`script-tilelayer` to a map, the layer's width and
+    height are automatically initialized to the size of the map (since Tiled 1.4.2).
+
 GroupLayer.addLayer(layer : :ref:`script-layer`) : void
     Adds the layer to the group, above all existing layers. The layer can't
     already be part of a map.
+
+    When adding a :ref:`script-tilelayer` to a map, the layer's width and
+    height are automatically initialized to the size of the map (since Tiled 1.4.2).
+
+.. raw:: html
+
+   <div class="new">New in Tiled 1.5</div>
+
+.. _script-image:
+
+Image
+^^^^^
+
+Can be used to create, load, save and modify images. Also useful when writing
+an importer, where the image can be set on a tileset or its tiles (see :ref:`Tileset.loadFromImage <script-tileset-loadFromImage>` and :ref:`Tile.setImage <script-tile-setImage>`).
+
+Properties
+~~~~~~~~~~
+
+.. csv-table::
+    :widths: 1, 2
+
+    **width** : int, Width of the image in pixels.
+    **height** : int, Height of the image in pixels.
+    **depth** : int, Number of bits used to store a single pixel.
+    **size** : :ref:`script-size`, Size of the image in pixels.
+    **format** : :ref:`Format <script-image-format>`, Format of the image.
+
+Functions
+~~~~~~~~~
+
+new Image()
+    Constructs an empty image.
+
+new Image(width : int, height : int, format : :ref:`Format <script-image-format>`)
+    Constructs an image of the given size using the given format.
+
+new Image(data : ArrayBuffer, width : int, height : int, format : :ref:`Format <script-image-format>`)
+    Constructs an image from the given data, interpreting it in the specified format and size.
+
+new Image(data : ArrayBuffer, width : int, height : int, bytesPerLine : int, format : :ref:`Format <script-image-format>`)
+    Constructs an image from the given data, interpreting it in the specified format and size.
+    The `bytesPerLine` argument specifies the stride and can be useful for referencing a sub-image.
+
+new Image(fileName : string [, format : string])
+    Construct an image by loading it from the given file name.
+    When no format is given it will be auto-detected (can be "bmp", "png", etc.).
+
+Image.pixel(x : int, y : int) : uint
+    Returns the 32-bit color value.
+
+Image.pixelColor(x : int, y : int) : color
+    Returns the color at the given position as string like "#rrggbb".
+
+Image.setPixel(x : int, y : int, index_or_rgb : uint) : void
+    Sets the color at the specified location to the given 32-bit color value or color table index.
+
+Image.setPixelColor(x : int, y : int, color : color) : void
+    Sets the color at the specified location to the given color by string (supports values like "#rrggbb").
+
+Image.fill(index_or_rgb : uint) : void
+    Fills the image with the given 32-bit color value or color table index.
+
+Image.fill(color : color) : void
+    Fills the image with the given color by string (supports values like "#rrggbb").
+
+Image.load(fileName : string [, format : string]) : bool
+    Loads the image from the given file name.
+    When no format is given it will be auto-detected (can be "bmp", "png", etc.).
+
+Image.loadFromData(data : ArrayBuffer, format: string) : bool
+    Loads the image from the given data interpreted with the given format (can be "bmp", png", etc.).
+
+Image.save(fileName : string [, format : string [, quality : int ]]) : bool
+    Saves the image to the given file.
+    When no format is given it will be auto-detected based on the file extension.
+
+Image.saveToData(format : string [, quality : int ]) : ArrayBuffer
+    Saves the image to an ArrayBuffer in the given format (can be "bmp", png", etc.).
+
+Image.color(index : int) : uint
+    Returns the 32-bit color value at the given index in the color table.
+
+Image.colorTable() : array
+    Returns the color table as an array of 32-bit color values.
+
+Image.setColor(index : int, rgb : uint) : void
+    Sets the color at the given index in the color table to a given 32-bit color value.
+
+Image.setColor(index : int, color : color) : void
+    Sets the color at the given index in the color table to a color by string (supports values like "#rrggbb").
+
+Image.setColorTable(colors : array) : void
+    Sets the color table given by an array of either 32-bit color values or strings (supports values like "#rrggbb").
+
+Image.copy(x : int, y : int, width : int, height : int) : Image
+    Copies the given rectangle to a new image object.
+
+Image.scaled(width : int, height : int [, aspectRatioMode : :ref:`AspectRatioMode <script-image-aspectRatioMode>` [, transformationMode : :ref:`TransformationMode <script-image-transformationMode>`]]) : Image
+    Returns a scaled copy of this image. Default ``aspectRatioMode`` behavior is to ignore the aspect ratio. Default ``mode`` is a fast transformation.
+
+Image.mirrored(horizontal : bool, vertical : bool) : Image
+    Returns a mirrored copy of this image.
+
+.. _script-image-format:
+
+.. csv-table::
+    :header: "Image.Format"
+
+    Image.Format_Invalid
+    Image.Format_Mono
+    Image.Format_MonoLSB
+    Image.Format_Indexed8
+    Image.Format_RGB32
+    Image.Format_ARGB32
+    Image.Format_ARGB32_Premultiplied
+    Image.Format_RGB16
+    Image.Format_ARGB8565_Premultiplied
+    Image.Format_RGB666
+    Image.Format_ARGB6666_Premultiplied
+    Image.Format_RGB555
+    Image.Format_ARGB8555_Premultiplied
+    Image.Format_RGB888
+    Image.Format_RGB444
+    Image.Format_ARGB4444_Premultiplied
+    Image.Format_RGBX8888
+    Image.Format_RGBA8888
+    Image.Format_RGBA8888_Premultiplied
+    Image.Format_BGR30
+    Image.Format_A2BGR30_Premultiplied
+    Image.Format_RGB30
+    Image.Format_A2RGB30_Premultiplied
+    Image.Format_Alpha8
+    Image.Format_Grayscale8
+    Image.Format_RGBX64
+    Image.Format_RGBA64
+    Image.Format_RGBA64_Premultiplied
+    Image.Format_Grayscale16
+    Image.Format_BGR888
+
+.. _script-image-aspectRatioMode:
+
+.. csv-table::
+    :header: "Image.AspectRatioMode"
+
+    Image.IgnoreAspectRatio
+    Image.KeepAspectRatio
+    Image.KeepAspectRatioByExpanding
+
+.. _script-image-transformationMode:
+
+.. csv-table::
+    :header: "Image.TransformationMode"
+
+    Image.FastTransformation
+    Image.SmoothTransformation
 
 .. _script-imagelayer:
 
@@ -738,6 +897,20 @@ Properties
     **transparentColor** : color, Color used as transparent color when rendering the image.
     **imageSource** : url, Reference to the image rendered by this layer.
 
+Functions
+~~~~~~~~~
+
+new ImageLayer([name : string])
+    Constructs a new image layer.
+
+.. _script-imagelayer-loadFromImage:
+
+ImageLayer.loadFromImage(image : :ref:`script-image` [, source: url]) : void
+    Sets the image for this layer to the given image, optionally also setting
+    the source of the image.
+
+    *Warning: This function has no undo!*
+
 .. _script-layer:
 
 Layer
@@ -751,12 +924,15 @@ Properties
 .. csv-table::
     :widths: 1, 2
 
+    **id** : int |ro|, Unique (map-wide) ID of the layer (since Tiled 1.5).
     **name** : string, Name of the layer.
     **opacity** : number, "Opacity of the layer, from 0 (fully transparent) to 1 (fully opaque)."
     **visible** : bool, Whether the layer is visible (affects child layer visibility for group layers).
     **locked** : bool, Whether the layer is locked (affects whether child layers are locked for group layers).
     **offset** : :ref:`script-point`, Offset in pixels that is applied when this layer is rendered.
-    **map** : :ref:`script-map`, Map that this layer is part of (or ``null`` in case of a standalone layer).
+    **parallaxFactor** : :ref:`script-point`, The parallax factor of the layer (since Tiled 1.5).
+    **map** : :ref:`script-map` |ro|, Map that this layer is part of (or ``null`` in case of a standalone layer).
+    **parentLayer** : :ref:`script-grouplayer` |ro|, "The parent group layer, if any."
     **selected** : bool, Whether the layer is selected.
     **isTileLayer** : bool |ro|, Whether this layer is a :ref:`script-tilelayer`.
     **isObjectLayer** : bool |ro|, Whether this layer is an :ref:`script-objectgroup`.
@@ -868,13 +1044,15 @@ Properties
 .. csv-table::
     :widths: 1, 2
 
-    **scale** : number, "Get or set the scale of the view."
+    **scale** : number, "The scale of the view."
+    **center** : :ref:`script-point`, "The center of the view."
 
 Functions
 ~~~~~~~~~
 
 MapView.centerOn(x : number, y : number) : void
-    Centers the view at the given location in screen coordinates.
+    Centers the view at the given location in screen coordinates. Same as
+    assigning to the ``center`` property.
 
 .. _script-object:
 
@@ -1039,24 +1217,6 @@ SelectedArea.intersect(rect : :ref:`script-rect`) : void
 SelectedArea.intersect(region : :ref:`script-region`) : void
     Sets the selected area to the intersection of the current selected area and the given region.
 
-.. _script-terrain:
-
-Terrain
-^^^^^^^
-
-Inherits :ref:`script-object`.
-
-Properties
-~~~~~~~~~~
-
-.. csv-table::
-    :widths: 1, 2
-
-    **id** : int |ro|, ID of this terrain.
-    **name** : string, Name of the terrain.
-    **imageTile** : :ref:`script-tile`, The tile representing the terrain (needs to be from the same tileset).
-    **tileset** : :ref:`script-tileset` |ro|, The tileset of the terrain.
-
 .. _script-tile:
 
 Tile
@@ -1076,7 +1236,6 @@ Properties
     **size** : :ref:`script-size` |ro|, Size of the tile in pixels.
     **type** : string, Type of the tile.
     **imageFileName** : string, File name of the tile image (when the tile is part of an image collection tileset).
-    **terrain** : :ref:`script-tileterrains`, An object specifying the terrain at each corner of the tile.
     **probability** : number, Probability that the tile gets chosen relative to other tiles.
     **objectGroup** : :ref:`script-objectgroup`, The :ref:`script-objectgroup` associated with the tile in case collision shapes were defined. Returns ``null`` if no collision shapes were defined for this tile.
     **frames** : :ref:`[frame] <script-frames>`, This tile's animation as an array of frames.
@@ -1093,24 +1252,15 @@ Properties
     Tile.FlippedAntiDiagonally
     Tile.RotatedHexagonal120
 
-.. _script-tile-corner:
-
-.. csv-table::
-    :header: "Tile.Corner"
-
-    Tile.TopLeft
-    Tile.TopRight
-    Tile.BottomLeft
-    Tile.BottomRight
-
 Functions
 ~~~~~~~~~
 
-Tile.terrainAtCorner(corner : :ref:`Corner <script-tile-corner>`) : :ref:`script-terrain`
-    Returns the terrain used at the given corner.
+.. _script-tile-setImage:
 
-Tile.setTerrainAtCorner(corner : :ref:`Corner <script-tile-corner>`, :ref:`script-terrain`) : void
-    Sets the terrain used at the given corner.
+Tile.setImage(image : :ref:`script-image`) : void
+    Sets the image of this tile.
+
+    *Warning: This function has no undo and does not affect the saved tileset!*
 
 .. _script-tilecollisioneditor:
 
@@ -1492,7 +1642,7 @@ Properties
     **name** : string, Name of the tileset.
     **image** : string, The file name of the image used by this tileset. Empty in case of image collection tilesets.
     **tiles** : [:ref:`script-tile`] |ro|, Array of all tiles in this tileset. Note that the index of a tile in this array does not always match with its ID.
-    **terrains** : [:ref:`script-terrain`] |ro|, Array of all terrains in this tileset.
+    **wangSets** : [:ref:`script-wangset`] |ro|, Array of all Wang sets in this tileset.
     **tileCount** : int, The number of tiles in this tileset.
     **nextTileId** : int, The ID of the next tile that would be added to this tileset. All existing tiles have IDs that are lower than this ID.
     **tileWidth** : int, Tile width for tiles in this tileset in pixels.
@@ -1553,11 +1703,30 @@ Tileset.setTileSize(width : int, height : int) : void
     Sets the tile size for this tileset. If an image has been specified as well,
     the tileset will be (re)loaded. Can't be used on image collection tilesets.
 
+.. _script-tileset-loadFromImage:
+
+Tileset.loadFromImage(image : :ref:`script-image` [, source: string]) : void
+    Creates the tiles in this tileset by cutting them out of the given image,
+    using the current tile size, tile spacing and margin parameters. These
+    values should be set before calling this function.
+
+    Optionally sets the source file of the image. This may be useful, but be
+    careful since Tiled will try to reload the tileset from that source when
+    the tileset parameters are changed.
+
+    *Warning: This function has no undo!*
+
 Tileset.addTile() : :ref:`script-tile`
     Adds a new tile to this tileset and returns it. Only works for image collection tilesets.
 
 Tileset.removeTiles(tiles : [:ref:`script-tile`]) : void
     Removes the given tiles from this tileset. Only works for image collection tilesets.
+
+Tileset.addWangSet(name : string, type : int) : :ref:`script-wangset`
+    Add a new Wang set to this tileset with the given name and type.
+
+Tileset.removeWangSet(wangSet : :ref:`script-wangset`) : void
+    Removes the given Wang set from this tileset.
 
 .. _script-tileseteditor:
 
@@ -1606,6 +1775,56 @@ Properties
 
     **currentTileset** : :ref:`script-tileset`, "Access or change the currently displayed tileset."
     **selectedTiles** : [:ref:`script-tile`], "A list of the tiles that are selected in the current tileset."
+
+.. raw:: html
+
+   <div class="new">New in Tiled 1.5</div>
+
+.. _script-wangset:
+
+WangSet
+^^^^^^^
+
+Inherits :ref:`script-object`.
+
+Properties
+~~~~~~~~~~
+
+.. csv-table::
+    :widths: 1, 2
+
+    **name** : string, "Name of the Wang set."
+    **type** : :ref:`Type <script-wangset-type>`, "Type of the Wang set."
+    **imageTile** : :ref:`script-tile`, "The tile used to represent the Wang set."
+    **colorCount** : int, "The number of colors used by this Wang set."
+    **tileset** : :ref:`script-tileset` |ro|, "The tileset to which this Wang set belongs."
+
+.. _script-wangset-type:
+
+.. csv-table::
+    :header: "WangSet.Type"
+
+    WangSet.Edge, "The Wang set only uses edges"
+    WangSet.Corner, "The Wang set only uses corners"
+    WangSet.Mixed, "The Wang set uses both corners and edges"
+
+Functions
+~~~~~~~~~
+
+WangSet.wangId(tile : :ref:`script-tile`) : int[8]
+    Returns the current Wang ID associated with the given tile. The Wang ID is
+    given by an array of 8 numbers, indicating the colors associated with each
+    index in the following order:
+    [Top, TopRight, Right, BottomRight, Bottom, BottomLeft, Left, TopLeft].
+
+    A value of 0 indicates that no color is associated with a given index.
+
+WangSet.setWangId(tile : :ref:`script-tile`, wangId : int[8]) : void
+    Sets the Wang ID associated with the given tile.
+
+    Make sure the Wang set color count is set before calling this function,
+    because it will raise an error when the Wang ID refers to non-existing
+    colors.
 
 .. _script-basic-types:
 
@@ -1780,20 +1999,6 @@ size
     **width** : number, Width.
     **height** : number, Height.
 
-.. _script-tileterrains:
-
-Terrains
-~~~~~~~~
-
-An object specifying the terrain for each corner of a tile:
-
-.. csv-table::
-
-    **topLeft** : :ref:`script-terrain`
-    **topRight** : :ref:`script-terrain`
-    **bottomLeft** : :ref:`script-terrain`
-    **bottomRight** : :ref:`script-terrain`
-
 .. _script-textfile:
 
 TextFile
@@ -1912,3 +2117,86 @@ BinaryFile.commit() : void
 BinaryFile.close() : void
     Closes the file. It is recommended to always call this function as soon as
     you are finished with the file.
+
+.. _script-process:
+
+Process
+~~~~~~~
+
+The Process class allows you to start processes, track their output, and so on.
+
+**Properties**
+
+.. csv-table::
+    :widths: 1, 2
+
+    **workingDirectory** : string, "The directory the process will be started in. This only has an effect if set before the process is started."
+    **atEnd** : bool |ro|, "True if there is no more data to be read from the process output, otherwise false."
+    **exitCode** : int |ro|, "The exit code of the process. This is needed for retrieving the exit code from processes started via ``start()``, rather than ``exec()``."
+    **codec**: string, "Sets the text codec to codec. The codec is used for reading and writing from and to the process, respectively. Common codecs are supported, for example: ""UTF-8"", ""UTF-16"", and ""ISO 8859-1""."
+
+**Functions**
+
+new Process()
+    Allocates and returns a new Process object.
+
+Process.close() : void
+    Frees the resources associated with the process. It is recommended to always
+    call this function as soon as you are finished with the process.
+
+Process.closeWriteChannel() : void
+    Schedules the stdin channel of process to be closed. The channel will close
+    once all data has been written to the process. After calling this function,
+    any attempts to write to the process will do nothing.
+
+Process.exec(filePath : string, arguments : [string] [, throwOnError : bool = true]) : number
+    Executes the program at filePath with the given argument list and blocks
+    until the process is finished. If an error occurs (for example, there is no
+    executable file at filePath) and ``throwOnError`` is true (the default),
+    then a JavaScript exception will be thrown. Otherwise, -1 will be returned
+    in case of an error. The normal return code is the exit code of the process.
+
+Process.getEnv(name : string) : string
+    Returns the value of the variable varName in the process' environment.
+
+Process.kill() : void
+    Kills the process, causing it to exit immediately.
+
+Process.readLine() : string
+    Reads and returns one line of text from the process output, without the
+    newline character(s).
+
+Process.readStdErr() : string
+    Reads and returns all data from the process' standard error channel.
+
+Process.readStdOut() : string
+    Reads and returns all data from the process' standard output channel.
+
+Process.setEnv(varName : string, varValue : string) : string
+    Sets the value of variable varName to varValue in the process environment.
+    This only has an effect if called before the process is started.
+
+Process.start(filePath : string, arguments : [string]) : bool
+    Starts the program at filePath with the given list of arguments. Returns
+    true if the process could be started and false otherwise.
+
+    **Note:** This call returns right after starting the process and should be
+    used only if you need to interact with the process while it is running.
+    Most of the time, you want to use ``exec()`` instead.
+
+Process.terminate() : void
+    Tries to terminate the process. This is not guaranteed to make the process
+    exit immediately; if you need that, use ``kill()``.
+
+Process.waitForFinished(int msecs = 30000) : bool
+    Blocks until the process has finished or timeout milliseconds have passed
+    (default is 30000). Returns true if the process has finished and false if
+    the operation has timed out. Calling this function only makes sense for
+    processes started via ``start()`` (as opposed to ``exec()``).
+
+Process.write(text : string) : void
+    Writes text into the process' input channel.
+
+Process.writeLine(text : string) : void
+    Writes text, followed by a newline character, into the process' input
+    channel.

@@ -25,6 +25,7 @@
 #include "object.h"
 #include "objecttypesmodel.h"
 #include "preferences.h"
+#include "session.h"
 #include "utils.h"
 #include "varianteditorfactory.h"
 #include "variantpropertymanager.h"
@@ -345,8 +346,8 @@ void ObjectTypesEditor::removePropertyFromSelectedTypes(const QString &name)
 
 void ObjectTypesEditor::importObjectTypes()
 {
-    Preferences *prefs = Preferences::instance();
-    const QString lastPath = prefs->lastPath(Preferences::ObjectTypesFile);
+    Session &session = Session::current();
+    const QString lastPath = session.lastPath(Session::ObjectTypesFile);
     const QString fileName =
             QFileDialog::getOpenFileName(this, tr("Import Object Types"),
                                          lastPath,
@@ -354,7 +355,7 @@ void ObjectTypesEditor::importObjectTypes()
     if (fileName.isEmpty())
         return;
 
-    prefs->setLastPath(Preferences::ObjectTypesFile, fileName);
+    session.setLastPath(Session::ObjectTypesFile, fileName);
 
     ObjectTypesSerializer serializer;
     ObjectTypes objectTypes;
@@ -384,11 +385,11 @@ void ObjectTypesEditor::importObjectTypes()
 
 void ObjectTypesEditor::exportObjectTypes()
 {
-    Preferences *prefs = Preferences::instance();
-    QString lastPath = prefs->lastPath(Preferences::ObjectTypesFile);
+    Session &session = Session::current();
+    QString lastPath = session.lastPath(Session::ObjectTypesFile);
 
     if (!lastPath.endsWith(QLatin1String(".xml")))
-        lastPath.append(QLatin1String("/objecttypes.xml"));
+        lastPath.append(QStringLiteral("/objecttypes.xml"));
 
     const QString fileName =
             QFileDialog::getSaveFileName(this, tr("Export Object Types"),
@@ -397,7 +398,7 @@ void ObjectTypesEditor::exportObjectTypes()
     if (fileName.isEmpty())
         return;
 
-    prefs->setLastPath(Preferences::ObjectTypesFile, fileName);
+    session.setLastPath(Session::ObjectTypesFile, fileName);
 
     ObjectTypesSerializer serializer;
     if (!serializer.writeObjectTypes(fileName, Object::objectTypes())) {
@@ -593,3 +594,5 @@ void ObjectTypesEditor::currentItemChanged(QtBrowserItem *item)
 }
 
 } // namespace Tiled
+
+#include "moc_objecttypeseditor.cpp"

@@ -70,6 +70,7 @@ class DocumentManager : public QObject
 
 public:
     static DocumentManager *instance();
+    static DocumentManager *maybeInstance();
 
     QWidget *widget() const;
 
@@ -138,6 +139,8 @@ public:
     WorldDocument *ensureWorldDocument(const QString &fileName);
     bool isAnyWorldModified() const;
     bool isWorldModified(const QString &fileName) const;
+
+    QString fileDialogStartLocation() const;
 
 signals:
     void documentCreated(Document *document);

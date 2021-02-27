@@ -45,7 +45,6 @@ namespace Tiled {
 
 class FileFormat;
 class TileLayer;
-class Terrain;
 
 class AutomappingManager;
 class ConsoleDock;
@@ -94,15 +93,9 @@ public:
      */
     bool openFile(const QString &fileName, FileFormat *fileFormat = nullptr);
 
-    Project &project() const;
-    ProjectModel *projectModel() const;
-
     bool addRecentProjectsActions(QMenu *menu) const;
 
     static MainWindow *instance();
-
-signals:
-    void projectChanged();
 
 protected:
     bool event(QEvent *event) override;

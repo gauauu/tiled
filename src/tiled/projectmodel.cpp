@@ -82,7 +82,11 @@ static void findFiles(const FolderEntry &entry, int offset, const QStringList &w
 {
     for (const auto &childEntry : entry.entries) {
         if (childEntry->entries.empty()) {
-            const QStringRef relativePath = childEntry->filePath.midRef(offset);
+#if QT_VERSION >= QT_VERSION_CHECK(6,0,0)
+            const auto relativePath = QStringView(childEntry->filePath).mid(offset);
+#else
+            const auto relativePath = childEntry->filePath.midRef(offset);
+#endif
             const int totalScore = Utils::matchingScore(words, relativePath);
 
             if (totalScore > 0) {
@@ -130,7 +134,9 @@ ProjectModel::ProjectModel(QObject *parent)
 ProjectModel::~ProjectModel()
 {
     mFoldersPendingScan.clear();
+#ifndef Q_OS_WASM
     mScanningThread.requestInterruption();
+#endif
     mScanningThread.quit();
     mScanningThread.wait();
 }
@@ -366,6 +372,10 @@ void ProjectModel::updateNameFilters()
         nameFilters.append(Utils::cleanFilterList(filter));
     }
 
+    // HACK: Needed to display world files in the project, since they do not
+    // have a registered FileFormat.
+    nameFilters.append(QStringLiteral("*.world"));
+
     nameFilters.removeDuplicates();
 
     if (mNameFilters != nameFilters) {
@@ -461,8 +471,10 @@ void FolderScanner::scanFolder(const QString &folder)
 
 void FolderScanner::scan(FolderEntry &folder, QSet<QString> &visitedFolders) const
 {
+#ifndef Q_OS_WASM
     if (QThread::currentThread()->isInterruptionRequested())
         return;
+#endif
 
     constexpr QDir::SortFlags sortFlags { QDir::Name | QDir::LocaleAware | QDir::DirsFirst };
     constexpr QDir::Filters filters { QDir::AllDirs | QDir::Files | QDir::NoDotAndDotDot };
@@ -492,3 +504,4 @@ void FolderScanner::scan(FolderEntry &folder, QSet<QString> &visitedFolders) con
 } // namespace Tiled
 
 #include "projectmodel.moc"
+#include "moc_projectmodel.cpp"

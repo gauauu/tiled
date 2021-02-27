@@ -5,6 +5,7 @@ DynamicLibrary {
     builtByDefault: false
 
     Depends { name: "libtiled" }
+    Depends { name: "libtiledquick" }
     Depends {
         name: "Qt"; submodules: ["qml", "quick"]
         versionAtLeast: "5.6"
@@ -12,8 +13,7 @@ DynamicLibrary {
 
     cpp.cxxLanguageVersion: "c++14"
     cpp.defines: [
-        "QT_DEPRECATED_WARNINGS",
-        "QT_DISABLE_DEPRECATED_BEFORE=0x050900",
+        "QT_DISABLE_DEPRECATED_BEFORE=QT_VERSION_CHECK(5,15,0)",
         "QT_NO_CAST_FROM_ASCII",
         "QT_NO_CAST_TO_ASCII",
         "QT_NO_FOREACH",
@@ -26,17 +26,8 @@ DynamicLibrary {
     }
 
     files: [
-        "mapitem.cpp",
-        "mapitem.h",
-        "maploader.cpp",
-        "maploader.h",
-        "mapref.h",
         "tiledquickplugin.cpp",
-        "tiledquickplugin.h",
-        "tilelayeritem.cpp",
-        "tilelayeritem.h",
-        "tilesnode.cpp",
-        "tilesnode.h",
+        "tiledquickplugin.h"
     ]
 
     property string installBase: qbs.targetOS.contains("darwin") ? "Tiled Quick.app/Contents/" : ""

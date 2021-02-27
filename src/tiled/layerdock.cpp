@@ -65,7 +65,7 @@ LayerDock::LayerDock(QWidget *parent):
 
     QWidget *widget = new QWidget(this);
     QVBoxLayout *layout = new QVBoxLayout(widget);
-    layout->setMargin(0);
+    layout->setContentsMargins(0, 0, 0, 0);
 
     QHBoxLayout *opacityLayout = new QHBoxLayout;
     mOpacitySlider->setRange(0, 100);
@@ -438,6 +438,8 @@ void LayerView::contextMenuEvent(QContextMenuEvent *event)
         menu.addAction(handler->actionLayerProperties());
     }
 
+    ActionManager::applyMenuExtensions(&menu, MenuIds::layerViewLayers);
+
     menu.exec(event->globalPos());
 }
 
@@ -493,3 +495,4 @@ void LayerView::selectionChanged(const QItemSelection &selected,
 }
 
 #include "layerdock.moc"
+#include "moc_layerdock.cpp"

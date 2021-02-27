@@ -248,8 +248,8 @@ void CommandLineHandler::showVersion()
 {
     if (!showedVersion) {
         showedVersion = true;
-        qWarning().noquote() << QApplication::applicationDisplayName()
-                             << QApplication::applicationVersion();
+        qInfo().noquote() << QApplication::applicationDisplayName()
+                          << QApplication::applicationVersion();
         quit = true;
     }
 }
@@ -306,9 +306,9 @@ void CommandLineHandler::showExportFormats()
     }
     formats.sort(Qt::CaseSensitive);
 
-    qWarning().noquote() << tr("Map export formats:");
+    qInfo().noquote() << tr("Map export formats:");
     for (const QString &name : formats)
-        qWarning(" %s", qUtf8Printable(name));
+        qInfo(" %s", qUtf8Printable(name));
 
     formats.clear();
     const auto tilesetFormats = PluginManager::objects<TilesetFormat>();
@@ -318,9 +318,9 @@ void CommandLineHandler::showExportFormats()
     }
     formats.sort(Qt::CaseSensitive);
 
-    qWarning().noquote() << tr("Tileset export formats:");
+    qInfo().noquote() << tr("Tileset export formats:");
     for (const QString &name : formats)
-        qWarning(" %s", qUtf8Printable(name));
+        qInfo(" %s", qUtf8Printable(name));
 
     quit = true;
 }
@@ -344,12 +344,26 @@ int main(int argc, char *argv[])
 
     qInstallMessageHandler(messagesToConsole);
 
+#if QT_VERSION >= QT_VERSION_CHECK(5, 14, 0)
+    QGuiApplication::setHighDpiScaleFactorRoundingPolicy(Qt::HighDpiScaleFactorRoundingPolicy::RoundPreferFloor);
+
+    // High-DPI scaling is always enabled in Qt 6
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
+    QCoreApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
+#endif
+#endif
+
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
+    // Enable support for highres images (added in Qt 5.1, but off by default, always enabled in Qt 6)
+    QCoreApplication::setAttribute(Qt::AA_UseHighDpiPixmaps);
+
+    // Fallback session management was removed from Qt 6
     QGuiApplication::setFallbackSessionManagementEnabled(false);
 
-    // Enable support for highres images (added in Qt 5.1, but off by default)
-    QCoreApplication::setAttribute(Qt::AA_UseHighDpiPixmaps);
+    // Window context help buttons are disabled by default in Qt 6
 #if QT_VERSION >= QT_VERSION_CHECK(5, 10, 0)
     QCoreApplication::setAttribute(Qt::AA_DisableWindowContextHelpButton);
+#endif
 #endif
 
 #ifdef Q_OS_MAC
@@ -483,7 +497,7 @@ int main(int argc, char *argv[])
         }
     }
 
-    if (!filesToOpen.isEmpty() && !commandLine.newInstance) {
+    if (a.isRunning() && !filesToOpen.isEmpty() && !commandLine.newInstance) {
         // Files need to be absolute paths because the already running Tiled
         // instance likely does not have the same working directory.
         QJsonDocument doc(QJsonArray::fromStringList(filesToOpen));

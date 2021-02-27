@@ -153,14 +153,14 @@ void AbstractWorldTool::activate(MapScene *scene)
 {
     scene->addItem(mSelectionRectangle.get());
     connect(scene, &MapScene::sceneRefreshed, this, &AbstractWorldTool::updateSelectionRectangle);
-    mMapScene = scene;
+    AbstractTool::activate(scene);
 }
 
 void AbstractWorldTool::deactivate(MapScene *scene)
 {
     scene->removeItem(mSelectionRectangle.get());
     disconnect(scene, &MapScene::sceneRefreshed, this, &AbstractWorldTool::updateSelectionRectangle);
-    mMapScene = nullptr;
+    AbstractTool::deactivate(scene);
 }
 
 void AbstractWorldTool::mouseLeft()
@@ -176,13 +176,13 @@ void AbstractWorldTool::mouseMoved(const QPointF &pos,
     // Take into account the offset of the current layer
     QPointF offsetPos = pos;
     if (Layer *layer = currentLayer())
-        offsetPos -= layer->totalOffset();
+        offsetPos -= mapScene()->absolutePositionForLayer(*layer);
 
     const QPoint pixelPos = offsetPos.toPoint();
     const QPointF tilePosF = mapDocument()->renderer()->screenToTileCoords(offsetPos);
     const int x = qFloor(tilePosF.x());
     const int y = qFloor(tilePosF.y());
-    setStatusInfo(QString(QLatin1String("%1, %2 (%3, %4)")).arg(x).arg(y).arg(pixelPos.x()).arg(pixelPos.y()));
+    setStatusInfo(QStringLiteral("%1, %2 (%3, %4)").arg(x).arg(y).arg(pixelPos.x()).arg(pixelPos.y()));
 }
 
 void AbstractWorldTool::mousePressed(QGraphicsSceneMouseEvent *event)
@@ -214,7 +214,7 @@ void AbstractWorldTool::updateEnabledState()
 
 MapDocument *AbstractWorldTool::mapAt(const QPointF &pos) const
 {
-    const QList<QGraphicsItem *> &items = mMapScene->items(pos);
+    const QList<QGraphicsItem *> &items = mapScene()->items(pos);
 
     for (QGraphicsItem *item : items) {
         if (!item->isEnabled())
@@ -289,7 +289,7 @@ void AbstractWorldTool::showContextMenu(QGraphicsSceneMouseEvent *event)
             menu.addAction(tr("Add \"%1\" to World \"%2\"")
                            .arg(currentDocument->displayName())
                            .arg(world->displayName()),
-                           this, [this, fileName = world->fileName] { addToWorld(fileName); });
+                           this, [=] { addToWorld(world); });
         }
     }
 
@@ -353,15 +353,19 @@ void AbstractWorldTool::removeFromWorld(const QString &mapFileName)
     undoStack()->push(new RemoveMapCommand(mapFileName));
 }
 
-void AbstractWorldTool::addToWorld(const QString &worldFileName)
+void AbstractWorldTool::addToWorld(const World *world)
 {
     MapDocument *document = mapDocument();
-    QSize size = document->map()->size();
-    size.setWidth(size.width() * document->map()->tileWidth());
-    size.setHeight(size.height() * document->map()->tileHeight());
-    const QRect rect = QRect(QPoint(0, 0), size);
-    QUndoStack *undoStack = DocumentManager::instance()->ensureWorldDocument(worldFileName)->undoStack();
-    undoStack->push(new AddMapCommand(worldFileName, document->fileName(), rect));
+    QRect rect = document->renderer()->mapBoundingRect();
+
+    // Position the map alongside the last map by default
+    if (!world->maps.isEmpty()) {
+        const QRect &lastWorldRect = world->maps.last().rect;
+        rect.moveTo(lastWorldRect.right() + 1, lastWorldRect.top());
+    }
+
+    QUndoStack *undoStack = DocumentManager::instance()->ensureWorldDocument(world->fileName)->undoStack();
+    undoStack->push(new AddMapCommand(world->fileName, document->fileName(), rect));
 }
 
 QUndoStack *AbstractWorldTool::undoStack()
@@ -391,7 +395,7 @@ void AbstractWorldTool::populateToolBar(QToolBar *toolBar)
             addToWorldMenu->addAction(tr("Add \"%1\" to World \"%2\"")
                                       .arg(mapDocument()->displayName())
                                       .arg(world->displayName()),
-                                      this, [this, fileName = world->fileName] { addToWorld(fileName); });
+                                      this, [=] { addToWorld(world); });
         }
     });
 
@@ -420,7 +424,7 @@ void AbstractWorldTool::setTargetMap(MapDocument *mapDocument)
 
 void AbstractWorldTool::updateSelectionRectangle()
 {
-    if (auto item = mMapScene->mapItem(mTargetMap)) {
+    if (auto item = mapScene()->mapItem(mTargetMap)) {
         auto rect = mapRect(mTargetMap);
         rect.moveTo(item->pos().toPoint());
 
@@ -432,3 +436,5 @@ void AbstractWorldTool::updateSelectionRectangle()
 }
 
 } // namespace Tiled
+
+#include "moc_abstractworldtool.cpp"

@@ -31,6 +31,7 @@
 #include "hexagonalrenderer.h"
 #include "imagelayer.h"
 #include "isometricrenderer.h"
+#include "tilesetmanager.h"
 #include "map.h"
 #include "mapformat.h"
 #include "mapreader.h"
@@ -66,19 +67,19 @@ TmxRasterizer::TmxRasterizer():
     mScale(1.0),
     mTileSize(0),
     mSize(0),
+    mAdvanceAnimations(0),
     mUseAntiAliasing(false),
     mSmoothImages(true),
     mIgnoreVisibility(false)
 {
 }
 
-void TmxRasterizer::drawMapLayers(MapRenderer &renderer,
+void TmxRasterizer::drawMapLayers(const MapRenderer &renderer,
                                   QPainter &painter,
-                                  Map &map,
                                   QPoint mapOffset) const
 {
     // Perform a similar rendering than found in exportasimagedialog.cpp
-    LayerIterator iterator(&map);
+    LayerIterator iterator(renderer.map());
     while (const Layer *layer = iterator.next()) {
         if (!shouldDrawLayer(layer))
             continue;
@@ -132,6 +133,11 @@ bool TmxRasterizer::shouldDrawLayer(const Layer *layer) const
     if (mLayersToHide.contains(layer->name(), Qt::CaseInsensitive))
         return false;
 
+    if (!mLayersToShow.empty()) {
+       if (!mLayersToShow.contains(layer->name(), Qt::CaseInsensitive))
+           return false;
+    }
+
     if (mIgnoreVisibility)
         return true;
 
@@ -176,6 +182,9 @@ int TmxRasterizer::renderMap(const QString &mapFileName,
         xScale = yScale = mScale;
     }
 
+    if (mAdvanceAnimations > 0) 
+        TilesetManager::instance()->advanceTileAnimations(mAdvanceAnimations);
+
     QMargins margins = map->computeLayerOffsetMargins();
     mapSize.setWidth(mapSize.width() + margins.left() + margins.right());
     mapSize.setHeight(mapSize.height() + margins.top() + margins.bottom());
@@ -194,7 +203,7 @@ int TmxRasterizer::renderMap(const QString &mapFileName,
     painter.translate(margins.left(), margins.top());
     painter.translate(-mapOffset);
 
-    drawMapLayers(*renderer, painter, *map);
+    drawMapLayers(*renderer, painter);
     map.reset();
     return saveImage(imageFileName, image);
 }
@@ -230,7 +239,7 @@ int TmxRasterizer::renderWorld(const QString &worldFileName,
                  qUtf8Printable(errorString));
         return 1;
     }
-    
+
     auto const maps = world->allMaps();
     if (maps.isEmpty()) {
         qWarning("Error: The world file to rasterize contains no maps : \"%s\"",
@@ -283,8 +292,12 @@ int TmxRasterizer::renderWorld(const QString &worldFileName,
                     qUtf8Printable(errorString));
             continue;
         }
+        if (mAdvanceAnimations > 0) 
+            TilesetManager::instance()->advanceTileAnimations(mAdvanceAnimations);
+        
         std::unique_ptr<MapRenderer> renderer = createRenderer(*map);
-        drawMapLayers(*renderer, painter, *map, mapEntry.rect.topLeft());
+        drawMapLayers(*renderer, painter, mapEntry.rect.topLeft());
+        TilesetManager::instance()->resetTileAnimations();
     }
 
     return saveImage(imageFileName, image);

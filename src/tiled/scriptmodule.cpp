@@ -47,19 +47,24 @@ namespace Tiled {
 ScriptModule::ScriptModule(QObject *parent)
     : QObject(parent)
 {
-    auto documentManager = DocumentManager::instance();
-    connect(documentManager, &DocumentManager::documentCreated, this, &ScriptModule::documentCreated);
-    connect(documentManager, &DocumentManager::documentOpened, this, &ScriptModule::documentOpened);
-    connect(documentManager, &DocumentManager::documentAboutToBeSaved, this, &ScriptModule::documentAboutToBeSaved);
-    connect(documentManager, &DocumentManager::documentSaved, this, &ScriptModule::documentSaved);
-    connect(documentManager, &DocumentManager::documentAboutToClose, this, &ScriptModule::documentAboutToClose);
-    connect(documentManager, &DocumentManager::currentDocumentChanged, this, &ScriptModule::currentDocumentChanged);
+    // If the script module is only created for command-line use, there will
+    // not be a DocumentManager instance.
+    if (auto documentManager = DocumentManager::maybeInstance()) {
+        connect(documentManager, &DocumentManager::documentCreated, this, &ScriptModule::documentCreated);
+        connect(documentManager, &DocumentManager::documentOpened, this, &ScriptModule::documentOpened);
+        connect(documentManager, &DocumentManager::documentAboutToBeSaved, this, &ScriptModule::documentAboutToBeSaved);
+        connect(documentManager, &DocumentManager::documentSaved, this, &ScriptModule::documentSaved);
+        connect(documentManager, &DocumentManager::documentAboutToClose, this, &ScriptModule::documentAboutToClose);
+        connect(documentManager, &DocumentManager::currentDocumentChanged, this, &ScriptModule::currentDocumentChanged);
+    }
 }
 
 ScriptModule::~ScriptModule()
 {
     for (const auto &pair : mRegisteredActions)
         ActionManager::unregisterAction(pair.second.get(), pair.first);
+
+    ActionManager::clearMenuExtensions();
 
     IssuesModel::instance().removeIssuesWithContext(this);
 }
@@ -138,9 +143,9 @@ QStringList ScriptModule::tilesetFormats() const
 
 EditableAsset *ScriptModule::activeAsset() const
 {
-    auto documentManager = DocumentManager::instance();
-    if (Document *document = documentManager->currentDocument())
-        return document->editable();
+    if (auto documentManager = DocumentManager::maybeInstance())
+        if (Document *document = documentManager->currentDocument())
+            return document->editable();
 
     return nullptr;
 }
@@ -151,7 +156,13 @@ bool ScriptModule::setActiveAsset(EditableAsset *asset) const
         ScriptManager::instance().throwNullArgError(0);
         return false;
     }
-    auto documentManager = DocumentManager::instance();
+
+    auto documentManager = DocumentManager::maybeInstance();
+    if (!documentManager) {
+        ScriptManager::instance().throwError(QCoreApplication::translate("Script Errors", "Editor not available"));
+        return false;
+    }
+
     for (const DocumentPtr &document : documentManager->documents())
         if (document->editable() == asset)
             return documentManager->switchToDocument(document.data());
@@ -161,21 +172,25 @@ bool ScriptModule::setActiveAsset(EditableAsset *asset) const
 
 QList<QObject *> ScriptModule::openAssets() const
 {
-    auto documentManager = DocumentManager::instance();
     QList<QObject *> assets;
-    for (const DocumentPtr &document : documentManager->documents())
-        assets.append(document->editable());
+    if (auto documentManager = DocumentManager::maybeInstance())
+        for (const DocumentPtr &document : documentManager->documents())
+            assets.append(document->editable());
     return assets;
 }
 
 TilesetEditor *ScriptModule::tilesetEditor() const
 {
-    return static_cast<TilesetEditor*>(DocumentManager::instance()->editor(Document::TilesetDocumentType));
+    if (auto documentManager = DocumentManager::maybeInstance())
+        return static_cast<TilesetEditor*>(documentManager->editor(Document::TilesetDocumentType));
+    return nullptr;
 }
 
 MapEditor *ScriptModule::mapEditor() const
 {
-    return static_cast<MapEditor*>(DocumentManager::instance()->editor(Document::MapDocumentType));
+    if (auto documentManager = DocumentManager::maybeInstance())
+        return static_cast<MapEditor*>(documentManager->editor(Document::MapDocumentType));
+    return nullptr;
 }
 
 FilePath ScriptModule::filePath(const QUrl &path) const
@@ -190,7 +205,12 @@ ObjectRef ScriptModule::objectRef(int id) const
 
 EditableAsset *ScriptModule::open(const QString &fileName) const
 {
-    auto documentManager = DocumentManager::instance();
+    auto documentManager = DocumentManager::maybeInstance();
+    if (!documentManager) {
+        ScriptManager::instance().throwError(QCoreApplication::translate("Script Errors", "Editor not available"));
+        return nullptr;
+    }
+
     documentManager->openFile(fileName);
 
     // If opening succeeded, it is the current document
@@ -208,9 +228,13 @@ bool ScriptModule::close(EditableAsset *asset) const
         ScriptManager::instance().throwNullArgError(0);
         return false;
     }
-    auto documentManager = DocumentManager::instance();
 
-    int index = documentManager->findDocument(asset->document());
+    auto documentManager = DocumentManager::maybeInstance();
+    int index = -1;
+
+    if (documentManager)
+        index = documentManager->findDocument(asset->document());
+
     if (index == -1) {
         ScriptManager::instance().throwError(QCoreApplication::translate("Script Errors", "Not an open asset"));
         return false;
@@ -226,9 +250,13 @@ EditableAsset *ScriptModule::reload(EditableAsset *asset) const
         ScriptManager::instance().throwNullArgError(0);
         return nullptr;
     }
-    auto documentManager = DocumentManager::instance();
 
-    int index = documentManager->findDocument(asset->document());
+    auto documentManager = DocumentManager::maybeInstance();
+    int index = -1;
+
+    if (documentManager)
+        index = documentManager->findDocument(asset->document());
+
     if (index == -1) {
         ScriptManager::instance().throwError(QCoreApplication::translate("Script Errors", "Not an open asset"));
         return nullptr;
@@ -386,16 +414,16 @@ static Id toId(QJSValue value)
 
 void ScriptModule::extendMenu(const QByteArray &idName, QJSValue items)
 {
-    MenuExtension extension;
-    extension.menuId = Id(idName);
+    ActionManager::MenuExtension extension;
+    Id menuId(idName);
 
-    if (!ActionManager::findMenu(extension.menuId)) {
+    if (!ActionManager::hasMenu(menuId)) {
         ScriptManager::instance().throwError(QCoreApplication::translate("Script Errors", "Unknown menu"));
         return;
     }
 
     auto addItem = [&] (QJSValue item) -> bool {
-        MenuItem menuItem;
+        ActionManager::MenuItem menuItem;
 
         const QJSValue action = item.property(QStringLiteral("action"));
 
@@ -433,21 +461,7 @@ void ScriptModule::extendMenu(const QByteArray &idName, QJSValue items)
         return;
     }
 
-    // Apply the extension
-    QMenu *menu = ActionManager::menu(extension.menuId);
-    QAction *before = nullptr;
-
-    for (MenuItem &item : extension.items) {
-        if (item.beforeAction)
-            before = ActionManager::findAction(item.beforeAction);
-
-        if (item.isSeparator)
-            menu->insertSeparator(before)->setParent(this);
-        else
-            menu->insertAction(before, ActionManager::action(item.action));
-    }
-
-    mMenuExtensions.append(extension);
+    ActionManager::registerMenuExtension(menuId, extension);
 }
 
 void ScriptModule::trigger(const QByteArray &actionName) const
@@ -548,3 +562,5 @@ void ScriptModule::currentDocumentChanged(Document *document)
 }
 
 } // namespace Tiled
+
+#include "moc_scriptmodule.cpp"

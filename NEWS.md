@@ -1,4 +1,91 @@
-### Tiled 1.4.0 (...)
+### Tiled 1.5.0 (.. February 2021)
+
+* Unified Wang and Terrain tools (backwards incompatible change!)
+* Added support for a per-layer parallax scrolling factor ([#2951](https://github.com/mapeditor/tiled/pull/2951))
+* Added option to change object selection behavior ([#2865](https://github.com/mapeditor/tiled/pull/2865))
+* Added Monospace option to the multi-line text editor
+* Added option to auto-scroll on middle click
+* Added smooth scrolling option for arrow keys
+* Added a 'Convert to Polygon' action for rectangle objects
+* Added support for drawing with a blob tileset
+* Added 'Duplicate Terrain Set' action
+* Added Terrain Set type (Corner, Edge or Mixed)
+* Added support for rotating and flipping Terrain tiles (by Christof Petig, [#2912](https://github.com/mapeditor/tiled/pull/2912))
+* Added support for exporting to [RPTools MapTool](https://www.rptools.net/toolbox/maptool/) RpMap files (by Christof Petig, [#2926](https://github.com/mapeditor/tiled/pull/2926))
+* Added Ctrl+Shift to toggle Snap to Fine Grid (by sverx, [#2895](https://github.com/bjorn/tiled/pull/2895))
+* Eraser: Added Shift to erase on all layers (by Michael Aganier, [#2897](https://github.com/bjorn/tiled/pull/2897))
+* Automatically add .world extension to new World files
+* Shape Fill Tool now displays the size of the current shape ([#2808](https://github.com/mapeditor/tiled/issues/2808))
+* Tile Collision Editor: Added action to add an auto-detected bounding box collision rectangle (by Robin Macharg, [#1960](https://github.com/bjorn/tiled/pull/1960))
+* Tile Collision Editor: Added context menu action to copy selected collision objects to all other selected tiles (by Robin Macharg, [#1960](https://github.com/bjorn/tiled/pull/1960))
+* Tilesets view: Added "Edit Tileset" action to tab context menu
+* Tilesets view: Added "Add External Tileset" action to tilesets menu
+* Scripting: Added initial API for creating and modifying Terrain Sets
+* Scripting: Added API for working with images ([#2787](https://github.com/mapeditor/tiled/pull/2787))
+* Scripting: Added missing Layer.id property
+* Scripting: Fixed reset of file formats on script reload ([#2911](https://github.com/mapeditor/tiled/issues/2911))
+* Enabled high-DPI scaling on Linux and changed rounding policy
+* Remember last file dialog locations in the session instead of globally
+* Fixed loading extension path from project config (by Peter Ruibal, [#2956](https://github.com/mapeditor/tiled/pull/2956))
+* Fixed performance issues when using a lot of custom properties
+* Fixed storing template instance size when overriding the tile ([#2889](https://github.com/mapeditor/tiled/issues/2889))
+* Fixed removal of object reference arrow when deleting target object ([#2944](https://github.com/mapeditor/tiled/issues/2944))
+* Fixed updating of object references when layer visibility changes
+* Fixed map positioning issues in the World Tool ([#2970](https://github.com/mapeditor/tiled/issues/2970))
+* Fixed handling of Shift modifiers in Bucket and Shape Fill tools ([#2883](https://github.com/mapeditor/tiled/issues/2883))
+* Fixed scrolling speed in Tileset view when holding Ctrl
+* Lua plugin: Don't embed external tilesets, unless enabled as export option ([#2120](https://github.com/mapeditor/tiled/issues/2120))
+* Python plugin: Added missing values to MapObject.Shape enum ([#2898](https://github.com/bjorn/tiled/issues/2898))
+* CSV plugin: Include flipping flags in exported tile IDs
+* libtiled-java: Many updates (by Henri Viitanen, [#2207](https://github.com/bjorn/tiled/pull/2207))
+* Ported Tiled to Qt 6 (releases still use 5.15 for now)
+
+### Tiled 1.4.3 (17 November 2020)
+
+* Fixed running Tiled on macOS Big Sur (#2845)
+* Improved error message when adding external tileset
+* Fixed opening of files in already open instance of Tiled
+* Fixed crash in Edit Commands dialog (#2914)
+* Fixed Object Alignment not getting set when reloading a tileset
+* Tile Collision Editor: Fixed invisible tile for isometric oriented tileset (#2892)
+* Ignore attempts to replace a tileset with itself
+* qmake: Support linking to system Zstd on all UNIX-like systems
+
+### Tiled 1.4.2 (5 August 2020)
+
+* Reverted the default layer data format back to CSV (was changed to Zstd by accident in 1.4.0)
+* Added ability to draw lines using click+drag (in addition to click and click) when holding Shift
+* Improved positioning when adding maps to world via context menu
+* Disable instead of hide the "Save As Template" action when using embedded tilesets
+* Made Ctrl turn off snapping if Snap to Fine Grid is enabled (#2061)
+* Set minimum value of tile width and height to 1
+* Fixed Select Same Tile tool behavior for empty tiles
+* Fixed clickability of the dot in point objects
+* Fixed adjusting of terrain images when tileset width changes
+* Worlds: Fixed potential data loss when opening .world file
+* tmxrasterizer: Added --show-layer option (by Matthias Varnholt, #2858)
+* tmxrasterizer: Added parameter to advance animations (by Sean Ballew, #2868)
+* Scripting: Initialize tile layer size to map size upon add (#2879)
+* Windows installer: Made creation of the desktop shortcut optional
+* Windows installer: Made the launching of Tiled optional
+* Updated Qt to 5.12.9 on all platforms except Windows XP and snap releases
+* snap: Fixed issues with storing the default session (#2852)
+* snap: Enabled support for Zstandard (#2850)
+
+### Tiled 1.4.1 (25 June 2020)
+
+* When opening a .world file, load the world and open its first map
+* When opening an object template, show it in the Template Editor
+* Fixed crash on trying to export using the command-line (#2842)
+* Fixed crash when deleting multiple objects with manual drawing order (#2844)
+* Fixed potential crash when removing a tileset
+* Fixed potential scaling happening for maps used as tilesets (#2843)
+* Fixed positioning of map view when switching between maps in a world
+* Fixed file dialog start location
+* Scripting: Fixed issues with absolute file paths on Windows (#2841)
+* Lua plugin: Fixed syntax used for object properties (#2839)
+
+### Tiled 1.4.0 (17 June 2020)
 
 * Added support for projects (#1665)
 * Added object reference property type (with Steve Le Roy Harris and Phlosioneer, #707)
@@ -22,9 +109,12 @@
 * Optimized loading of CSV tile layer data (by Phlosioneer, #2701)
 * Improved map positioning when toggling 'Clear View'
 * Remember the preferred format used for saving
+* Normalize rotation values when rotating objects (#2775)
 * Removed the Maps view (replaced by Project view)
 * Removed file system hierarchy from Templates view (replaced by Project view)
+* Fixed potential crash when triggering AutoMap (#2766)
 * Fixed the status bar placement to be always at the bottom of the window
+* Fixed potential issue with automatic reloading of files (#1904)
 * Fixed issue where image layer images cannot be loaded from Qt resource files (by obeezzy, #2711)
 * GmxPlugin: Added support for layer tint color
 * Scripting: Assign global variables to console script evaluations (by Phlosioneer, #2724)
@@ -32,10 +122,12 @@
 * Scripting: Added support for custom "file" properties
 * Scripting: Added checks for nullptr arguments (by Phlosioneer, #2736)
 * Scripting: Added some missing tileset related properties
-* Scripting: Added FileInfo API with various file path operations
+* Scripting: Added FileInfo API with various file path operations (with David Konsumer, #2822)
 * Scripting: Provide access to registered file formats (by Phlosioneer, #2716)
 * Scripting: Enabled scripted formats to be used on the command-line
+* Scripting: Added functions to access inherited properties (by Bill Clark, #2813)
 * Scripting: Introduced \__filename global value (with konsumer)
+* Scripting: Fixed ObjectGroup.insertObjectAt to use the index
 * docs: Clarify "can contain" documentation and error handling (by Phlosioneer, #2702)
 * docs: Document all optional attributes, update some docs (by Phlosioneer, #2705)
 * docs: Alphabetize scripting API reference (by Phlosioneer, #2720)
@@ -43,6 +135,9 @@
 * docs: Enabled Algolia powered search
 * libtiled-java: Big update to support newer TMX attributes (by Mike Thomas, #1925)
 * libtiled-java: Fixed writing of the tile type (by Phlosioneer, #2704)
+* libtiled-java: Enable loading of maps from jar files (by Adam Hornáček, #2829)
+* Updated Bulgarian, Chinese (Simplified), Czech, Finnish, French, Norwegian Bokmål, Portuguese (Portugal) and Turkish translations
+
 
 ### Tiled 1.3.5 (27 May 2020)
 

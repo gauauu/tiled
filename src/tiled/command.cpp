@@ -24,9 +24,9 @@
 #include "commandmanager.h"
 #include "documentmanager.h"
 #include "logginginterface.h"
-#include "mainwindow.h"
 #include "mapdocument.h"
 #include "mapobject.h"
+#include "projectmanager.h"
 #include "worlddocument.h"
 #include "worldmanager.h"
 
@@ -67,15 +67,15 @@ private:
 static QString replaceVariables(const QString &string, bool quoteValues = true)
 {
     QString finalString = string;
-    QString replaceString = quoteValues ? QString(QLatin1String("\"%1\"")) :
-                                          QString(QLatin1String("%1"));
+    QString replaceString = quoteValues ? QStringLiteral("\"%1\"") :
+                                          QStringLiteral("%1");
 
     // Perform variable replacement
     if (Document *document = DocumentManager::instance()->currentDocument()) {
         const QString fileName = document->fileName();
         QFileInfo fileInfo(fileName);
         const QString mapPath = fileInfo.absolutePath();
-        const QString projectPath = QFileInfo(MainWindow::instance()->project().fileName()).absolutePath();
+        const QString projectPath = QFileInfo(ProjectManager::instance()->project().fileName()).absolutePath();
 
         finalString.replace(QLatin1String("%mapfile"), replaceString.arg(fileName));
         finalString.replace(QLatin1String("%mappath"), replaceString.arg(mapPath));
@@ -122,7 +122,7 @@ QString Command::finalWorkingDirectory() const
  */
 QString Command::finalCommand() const
 {
-    QString finalCommand = QString(QLatin1String("%1 %2")).arg(executable, arguments);
+    QString finalCommand = QStringLiteral("%1 %2").arg(executable, arguments);
     return replaceVariables(finalCommand);
 }
 
@@ -242,8 +242,8 @@ CommandProcess::CommandProcess(const Command &command, bool inTerminal, bool sho
         mFile.close();
 
         // Add execute permission to the file
-        int chmodRet = QProcess::execute(QString(QLatin1String(
-                                     "chmod +x \"%1\"")).arg(mFile.fileName()));
+        int chmodRet = QProcess::execute(QStringLiteral("chmod"),
+                                         { QStringLiteral("+x"), mFile.fileName() });
         if (chmodRet != 0) {
             reportErrorAndDelete(tr("Unable to add executable permissions to %1")
                                  .arg(mFile.fileName()));
@@ -253,7 +253,7 @@ CommandProcess::CommandProcess(const Command &command, bool inTerminal, bool sho
         // Use open command to launch the command in the terminal
         // -W makes it not return immediately
         // -n makes it open a new instance of terminal if it is open already
-        mFinalCommand = QString(QLatin1String("open -W -n \"%1\""))
+        mFinalCommand = QStringLiteral("open -W -n \"%1\"")
                                                          .arg(mFile.fileName());
 #endif
     }
@@ -275,7 +275,13 @@ CommandProcess::CommandProcess(const Command &command, bool inTerminal, bool sho
     if (!finalWorkingDirectory.trimmed().isEmpty())
         setWorkingDirectory(finalWorkingDirectory);
 
+#if QT_VERSION < QT_VERSION_CHECK(5, 15, 0)
     start(mFinalCommand);
+#else
+    QStringList args = QProcess::splitCommand(mFinalCommand);
+    const QString executable = args.takeFirst();
+    start(executable, args);
+#endif
 }
 
 void CommandProcess::consoleOutput()

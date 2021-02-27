@@ -40,7 +40,8 @@ IssuesCounter::IssuesCounter(QWidget *parent)
     , mWarningCount(new QLabel)
 {
     auto layout = new QHBoxLayout;
-    layout->setMargin(Utils::dpiScaled(2));
+    const int margin = Utils::dpiScaled(2);
+    layout->setContentsMargins(margin, margin, margin, margin);
 
     int spacing = Utils::dpiScaled(5);
     layout->addSpacing(spacing);
@@ -109,7 +110,9 @@ void IssuesCounter::updateLabels()
     const QString errorText = tr("%n error(s)", "", errorCount);
     const QString warningText = tr("%n warning(s)", "", warningCount);
 
-    setToolTip(QString(QLatin1String("%1, %2")).arg(errorText, warningText));
+    setToolTip(QStringLiteral("%1, %2").arg(errorText, warningText));
 }
 
 } // namespace Tiled
+
+#include "moc_issuescounter.cpp"

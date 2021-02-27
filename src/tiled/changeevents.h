@@ -27,6 +27,7 @@
 namespace Tiled {
 
 class Layer;
+class WangSet;
 
 class ChangeEvent
 {
@@ -43,6 +44,7 @@ public:
         MapObjectsChanged,
         MapObjectsRemoved,
         ObjectGroupChanged,
+        WangSetChanged,
     } type;
 
 protected:
@@ -60,7 +62,9 @@ public:
         VisibleProperty         = 1 << 2,
         LockedProperty          = 1 << 3,
         OffsetProperty          = 1 << 4,
-        TintColorProperty       = 1 << 5,
+        ParallaxFactorProperty  = 1 << 5,
+        TintColorProperty       = 1 << 6,
+        PositionProperties      = OffsetProperty | ParallaxFactorProperty,
         AllProperties           = 0xFF
     };
 
@@ -150,6 +154,23 @@ public:
 
     ObjectGroup *objectGroup;
     int index;
+};
+
+class WangSetChangeEvent : public ChangeEvent
+{
+public:
+    enum WangSetProperty {
+        TypeProperty            = 1 << 0,
+    };
+
+    WangSetChangeEvent(WangSet *wangSet, int properties)
+        : ChangeEvent(WangSetChanged)
+        , wangSet(wangSet)
+        , properties(properties)
+    {}
+
+    WangSet *wangSet;
+    int properties;
 };
 
 } // namespace Tiled

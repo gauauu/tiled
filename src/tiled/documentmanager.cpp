@@ -38,9 +38,9 @@
 #include "mapview.h"
 #include "noeditorwidget.h"
 #include "preferences.h"
+#include "projectmanager.h"
 #include "session.h"
 #include "tabbar.h"
-#include "terrain.h"
 #include "tilesetdocument.h"
 #include "tilesetdocumentsmodel.h"
 #include "tilesetmanager.h"
@@ -80,6 +80,11 @@ DocumentManager *DocumentManager::instance()
     return mInstance;
 }
 
+DocumentManager *DocumentManager::maybeInstance()
+{
+    return mInstance;
+}
+
 DocumentManager::DocumentManager(QObject *parent)
     : QObject(parent)
     , mTilesetDocumentsModel(new TilesetDocumentsModel(this))
@@ -114,7 +119,7 @@ DocumentManager::DocumentManager(QObject *parent)
     vertical->addWidget(mTabBar);
     vertical->addWidget(mFileChangedWarning);
     vertical->addWidget(mBrokenLinksWidget);
-    vertical->setMargin(0);
+    vertical->setContentsMargins(0, 0, 0, 0);
     vertical->setSpacing(0);
 
     mEditorStack = new QStackedLayout;
@@ -151,10 +156,13 @@ DocumentManager::DocumentManager(QObject *parent)
             auto renderer = mapDocument->renderer();
             auto mapView = viewForDocument(mapDocument);
             auto pos = renderer->tileToScreenCoords(jump.tilePos);
-            mapView->forceCenterOn(pos);
 
-            if (auto layer = mapDocument->map()->findLayerById(jump.layerId))
+            if (auto layer = mapDocument->map()->findLayerById(jump.layerId)) {
                 mapDocument->switchSelectedLayers({ layer });
+                mapView->forceCenterOn(pos, *layer);
+            } else {
+                mapView->forceCenterOn(pos);
+            }
         }
     };
 
@@ -217,11 +225,6 @@ DocumentManager::DocumentManager(QObject *parent)
             switch (select.objectType) {
             case Object::MapObjectType:
                 // todo: no way to know to which tile this object belongs
-                break;
-            case Object::TerrainType:
-                // todo: select the terrain
-                if (select.id < tilesetDocument->tileset()->terrainCount())
-                    obj = tilesetDocument->tileset()->terrain(select.id);
                 break;
             case Object::TilesetType:
                 obj = tilesetDocument->tileset().data();
@@ -639,13 +642,9 @@ DocumentPtr DocumentManager::loadDocument(const QString &fileName,
 
     if (!fileFormat) {
         // Try to find a plugin that implements support for this format
-        const auto formats = PluginManager::objects<FileFormat>();
-        for (FileFormat *format : formats) {
-            if (format->supportsFile(fileName)) {
-                fileFormat = format;
-                break;
-            }
-        }
+        fileFormat = PluginManager::find<FileFormat>([&](FileFormat *format) {
+            return format->hasCapabilities(FileFormat::Read) && format->supportsFile(fileName);
+        });
     }
 
     if (!fileFormat) {
@@ -684,6 +683,7 @@ bool DocumentManager::saveDocument(Document *document, const QString &fileName)
 
     QString error;
     if (!document->save(fileName, &error)) {
+        switchToDocument(document);
         QMessageBox::critical(mWidget->window(), QCoreApplication::translate("Tiled::MainWindow", "Error Saving File"), error);
         return false;
     }
@@ -709,7 +709,7 @@ bool DocumentManager::saveDocumentAs(Document *document)
 
     auto getSaveFileName = [&](const QString &filter, const QString &defaultFileName) {
         if (fileName.isEmpty()) {
-            fileName = Preferences::instance()->fileDialogStartLocation();
+            fileName = fileDialogStartLocation();
             fileName += QLatin1Char('/');
             fileName += defaultFileName;
             fileName += Utils::firstExtension(selectedFilter);
@@ -921,9 +921,13 @@ bool DocumentManager::reloadDocumentAt(int index)
     QString error;
 
     if (auto mapDocument = oldDocument.objectCast<MapDocument>()) {
+        auto readerFormat = mapDocument->readerFormat();
+        if (!readerFormat)
+            return false;
+
         // TODO: Consider fixing the reload to avoid recreating the MapDocument
         auto newDocument = MapDocument::load(oldDocument->fileName(),
-                                             mapDocument->readerFormat(),
+                                             readerFormat,
                                              &error);
         if (!newDocument) {
             emit reloadError(tr("%1:\n\n%2").arg(oldDocument->fileName(), error));
@@ -1265,6 +1269,30 @@ bool DocumentManager::isWorldModified(const QString &fileName) const
     return false;
 }
 
+/**
+ * Returns a logical start location for a file dialog to open a file, based on
+ * the currently selected file, a recent file, the project path or finally, the
+ * home location.
+ */
+QString DocumentManager::fileDialogStartLocation() const
+{
+    if (auto doc = currentDocument()) {
+        QString path = QFileInfo(doc->fileName()).path();
+        if (!path.isEmpty())
+            return path;
+    }
+
+    const auto &session = Session::current();
+    if (!session.recentFiles.isEmpty())
+        return QFileInfo(session.recentFiles.first()).path();
+
+    const auto &project = ProjectManager::instance()->project();
+    if (!project.fileName().isEmpty())
+        return QFileInfo(project.fileName()).path();
+
+    return Preferences::homeLocation();
+}
+
 void DocumentManager::onWorldUnloaded(const QString &worldFile)
 {
     delete mWorldDocuments.take(worldFile);
@@ -1375,3 +1403,5 @@ void DocumentManager::abortMultiDocumentClose()
 {
     mMultiDocumentClose = false;
 }
+
+#include "moc_documentmanager.cpp"

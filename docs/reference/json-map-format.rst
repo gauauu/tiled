@@ -94,10 +94,12 @@ Layer
     offsetx,          double,           "Horizontal layer offset in pixels (default: 0)"
     offsety,          double,           "Vertical layer offset in pixels (default: 0)"
     opacity,          double,           "Value between 0 and 1"
+    parallaxx,        double,           "Horizontal :ref:`parallax factor <parallax-factor>` for this layer (default: 1). (since Tiled 1.5)"
+    parallaxy,        double,           "Vertical :ref:`parallax factor <parallax-factor>` for this layer (default: 1). (since Tiled 1.5)"
     properties,       array,            "Array of :ref:`Properties <json-property>`"
     startx,           int,              "X coordinate where layer content starts (for infinite maps)"
     starty,           int,              "Y coordinate where layer content starts (for infinite maps)"
-    tintcolor,        string,           "Hex-formatted color (#RRGGBB or #AARRGGBB) that is multiplied with any graphics drawn by this layer or any child layers (optional)."
+    tintcolor,        string,           "Hex-formatted :ref:`tint color <tint-color>` (#RRGGBB or #AARRGGBB) that is multiplied with any graphics drawn by this layer or any child layers (optional)."
     transparentcolor, string,           "Hex-formatted color (#RRGGBB) (optional). ``imagelayer`` only."
     type,             string,           "``tilelayer``, ``objectgroup``, ``imagelayer`` or ``group``"
     visible,          bool,             "Whether layer is shown or hidden in editor"
@@ -441,6 +443,7 @@ Tileset
     tileoffset,       :ref:`json-tileset-tileoffset`, "(optional)"
     tiles,            array,            "Array of :ref:`Tiles <json-tile>` (optional)"
     tilewidth,        int,              "Maximum width of tiles in this set"
+    transformations,  :ref:`json-tileset-transformations`, "Allowed transformations (optional)"
     transparentcolor, string,           "Hex-formatted color (#RRGGBB) (optional)"
     type,             string,           "``tileset`` (for tileset files, since 1.0)"
     version,          number,           "The JSON format version"
@@ -482,6 +485,22 @@ See :ref:`tmx-tileoffset` in the TMX Map Format.
 
     x,                int,              "Horizontal offset in pixels"
     y,                int,              "Vertical offset in pixels (positive is down)"
+
+.. _json-tileset-transformations:
+
+Transformations
+~~~~~~~~~~~~~~~
+
+See :ref:`tmx-tileset-transformations` in the TMX Map Format.
+
+.. csv-table::
+    :header: Field, Type, Description
+    :widths: 1, 1, 4
+
+    hflip,            bool,             "Tiles can be flipped horizontally"
+    vflip,            bool,             "Tiles can be flipped vertically"
+    rotate,           bool,             "Tiles can be rotated in 90-degree increments"
+    preferuntransformed, bool,          "Whether untransformed tiles remain preferred, otherwise transformed tiles are used to produce more variations"
 
 Tileset Example
 ~~~~~~~~~~~~~~~
@@ -626,8 +645,7 @@ Wang Set
     :header: Field, Type, Description
     :widths: 1, 1, 4
 
-    cornercolors,     array,            "Array of :ref:`Wang colors <json-wangcolor>`"
-    edgecolors,       array,            "Array of :ref:`Wang colors <json-wangcolor>`"
+    colors,           array,            "Array of :ref:`Wang colors <json-wangcolor>`"
     name,             string,           "Name of the Wang set"
     properties,       array,            "Array of :ref:`Properties <json-property>`"
     tile,             int,              "Local ID of tile representing the Wang set"
@@ -645,6 +663,7 @@ Wang Color
     color,            string,           "Hex-formatted color (#RRGGBB or #AARRGGBB)"
     name,             string,           "Name of the Wang color"
     probability,      double,           "Probability used when randomizing"
+    properties,       array,            "Array of :ref:`Properties <json-property>`"
     tile,             int,              "Local ID of tile representing the Wang color"
 
 Example:
@@ -667,10 +686,7 @@ Wang Tile
     :header: Field, Type, Description
     :widths: 1, 1, 4
 
-    dflip,            bool,             "Tile is flipped diagonally (default: ``false``)"
-    hflip,            bool,             "Tile is flipped horizontally (default: ``false``)"
     tileid,           int,              "Local ID of tile"
-    vflip,            bool,             "Tile is flipped vertically (default: ``false``)"
     wangid,           array,            "Array of Wang color indexes (``uchar[8]``)"
 
 Example:
@@ -678,10 +694,7 @@ Example:
 .. code:: json
 
     {
-      "dflip": false,
-      "hflip": false,
       "tileid": 0,
-      "vflip": false,
       "wangid": [2, 0, 1, 0, 1, 0, 2, 0]
     }
 
@@ -730,6 +743,20 @@ A point on a polygon or a polyline, relative to the position of the object.
 
 Changelog
 ---------
+
+Tiled 1.5
+~~~~~~~~~
+
+* Unified ``cornercolors`` and ``edgecolors`` attributes of :ref:`json-wangset`
+  as the new ``colors`` property.
+
+* :ref:`json-wangcolor` can now store ``properties``.
+
+* Added ``transformations`` property to :ref:`json-tileset` (see
+  :ref:`json-tileset-transformations`).
+
+* Removed ``dflip``, ``hflip`` and ``vflip`` properties from
+  :ref:`json-wangtile` (no longer supported).
 
 Tiled 1.4
 ~~~~~~~~~

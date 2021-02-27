@@ -20,15 +20,19 @@
 
 #pragma once
 
+#include "preferences.h"
+
 #include <QGraphicsView>
 #include <QPinchGesture>
 
 namespace Tiled {
 
+class Layer;
 class MapObject;
 
 class MapDocument;
 class MapScene;
+class TileAnimationDriver;
 class Zoomable;
 
 /**
@@ -43,6 +47,7 @@ class MapView : public QGraphicsView
     Q_OBJECT
 
     Q_PROPERTY(qreal scale READ scale WRITE setScale)
+    Q_PROPERTY(QPointF center READ viewCenter WRITE forceCenterOn)
 
 public:
     /**
@@ -58,10 +63,11 @@ public:
         NoStaticContents,
     };
 
+    static Preference<bool> ourAutoScrollingEnabled;
+    static Preference<bool> ourSmoothScrollingEnabled;
+
     MapView(QWidget *parent = nullptr, Mode mode = StaticContents);
     ~MapView() override;
-
-    void setInitialCenterPos(const QPointF &center);
 
     void setScene(MapScene *scene);
     MapScene *mapScene() const;
@@ -71,15 +77,24 @@ public:
     qreal scale() const;
     void setScale(qreal scale);
 
+    const QRectF &viewRect() const;
+    QPointF viewCenter() const;
+
     void fitMapInView();
 
-    bool handScrolling() const { return mHandScrolling; }
-    void setHandScrolling(bool handScrolling);
+    enum ScrollingMode {
+        NoScrolling,
+        DragScrolling,
+        AutoScrolling
+    };
+    ScrollingMode scrollingMode() const { return mScrollingMode; }
+    void setScrollingMode(ScrollingMode mode);
 
     using QGraphicsView::centerOn;
     Q_INVOKABLE void centerOn(qreal x, qreal y) { forceCenterOn(QPointF(x, y)); }
 
-    void forceCenterOn(const QPointF &pos);
+    void forceCenterOn(QPointF pos);
+    void forceCenterOn(QPointF pos, const Layer &layer);
 
 protected:
     bool event(QEvent *event) override;
@@ -89,6 +104,7 @@ protected:
     void resizeEvent(QResizeEvent *event) override;
 
     void keyPressEvent(QKeyEvent *event) override;
+    void keyReleaseEvent(QKeyEvent *event) override;
 
     void wheelEvent(QWheelEvent *event) override;
 
@@ -104,32 +120,59 @@ protected:
 
 signals:
     void focused();
+    void viewRectChanged();
 
 private:
     void adjustScale(qreal scale);
     void setUseOpenGL(bool useOpenGL);
     void updateSceneRect(const QRectF &sceneRect);
     void updateSceneRect(const QRectF &sceneRect, const QTransform &transform);
+    void updateViewRect();
     void focusMapObject(MapObject *mapObject);
+
+    enum PanDirectionFlag {
+        Left    = 0x1,
+        Right   = 0x2,
+        Up      = 0x4,
+        Down    = 0x8,
+    };
+    Q_DECLARE_FLAGS(PanDirections, PanDirectionFlag)
+
+    void setPanDirections(PanDirections directions);
+    void updatePanningDriverState();
+    void updatePanning(int deltaTime);
+
+    void scrollBy(QPoint distance);
 
     void setMapDocument(MapDocument *mapDocument);
 
     MapDocument *mMapDocument = nullptr;
     QPoint mLastMousePos;
+    QPoint mScrollStartPos;
     QPointF mLastMouseScenePos;
-    bool mHandScrolling = false;
+    ScrollingMode mScrollingMode = NoScrolling;
     bool mViewInitialized = false;
     bool mHasInitialCenterPos = false;
     QPointF mInitialCenterPos;
+    QRectF mViewRect;
     Mode mMode;
     Zoomable *mZoomable;
+
+    PanDirections mPanDirections;
+    TileAnimationDriver *mPanningDriver;
 };
 
-
-inline void MapView::setInitialCenterPos(const QPointF &center)
+/**
+ * Returns the part of the scene that is visible in this MapView.
+ */
+inline const QRectF &MapView::viewRect() const
 {
-    mInitialCenterPos = center;
-    mHasInitialCenterPos = true;
+    return mViewRect;
+}
+
+inline QPointF MapView::viewCenter() const
+{
+    return mViewRect.center();
 }
 
 } // namespace Tiled

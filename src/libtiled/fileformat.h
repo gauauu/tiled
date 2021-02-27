@@ -114,7 +114,7 @@ public:
                 const QString nameFilter = format->nameFilter();
 
                 if (!mFilter.isEmpty())
-                    mFilter += QLatin1String(";;");
+                    mFilter += QStringLiteral(";;");
                 mFilter += nameFilter;
 
                 mFormats.append(format);
@@ -149,6 +149,9 @@ private:
 template<typename Format>
 Format *findFileFormat(const QString &shortName, FileFormat::Capabilities capabilities = FileFormat::Write)
 {
+    if (shortName.isEmpty())
+        return nullptr;
+
     return PluginManager::find<Format>([&](Format *format) {
         return format->hasCapabilities(capabilities) && format->shortName() == shortName;
     });

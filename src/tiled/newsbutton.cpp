@@ -99,7 +99,7 @@ void NewsButton::refreshButton()
         painter.setBrush(Qt::white);
         painter.setPen(Qt::white);
         painter.drawText(numberPixmap.rect(), Qt::AlignCenter, unreadCount < 5 ? QString::number(unreadCount) :
-                                                                                 QString(QLatin1String("!")));
+                                                                                 QStringLiteral("!"));
 
         setIcon(QIcon(numberPixmap));
     } else {
@@ -159,3 +159,5 @@ void NewsButton::retranslateUi()
 }
 
 } // namespace Tiled
+
+#include "moc_newsbutton.cpp"
