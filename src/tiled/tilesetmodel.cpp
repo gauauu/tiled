@@ -73,9 +73,6 @@ QVariant TilesetModel::data(const QModelIndex &index, int role) const
     if (role == Qt::DecorationRole) {
         if (Tile *tile = tileAt(index))
             return tile->image();
-    } else if (role == TerrainRole) {
-        if (Tile *tile = tileAt(index))
-            return tile->terrain();
     }
 
     return QVariant();
@@ -112,7 +109,11 @@ QMimeData *TilesetModel::mimeData(const QModelIndexList &indexes) const
     QMimeData *mimeData = new QMimeData;
     QByteArray encodedData;
 
+#if QT_VERSION < QT_VERSION_CHECK(6,0,0)
     QDataStream stream(&encodedData, QIODevice::WriteOnly);
+#else
+    QDataStream stream(&encodedData, QDataStream::WriteOnly);
+#endif
 
     for (const QModelIndex &index : indexes) {
         if (index.isValid())
@@ -235,3 +236,5 @@ void TilesetModel::refreshTileIds()
     for (Tile *tile : mTileset->tiles())
         mTileIds.append(tile->id());
 }
+
+#include "moc_tilesetmodel.cpp"

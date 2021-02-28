@@ -15,6 +15,10 @@ win32 {
 
 QT += widgets qml
 
+contains(QT_CONFIG, opengl):minQtVersion(6, 0, 0) {
+    QT += openglwidgets
+}
+
 DEFINES += TILED_VERSION=$${TILED_VERSION}
 
 DEFINES += QT_NO_CAST_FROM_ASCII \
@@ -40,6 +44,11 @@ macx {
     QMAKE_RPATHDIR =
 }
 
+# Support linking to system Zstandard install
+unix:contains(SYSTEM_ZSTD, yes) {
+    DEFINES += TILED_ZSTD_SUPPORT
+}
+
 SOURCES += aboutdialog.cpp \
     abstractobjecttool.cpp \
     abstracttileselectiontool.cpp \
@@ -51,7 +60,6 @@ SOURCES += aboutdialog.cpp \
     addpropertydialog.cpp \
     addremovelayer.cpp \
     addremovemapobject.cpp \
-    addremoveterrain.cpp \
     addremovetiles.cpp \
     addremovetileset.cpp \
     addremovewangset.cpp \
@@ -73,13 +81,11 @@ SOURCES += aboutdialog.cpp \
     changepolygon.cpp \
     changeproperties.cpp \
     changeselectedarea.cpp \
-    changeterrain.cpp \
     changetile.cpp \
     changetileanimation.cpp \
     changetileimagesource.cpp \
     changetileobjectgroup.cpp \
     changetileprobability.cpp \
-    changetileterrain.cpp \
     changetilewangid.cpp \
     changewangcolordata.cpp \
     changewangsetdata.cpp \
@@ -106,6 +112,7 @@ SOURCES += aboutdialog.cpp \
     createtemplatetool.cpp \
     createtextobjecttool.cpp \
     createtileobjecttool.cpp \
+    debugdrawitem.cpp \
     document.cpp \
     documentmanager.cpp \
     donationdialog.cpp \
@@ -119,10 +126,10 @@ SOURCES += aboutdialog.cpp \
     editableobject.cpp \
     editableobjectgroup.cpp \
     editableselectedarea.cpp \
-    editableterrain.cpp \
     editabletile.cpp \
     editabletilelayer.cpp \
     editabletileset.cpp \
+    editablewangset.cpp \
     editor.cpp \
     editpolygontool.cpp \
     eraser.cpp \
@@ -163,7 +170,6 @@ SOURCES += aboutdialog.cpp \
     movelayer.cpp \
     movemapobject.cpp \
     movemapobjecttogroup.cpp \
-    moveterrain.cpp \
     newmapdialog.cpp \
     newsbutton.cpp \
     newsfeed.cpp \
@@ -191,6 +197,7 @@ SOURCES += aboutdialog.cpp \
     preferences.cpp \
     project.cpp \
     projectdock.cpp \
+    projectmanager.cpp \
     projectmodel.cpp \
     projectpropertiesdialog.cpp \
     preferencesdialog.cpp \
@@ -198,7 +205,6 @@ SOURCES += aboutdialog.cpp \
     propertybrowser.cpp \
     raiselowerhelper.cpp \
     regionvaluetype.cpp \
-    renamewangset.cpp \
     reparentlayers.cpp \
     replacetemplate.cpp \
     replacetileset.cpp \
@@ -214,8 +220,11 @@ SOURCES += aboutdialog.cpp \
     scriptedtool.cpp \
     scriptfile.cpp \
     scriptfileformatwrappers.cpp \
+    scriptfileinfo.cpp \
+    scriptimage.cpp \
     scriptmanager.cpp \
     scriptmodule.cpp \
+    scriptprocess.cpp \
     selectionrectangle.cpp \
     selectsametiletool.cpp \
     session.cpp \
@@ -228,10 +237,6 @@ SOURCES += aboutdialog.cpp \
     swaptiles.cpp \
     tabbar.cpp \
     templatesdock.cpp \
-    terrainbrush.cpp \
-    terraindock.cpp \
-    terrainmodel.cpp \
-    terrainview.cpp \
     texteditordialog.cpp \
     textpropertyedit.cpp \
     tileanimationeditor.cpp \
@@ -250,7 +255,6 @@ SOURCES += aboutdialog.cpp \
     tileseteditor.cpp \
     tilesetmodel.cpp \
     tilesetparametersedit.cpp \
-    tilesetterrainmodel.cpp \
     tilesetwangsetmodel.cpp \
     tilesetview.cpp \
     tilestamp.cpp \
@@ -272,6 +276,7 @@ SOURCES += aboutdialog.cpp \
     wangsetmodel.cpp \
     wangdock.cpp \
     wangfiller.cpp \
+    wangoverlay.cpp \
     wangtemplatemodel.cpp \
     wangtemplateview.cpp \
     worlddocument.cpp \
@@ -289,7 +294,6 @@ HEADERS += aboutdialog.h \
     addpropertydialog.h \
     addremovelayer.h \
     addremovemapobject.h \
-    addremoveterrain.h \
     addremovetileset.h \
     addremovetiles.h \
     addremovewangset.h \
@@ -312,13 +316,11 @@ HEADERS += aboutdialog.h \
     changepolygon.h \
     changeproperties.h \
     changeselectedarea.h \
-    changeterrain.h \
     changetile.h \
     changetileanimation.h \
     changetileimagesource.h \
     changetileobjectgroup.h \
     changetileprobability.h \
-    changetileterrain.h \
     changetilewangid.h \
     changewangcolordata.h \
     changewangsetdata.h \
@@ -345,6 +347,7 @@ HEADERS += aboutdialog.h \
     createtemplatetool.h \
     createtextobjecttool.h \
     createtileobjecttool.h \
+    debugdrawitem.h \
     document.h \
     documentmanager.h \
     donationdialog.h \
@@ -358,10 +361,10 @@ HEADERS += aboutdialog.h \
     editableobject.h \
     editableobjectgroup.h \
     editableselectedarea.h \
-    editableterrain.h \
     editabletile.h \
     editabletilelayer.h \
     editabletileset.h \
+    editablewangset.h \
     editor.h \
     editpolygontool.h \
     eraser.h \
@@ -402,7 +405,6 @@ HEADERS += aboutdialog.h \
     movelayer.h \
     movemapobject.h \
     movemapobjecttogroup.h \
-    moveterrain.h \
     newmapdialog.h \
     newsbutton.h \
     newsfeed.h \
@@ -431,6 +433,7 @@ HEADERS += aboutdialog.h \
     preferencesdialog.h \
     project.h \
     projectdock.h \
+    projectmanager.h \
     projectmodel.h \
     projectpropertiesdialog.h \
     propertiesdock.h \
@@ -439,7 +442,6 @@ HEADERS += aboutdialog.h \
     randompicker.h \
     rangeset.h \
     regionvaluetype.h \
-    renamewangset.h \
     reparentlayers.h \
     replacetemplate.h \
     replacetileset.h \
@@ -456,8 +458,11 @@ HEADERS += aboutdialog.h \
     scriptedtool.h \
     scriptfile.h \
     scriptfileformatwrappers.h \
+    scriptfileinfo.h \
+    scriptimage.h \
     scriptmanager.h \
     scriptmodule.h \
+    scriptprocess.h \
     selectionrectangle.h \
     selectsametiletool.h \
     session.h \
@@ -470,10 +475,6 @@ HEADERS += aboutdialog.h \
     swaptiles.h \
     tabbar.h \
     templatesdock.h \
-    terrainbrush.h \
-    terraindock.h \
-    terrainmodel.h \
-    terrainview.h \
     texteditordialog.h \
     textpropertyedit.h \
     tileanimationeditor.h \
@@ -492,7 +493,6 @@ HEADERS += aboutdialog.h \
     tileseteditor.h \
     tilesetmodel.h \
     tilesetparametersedit.h \
-    tilesetterrainmodel.h \
     tilesetwangsetmodel.h \
     tilesetview.h \
     tilestamp.h \
@@ -514,6 +514,7 @@ HEADERS += aboutdialog.h \
     wangsetmodel.h \
     wangdock.h \
     wangfiller.h \
+    wangoverlay.h \
     wangtemplatemodel.h \
     wangtemplateview.h \
     worlddocument.h \
@@ -543,11 +544,11 @@ FORMS += aboutdialog.ui \
     tileanimationeditor.ui
 
 icon32.path = $${PREFIX}/share/icons/hicolor/32x32/apps/
-icon32.files += images/32x32/tiled.png
+icon32.files += images/32/tiled.png
 INSTALLS += icon32
 
 icon16.path = $${PREFIX}/share/icons/hicolor/16x16/apps/
-icon16.files += images/16x16/tiled.png
+icon16.files += images/16/tiled.png
 INSTALLS += icon16
 
 iconscalable.path = $${PREFIX}/share/icons/hicolor/scalable/apps/
@@ -555,11 +556,11 @@ iconscalable.files += images/scalable/tiled.svg
 INSTALLS += iconscalable
 
 mimeicon16.path = $${PREFIX}/share/icons/hicolor/16x16/mimetypes/
-mimeicon16.files += images/16x16/application-x-tiled.png
+mimeicon16.files += images/16/application-x-tiled.png
 INSTALLS += mimeicon16
 
 mimeicon32.path = $${PREFIX}/share/icons/hicolor/32x32/mimetypes/
-mimeicon32.files += images/32x32/application-x-tiled.png
+mimeicon32.files += images/32/application-x-tiled.png
 INSTALLS += mimeicon32
 
 mimeiconscalable.path = $${PREFIX}/share/icons/hicolor/scalable/mimetypes/

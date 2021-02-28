@@ -21,6 +21,8 @@
 
 #include "fileedit.h"
 
+#include "tiled.h"
+
 #include <QFileDialog>
 #include <QFocusEvent>
 #include <QHBoxLayout>
@@ -34,7 +36,7 @@ FileEdit::FileEdit(QWidget *parent)
     , mErrorTextColor(Qt::red)
 {
     QHBoxLayout *layout = new QHBoxLayout(this);
-    layout->setMargin(0);
+    layout->setContentsMargins(0, 0, 0, 0);
     layout->setSpacing(0);
 
     mLineEdit = new QLineEdit(this);
@@ -71,10 +73,7 @@ void FileEdit::setFileUrl(const QUrl &url)
 QUrl FileEdit::fileUrl() const
 {
     const QString path = mLineEdit->text();
-    QUrl url(path);
-    if (url.isRelative())
-        url = QUrl::fromLocalFile(path);
-    return url;
+    return Tiled::toUrl(path);
 }
 
 void FileEdit::focusInEvent(QFocusEvent *e)
@@ -150,3 +149,5 @@ void FileEdit::buttonClicked()
 }
 
 } // namespace Tiled
+
+#include "moc_fileedit.cpp"

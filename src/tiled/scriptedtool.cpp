@@ -22,6 +22,7 @@
 
 #include "brushitem.h"
 #include "editablemap.h"
+#include "editabletile.h"
 #include "mapdocument.h"
 #include "pluginmanager.h"
 #include "scriptmanager.h"
@@ -105,7 +106,6 @@ void ScriptedTool::setPreview(EditableMap *editableMap)
 void ScriptedTool::activate(MapScene *scene)
 {
     AbstractTileTool::activate(scene);
-    mScene = scene;
     call(QStringLiteral("activated"));
 }
 
@@ -113,7 +113,6 @@ void ScriptedTool::deactivate(MapScene *scene)
 {
     AbstractTileTool::deactivate(scene);
     call(QStringLiteral("deactivated"));
-    mScene = nullptr;
 }
 
 void ScriptedTool::keyPressed(QKeyEvent *keyEvent)
@@ -285,3 +284,5 @@ bool ScriptedTool::call(const QString &methodName, const QJSValueList &args)
 }
 
 } // namespace Tiled
+
+#include "moc_scriptedtool.cpp"

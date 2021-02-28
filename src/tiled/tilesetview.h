@@ -27,8 +27,7 @@
 
 namespace Tiled {
 
-class Terrain;
-
+class ChangeEvent;
 class TilesetDocument;
 class Zoomable;
 
@@ -81,58 +80,26 @@ public:
     void setMarkAnimatedTiles(bool enabled);
     bool markAnimatedTiles() const;
 
-    /**
-     * Returns whether terrain editing is enabled.
-     * \sa terrainId
-     */
-    bool isEditTerrain() const { return mEditTerrain; }
-
-    /**
-     * Sets whether terrain editing is enabled.
-     * \sa setTerrain
-     */
-    void setEditTerrain(bool enabled);
-
     void setEditWangSet(bool enabled);
     bool isEditWangSet() const { return mEditWangSet; }
-
-    /**
-     * Sets whether terrain editing is in "erase" mode.
-     * \sa setEditTerrain
-     */
-    void setEraseTerrain(bool erase) { mEraseTerrain = erase; }
-    bool isEraseTerrain() const { return mEraseTerrain; }
-
-    int terrainId() const;
-
-    /**
-     * Sets the terrain to paint on the tiles.
-     */
-    void setTerrain(const Terrain *terrain);
 
     WangSet *wangSet() const { return mWangSet; }
     void setWangSet(WangSet *wangSet);
 
     WangId wangId() const { return mWangId; }
-    //sets the WangId and changes WangBehavior to WholeId
     void setWangId(WangId  wangId);
 
-    //Sets the wangColor, and changes WangBehavior to edges/corners
-    void setWangEdgeColor(int color);
-    void setWangCornerColor(int color);
+    void setWangColor(int color);
 
     QModelIndex hoveredIndex() const { return mHoveredIndex; }
-    int hoveredCorner() const { return mHoveredCorner; }
 
     QIcon imageMissingIcon() const;
 
     void updateBackgroundColor();
 
 signals:
-    void createNewTerrain(Tile *tile);
-    void terrainImageSelected(Tile *tile);
     void wangSetImageSelected(Tile *tile);
-    void wangColorImageSelected(Tile *tile, bool isEdge, int index);
+    void wangColorImageSelected(Tile *tile, int index);
     void wangIdUsedChanged(WangId wangId);
     void currentWangIdChanged(WangId wangId);
     void swapTilesRequested(Tile *tileA, Tile *tileB);
@@ -143,15 +110,19 @@ protected:
     void mousePressEvent(QMouseEvent *event) override;
     void mouseMoveEvent(QMouseEvent *event) override;
     void mouseReleaseEvent(QMouseEvent *event) override;
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
     void enterEvent(QEvent *) override;
+#else
+    void enterEvent(QEnterEvent *) override;
+#endif
     void leaveEvent(QEvent *) override;
     void wheelEvent(QWheelEvent *event) override;
     void contextMenuEvent(QContextMenuEvent *event) override;
     void resizeEvent(QResizeEvent *event) override;
 
 private:
-    void addTerrainType();
-    void selectTerrainImage();
+    void onChange(const ChangeEvent &change);
+
     void selectWangSetImage();
     void selectWangColorImage();
     void editTileProperties();
@@ -161,17 +132,14 @@ private:
     void adjustScale();
     void refreshColumnCount();
 
-    void applyTerrain();
-    void finishTerrainChange();
     void applyWangId();
     void finishWangIdChange();
     Tile *currentTile() const;
     void setHandScrolling(bool handScrolling);
 
     enum WangBehavior {
-        WholeId, //Assigning templates
-        Corner,  //Assigning color to corners
-        Edge     //Assigning color to edges
+        AssignWholeId,      // Assigning templates
+        AssignHoveredIndex, // Assigning color to hovered index
     };
 
     enum WrapBehavior {
@@ -184,18 +152,13 @@ private:
     TilesetDocument *mTilesetDocument = nullptr;
     bool mDrawGrid;
     bool mMarkAnimatedTiles = true;
-    bool mEditTerrain = false;
     bool mEditWangSet = false;
     WrapBehavior mWrapBehavior = WrapDefault;
-    WangBehavior mWangBehavior = WholeId;
-    bool mEraseTerrain = false;
-    const Terrain *mTerrain = nullptr;
+    WangBehavior mWangBehavior = AssignWholeId;
     WangSet *mWangSet = nullptr;
-    WangId mWangId = 0;
+    WangId mWangId;
     int mWangColorIndex = 0;
     QModelIndex mHoveredIndex;
-    int mHoveredCorner = 0;
-    bool mTerrainChanged = false;
     bool mWangIdChanged = false;
 
     bool mHandScrolling = false;

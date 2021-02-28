@@ -41,6 +41,7 @@ class BorderItem;
 class LayerChangeEvent;
 class LayerItem;
 class MapObjectItem;
+class MapScene;
 class ObjectSelectionItem;
 class TileGridItem;
 class TileSelectionItem;
@@ -72,6 +73,8 @@ public:
 
     void setDisplayMode(DisplayMode displayMode);
     void setShowTileCollisionShapes(bool enabled);
+
+    void updateLayerPositions();
 
     // QGraphicsItem
     QRectF boundingRect() const override;
@@ -114,7 +117,7 @@ private:
     void tilesetReplaced(int index, Tileset *tileset);
 
     void objectsInserted(ObjectGroup *objectGroup, int first, int last);
-    void deleteObjectItems(const QList<MapObject*> &objects);
+    void deleteObjectItem(MapObject *object);
     void syncObjectItems(const QList<MapObject*> &objects);
     void objectsIndexChanged(ObjectGroup *objectGroup, int first, int last);
 

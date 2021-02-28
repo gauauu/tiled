@@ -27,12 +27,14 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 
+#include "qtcompat_p.h"
+
 namespace Tiled {
 
 static QString relative(const QDir &dir, const QString &fileName)
 {
     QString rel = dir.relativeFilePath(fileName);
-    return rel.isEmpty() ? QString(QLatin1String(".")) : rel;
+    return rel.isEmpty() ? QStringLiteral(".") : rel;
 }
 
 static QString absolute(const QDir &dir, const QString &fileName)
@@ -114,7 +116,7 @@ bool Project::load(const QString &fileName)
 
     const QJsonObject project = document.object();
 
-    mExtensionsPath = absolute(dir, project.value(QLatin1String("extensionsFolder")).toString(QLatin1String("extensions")));
+    mExtensionsPath = absolute(dir, project.value(QLatin1String("extensionsPath")).toString(QLatin1String("extensions")));
     mObjectTypesFile = absolute(dir, project.value(QLatin1String("objectTypesFile")).toString());
     mAutomappingRulesFile = absolute(dir, project.value(QLatin1String("automappingRulesFile")).toString());
 

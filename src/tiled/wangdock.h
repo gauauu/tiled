@@ -25,14 +25,18 @@
 
 #include "wangset.h"
 
+class QMenu;
 class QModelIndex;
 class QPushButton;
+class QSortFilterProxyModel;
 class QTabWidget;
 class QToolBar;
+class QToolButton;
 class QTreeView;
 
 namespace Tiled {
 
+class ChangeEvent;
 class Document;
 class HasChildrenFilterModel;
 class WangSetView;
@@ -59,7 +63,6 @@ public:
 
     void editWangSetName(WangSet *wangSet);
 
-    void setTemplateView();
     void setColorView();
     void hideTemplateColorView();
 
@@ -70,19 +73,19 @@ signals:
     void currentWangSetChanged(WangSet *wangSet);
     void currentWangIdChanged(WangId wangId);
 
-    void addWangSetRequested();
+    void addWangSetRequested(WangSet::Type type);
+    void duplicateWangSetRequested();
     void removeWangSetRequested();
 
     void selectWangBrush();
     // When the color view selection changes.
-    // edges is false if this is a corner color.
-    void wangColorChanged(int color, bool edge);
+    void wangColorChanged(int color);
 
 public slots:
     void setCurrentWangSet(WangSet *wangSet);
     void onCurrentWangIdChanged(WangId wangId);
     void onWangIdUsedChanged(WangId wangId);
-    void onColorCaptured(int color, bool isEdge);
+    void onColorCaptured(int color);
 
 protected:
     void changeEvent(QEvent *event) override;
@@ -92,11 +95,11 @@ private:
     void refreshCurrentWangSet();
     void refreshCurrentWangId();
     void refreshCurrentWangColor();
+    void documentChanged(const ChangeEvent &change);
     void wangSetChanged();
     void indexPressed(const QModelIndex &index);
     void expandRows(const QModelIndex &parent, int first, int last);
-    void addEdgeColor();
-    void addCornerColor();
+    void addColor();
     void removeColor();
 
     void updateAddColorStatus();
@@ -106,10 +109,14 @@ private:
 
     QToolBar *mWangSetToolBar;
     QToolBar *mWangColorToolBar;
-    QAction *mAddWangSet;
+    QToolButton *mNewWangSetButton;
+    QMenu *mNewWangSetMenu;
+    QAction *mAddCornerWangSet;
+    QAction *mAddEdgeWangSet;
+    QAction *mAddMixedWangSet;
+    QAction *mDuplicateWangSet;
     QAction *mRemoveWangSet;
-    QAction *mAddEdgeColor;
-    QAction *mAddCornerColor;
+    QAction *mAddColor;
     QAction *mRemoveColor;
 
     Document *mDocument;
@@ -120,9 +127,10 @@ private:
     TilesetDocumentsFilterModel *mTilesetDocumentFilterModel;
     WangColorView *mWangColorView;
     WangColorModel *mWangColorModel;
-    HasChildrenFilterModel *mWangColorFilterModel;
+    QSortFilterProxyModel *mWangColorFilterModel;
     WangSetModel *mWangSetModel;
     HasChildrenFilterModel *mProxyModel;
+    QWidget *mWangColorWidget;
     WangTemplateView *mWangTemplateView;
     WangTemplateModel *mWangTemplateModel;
     QTabWidget *mTemplateAndColorView;

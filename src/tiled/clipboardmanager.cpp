@@ -25,12 +25,13 @@
 #include "mapdocument.h"
 #include "mapobject.h"
 #include "maprenderer.h"
+#include "mapscene.h"
 #include "mapview.h"
 #include "objectgroup.h"
 #include "snaphelper.h"
-#include "tmxmapformat.h"
 #include "tile.h"
 #include "tilelayer.h"
+#include "tmxmapformat.h"
 
 #include <QApplication>
 #include <QClipboard>
@@ -38,6 +39,11 @@
 #include <QMimeData>
 #include <QSet>
 #include <QUndoStack>
+
+#if QT_VERSION >= QT_VERSION_CHECK(5, 12, 0)
+#include <QCborArray>
+#include <QCborValue>
+#endif
 
 #include <algorithm>
 
@@ -96,18 +102,30 @@ Properties ClipboardManager::properties() const
 {
     const QMimeData *mimeData = mClipboard->mimeData();
     const QByteArray data = mimeData->data(QLatin1String(PROPERTIES_MIMETYPE));
-    const QJsonDocument document = QJsonDocument::fromBinaryData(data);
 
-    return propertiesFromJson(document.array());
+#if QT_VERSION < QT_VERSION_CHECK(5, 15, 0)
+    const QJsonArray array = QJsonDocument::fromBinaryData(data).array();
+#else
+    const QJsonArray array = QCborValue::fromCbor(data).toArray().toJsonArray();
+#endif
+
+    return propertiesFromJson(array);
 }
 
 void ClipboardManager::setProperties(const Properties &properties)
 {
-    const QJsonDocument document(propertiesToJson(properties));
-
     QMimeData *mimeData = new QMimeData;
-    mimeData->setData(QLatin1String(PROPERTIES_MIMETYPE), document.toBinaryData());
+
+    const QJsonArray propertiesJson = propertiesToJson(properties);
+    const QJsonDocument document(propertiesJson);
+
     mimeData->setText(QString::fromUtf8(document.toJson()));
+
+#if QT_VERSION < QT_VERSION_CHECK(5, 15, 0)
+    mimeData->setData(QLatin1String(PROPERTIES_MIMETYPE), document.toBinaryData());
+#else
+    mimeData->setData(QLatin1String(PROPERTIES_MIMETYPE), QCborArray::fromJsonArray(propertiesJson).toCborValue().toCbor());
+#endif
 
     mClipboard->setMimeData(mimeData);
 }
@@ -224,9 +242,10 @@ void ClipboardManager::pasteObjectGroup(const ObjectGroup *objectGroup,
         else
             viewPos = QPoint(view->width() / 2, view->height() / 2);
 
-        const QPointF scenePos = view->mapToScene(viewPos);
+        QPointF layerScreenPos = view->mapToScene(viewPos);
+        layerScreenPos -= view->mapScene()->absolutePositionForLayer(*currentObjectGroup);
 
-        insertPos = renderer->screenToPixelCoords(scenePos) - center;
+        insertPos = renderer->screenToPixelCoords(layerScreenPos) - center;
         SnapHelper(renderer).snap(insertPos);
     }
 
@@ -270,3 +289,5 @@ void ClipboardManager::update()
         emit hasPropertiesChanged();
     }
 }
+
+#include "moc_clipboardmanager.cpp"

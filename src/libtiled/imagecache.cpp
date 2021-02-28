@@ -51,9 +51,13 @@ bool TilesheetParameters::operator==(const TilesheetParameters &other) const
             transparentColor == other.transparentColor;
 }
 
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
 uint qHash(const TilesheetParameters &key, uint seed) Q_DECL_NOTHROW
+#else
+size_t qHash(const TilesheetParameters &key, size_t seed) Q_DECL_NOTHROW
+#endif
 {
-    uint h = ::qHash(key.fileName, seed);
+    auto h = ::qHash(key.fileName, seed);
     h = ::qHash(key.tileWidth, h);
     h = ::qHash(key.tileHeight, h);
     h = ::qHash(key.margin, h);
@@ -103,6 +107,9 @@ QHash<TilesheetParameters, CutTiles> ImageCache::sCutTiles;
 
 LoadedImage ImageCache::loadImage(const QString &fileName)
 {
+    if (fileName.isEmpty())
+        return {};
+
     auto it = sLoadedImages.find(fileName);
 
     QFileInfo info(fileName);
@@ -127,6 +134,9 @@ LoadedImage ImageCache::loadImage(const QString &fileName)
 
 QPixmap ImageCache::loadPixmap(const QString &fileName)
 {
+    if (fileName.isEmpty())
+        return {};
+
     auto it = sLoadedPixmaps.find(fileName);
 
     bool found = it != sLoadedPixmaps.end();
@@ -171,6 +181,9 @@ static CutTiles cutTilesImpl(const TilesheetParameters &p)
 
 QVector<QPixmap> ImageCache::cutTiles(const TilesheetParameters &parameters)
 {
+    if (parameters.fileName.isEmpty())
+        return {};
+
     auto it = sCutTiles.find(parameters);
 
     bool found = it != sCutTiles.end();
@@ -199,6 +212,9 @@ void ImageCache::remove(const QString &fileName)
 
 QImage ImageCache::renderMap(const QString &fileName)
 {
+    if (fileName.isEmpty())
+        return {};
+
     static QSet<QString> loadingMaps;
 
     if (loadingMaps.contains(fileName)) {

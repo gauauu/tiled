@@ -25,6 +25,7 @@
 #include "mapdocumentactionhandler.h"
 #include "objecttemplate.h"
 #include "preferences.h"
+#include "projectmanager.h"
 #include "projectmodel.h"
 #include "session.h"
 #include "templatemanager.h"
@@ -37,7 +38,6 @@
 #include <QMouseEvent>
 #include <QScrollBar>
 #include <QSet>
-#include <QStandardPaths>
 #include <QTreeView>
 
 namespace Tiled {
@@ -92,7 +92,7 @@ ProjectDock::ProjectDock(QWidget *parent)
 
     auto widget = new QWidget(this);
     auto layout = new QVBoxLayout(widget);
-    layout->setMargin(0);
+    layout->setContentsMargins(0, 0, 0, 0);
     layout->setSpacing(0);
 
     layout->addWidget(mProjectView);
@@ -112,12 +112,14 @@ ProjectDock::ProjectDock(QWidget *parent)
 
 void ProjectDock::addFolderToProject()
 {
-    QString folder = QFileInfo(project().fileName()).path();
+    Project &project = ProjectManager::instance()->project();
+
+    QString folder = QFileInfo(project.fileName()).path();
     if (folder.isEmpty()) {
-        if (!project().folders().isEmpty())
-            folder = QFileInfo(project().folders().last()).path();
+        if (!project.folders().isEmpty())
+            folder = QFileInfo(project.folders().last()).path();
         else
-            folder = QStandardPaths::writableLocation(QStandardPaths::HomeLocation);
+            folder = Preferences::homeLocation();
     }
 
     folder = QFileDialog::getExistingDirectory(window(),
@@ -130,7 +132,7 @@ void ProjectDock::addFolderToProject()
     mProjectView->model()->addFolder(folder);
     mProjectView->addExpandedPath(folder);
 
-    project().save();
+    project.save();
 }
 
 void ProjectDock::refreshProjectFolders()
@@ -165,21 +167,6 @@ void ProjectDock::onCurrentRowChanged(const QModelIndex &current)
         emit fileSelected(filePath);
 }
 
-Project &ProjectDock::project() const
-{
-    return mProjectView->model()->project();
-}
-
-void ProjectDock::setProject(Project project)
-{
-    mProjectView->model()->setProject(std::move(project));
-}
-
-ProjectModel *ProjectDock::projectModel() const
-{
-    return mProjectView->model();
-}
-
 void ProjectDock::selectFile(const QString &filePath)
 {
     mProjectView->selectPath(filePath);
@@ -201,7 +188,7 @@ ProjectView::ProjectView(QWidget *parent)
     setDefaultDropAction(Qt::MoveAction);
     setDragDropMode(QAbstractItemView::DragOnly);
 
-    auto model = new ProjectModel(this);
+    auto model = ProjectManager::instance()->projectModel();
     setModel(model);
 
     connect(this, &QAbstractItemView::activated,
@@ -230,7 +217,7 @@ ProjectView::ProjectView(QWidget *parent)
 
 QSize ProjectView::sizeHint() const
 {
-    return Utils::dpiScaled(QSize(130, 200));
+    return Utils::dpiScaled(QSize(250, 200));
 }
 
 void ProjectView::setModel(QAbstractItemModel *model)
@@ -298,6 +285,8 @@ void ProjectView::contextMenuEvent(QContextMenuEvent *event)
         menu.addAction(ActionManager::action("RefreshProjectFolders"));
     }
 
+    ActionManager::applyMenuExtensions(&menu, MenuIds::projectViewFiles);
+
     if (!menu.isEmpty())
         menu.exec(event->globalPos());
 }
@@ -330,3 +319,4 @@ void ProjectView::restoreExpanded(const QModelIndex &parent)
 } // namespace Tiled
 
 #include "projectdock.moc"
+#include "moc_projectdock.cpp"

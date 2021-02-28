@@ -262,10 +262,10 @@ void WangSetModel::onTilesetDataChanged(const QModelIndex &topLeft, const QModel
                      index(bottomRight.row(), bottomRight.column()));
 }
 
-void WangSetModel::onWangSetAboutToBeAdded(Tileset *tileset)
+void WangSetModel::onWangSetAboutToBeAdded(Tileset *tileset, int index)
 {
-    QModelIndex parent = index(tileset);
-    beginInsertRows(parent, tileset->wangSetCount(), tileset->wangSetCount());
+    QModelIndex parent = this->index(tileset);
+    beginInsertRows(parent, index, index);
 }
 
 void WangSetModel::onWangSetAdded(Tileset *tileset)
@@ -289,3 +289,5 @@ void WangSetModel::onWangSetRemoved(WangSet *wangSet)
     const QModelIndex index = WangSetModel::index(wangSet->tileset());
     emit dataChanged(index, index);
 }
+
+#include "moc_wangsetmodel.cpp"

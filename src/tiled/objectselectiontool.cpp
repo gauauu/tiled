@@ -184,7 +184,7 @@ void OriginIndicator::paint(QPainter *painter,
                             const QStyleOptionGraphicsItem *,
                             QWidget *)
 {
-    static const QLine lines[] = {
+    static constexpr QLine lines[] = {
         QLine(-8,0, 8,0),
         QLine(0,-8, 0,8),
     };
@@ -335,6 +335,12 @@ ObjectSelectionTool::ObjectSelectionTool(QObject *parent)
         mRotateHandles[i] = new RotateHandle(static_cast<AnchorPosition>(i));
     for (int i = 0; i < AnchorCount; ++i)
         mResizeHandles[i] = new ResizeHandle(static_cast<AnchorPosition>(i));
+
+    connect(Preferences::instance(), &Preferences::highlightCurrentLayerChanged,
+            this, [this] {
+        if (mapScene() && mapDocument()->hoveredMapObject())
+            updateHover(mLastMousePos);
+    });
 }
 
 ObjectSelectionTool::~ObjectSelectionTool()
@@ -357,6 +363,8 @@ void ObjectSelectionTool::activate(MapScene *scene)
             this, &ObjectSelectionTool::updateHandlesAndOrigin);
     connect(mapDocument(), &MapDocument::tilesetTilePositioningChanged,
             this, &ObjectSelectionTool::updateHandlesAndOrigin);
+    connect(scene, &MapScene::parallaxParametersChanged,
+            this, &ObjectSelectionTool::updateHandlesAndOrigin);
 
     scene->addItem(mOriginIndicator.get());
     for (RotateHandle *handle : mRotateHandles)
@@ -378,6 +386,8 @@ void ObjectSelectionTool::deactivate(MapScene *scene)
     disconnect(mapDocument(), &MapDocument::selectedObjectsChanged,
                this, &ObjectSelectionTool::updateHandlesAndOrigin);
     disconnect(mapDocument(), &MapDocument::tilesetTilePositioningChanged,
+               this, &ObjectSelectionTool::updateHandlesAndOrigin);
+    disconnect(scene, &MapScene::parallaxParametersChanged,
                this, &ObjectSelectionTool::updateHandlesAndOrigin);
 
     abortCurrentAction(Deactivated);
@@ -738,7 +748,7 @@ void ObjectSelectionTool::changeEvent(const ChangeEvent &event)
 
     switch (event.type) {
     case ChangeEvent::LayerChanged:
-        if (static_cast<const LayerChangeEvent&>(event).properties & LayerChangeEvent::OffsetProperty)
+        if (static_cast<const LayerChangeEvent&>(event).properties & LayerChangeEvent::PositionProperties)
             updateHandlesAndOrigin();
         break;
     case ChangeEvent::MapObjectsChanged:
@@ -892,7 +902,7 @@ static QRectF objectBounds(const MapObject *object,
     return QRectF();
 }
 
-static QTransform objectTransform(MapObject *object, MapRenderer *renderer)
+static QTransform objectTransform(MapObject *object, MapRenderer *renderer, MapScene *mapScene)
 {
     QTransform transform;
 
@@ -901,7 +911,7 @@ static QTransform objectTransform(MapObject *object, MapRenderer *renderer)
         transform = rotateAt(pos, object->rotation());
     }
 
-    QPointF offset = object->objectGroup()->totalOffset();
+    const QPointF offset = mapScene->absolutePositionForLayer(*object->objectGroup());
     if (!offset.isNull())
         transform *= QTransform::fromTranslate(offset.x(), offset.y());
 
@@ -936,12 +946,12 @@ void ObjectSelectionTool::updateHandlesImpl(bool resetOriginIndicator)
     if (showHandles) {
         MapRenderer *renderer = mapDocument()->renderer();
         QRectF boundingRect = objectBounds(objects.first(), renderer,
-                                           objectTransform(objects.first(), renderer));
+                                           objectTransform(objects.first(), renderer, mapScene()));
 
         for (int i = 1; i < objects.size(); ++i) {
             MapObject *object = objects.at(i);
             QRectF bounds = objectBounds(object, renderer,
-                                         objectTransform(object, renderer));
+                                         objectTransform(object, renderer, mapScene()));
             boundingRect = uniteBounds(boundingRect, bounds);
         }
 
@@ -962,7 +972,7 @@ void ObjectSelectionTool::updateHandlesImpl(bool resetOriginIndicator)
             if (resizeInPixelSpace(object)) {
                 QRectF bounds = pixelBounds(object);
 
-                QTransform transform(objectTransform(object, renderer));
+                QTransform transform(objectTransform(object, renderer, mapScene()));
                 topLeft = transform.map(renderer->pixelToScreenCoords(bounds.topLeft()));
                 topRight = transform.map(renderer->pixelToScreenCoords(bounds.topRight()));
                 bottomLeft = transform.map(renderer->pixelToScreenCoords(bounds.bottomLeft()));
@@ -975,7 +985,7 @@ void ObjectSelectionTool::updateHandlesImpl(bool resetOriginIndicator)
             } else {
                 QRectF bounds = objectBounds(object, renderer, QTransform());
 
-                QTransform transform(objectTransform(object, renderer));
+                QTransform transform(objectTransform(object, renderer, mapScene()));
                 topLeft = transform.map(bounds.topLeft());
                 topRight = transform.map(bounds.topRight());
                 bottomLeft = transform.map(bounds.bottomLeft());
@@ -1107,6 +1117,8 @@ void ObjectSelectionTool::updateSelection(const QPointF &pos,
             selectedObjects.append(mapObjectItem->mapObject());
     }
 
+    filterMapObjects(selectedObjects);
+
     if (modifiers & (Qt::ControlModifier | Qt::ShiftModifier)) {
         for (MapObject *object : mapDocument()->selectedObjects())
             if (!selectedObjects.contains(object))
@@ -1219,6 +1231,15 @@ void ObjectSelectionTool::startRotating(const QPointF &pos)
     updateHandleVisibility();
 }
 
+// Brings rotation values within the range of 0 - 360
+static qreal normalizeRotation(qreal rotation)
+{
+    qreal normalized = fmod(rotation, 360.);
+    if (normalized < 0.)
+        normalized += 360.;
+    return normalized;
+}
+
 void ObjectSelectionTool::updateRotatingItems(const QPointF &pos,
                                               Qt::KeyboardModifiers modifiers)
 {
@@ -1237,7 +1258,7 @@ void ObjectSelectionTool::updateRotatingItems(const QPointF &pos,
 
     for (const MovingObject &object : qAsConst(mMovingObjects)) {
         MapObject *mapObject = object.mapObject;
-        const QPointF offset = mapObject->objectGroup()->totalOffset();
+        const QPointF offset = mapScene()->absolutePositionForLayer(*mapObject->objectGroup());
 
         const QPointF oldRelPos = object.oldScreenPosition + offset - mOriginPos;
         const qreal sn = std::sin(angleDiff);
@@ -1247,7 +1268,7 @@ void ObjectSelectionTool::updateRotatingItems(const QPointF &pos,
         const QPointF newPixelPos = mOriginPos + newRelPos - offset;
         const QPointF newPos = renderer->screenToPixelCoords(newPixelPos);
 
-        const qreal newRotation = object.oldRotation + angleDiff * 180 / M_PI;
+        const qreal newRotation = normalizeRotation(object.oldRotation + angleDiff * 180 / M_PI);
 
         mapObject->setPosition(newPos);
         if (mapObject->canRotate())
@@ -1350,7 +1371,7 @@ void ObjectSelectionTool::updateResizingItems(const QPointF &pos,
 
     for (const MovingObject &object : qAsConst(mMovingObjects)) {
         MapObject *mapObject = object.mapObject;
-        const QPointF offset = mapObject->objectGroup()->totalOffset();
+        const QPointF offset = mapScene()->absolutePositionForLayer(*mapObject->objectGroup());
 
         const QPointF oldRelPos = object.oldScreenPosition + offset - resizingOrigin;
         const QPointF scaledRelPos(oldRelPos.x() * scale,
@@ -1404,13 +1425,13 @@ void ObjectSelectionTool::updateResizingSingleItem(const QPointF &resizingOrigin
      * offset. We will un-apply it to these variables since the resize for
      * single items happens in local coordinate space.
      */
-    QPointF offset = mapObject->objectGroup()->totalOffset();
+    const QPointF offset = mapScene()->absolutePositionForLayer(*mapObject->objectGroup());
 
     /* These transformations undo and redo the object rotation, which is always
      * applied in screen space.
      */
-    QTransform unrotate = rotateAt(object.oldScreenPosition, -object.oldRotation);
-    QTransform rotate = rotateAt(object.oldScreenPosition, object.oldRotation);
+    const QTransform unrotate = rotateAt(object.oldScreenPosition, -object.oldRotation);
+    const QTransform rotate = rotateAt(object.oldScreenPosition, object.oldRotation);
 
     QPointF origin = (resizingOrigin - offset) * unrotate;
     QPointF pos = (screenPos - offset) * unrotate;
@@ -1704,3 +1725,5 @@ QList<MapObject *> ObjectSelectionTool::changingObjects() const
 
     return changingObjects;
 }
+
+#include "moc_objectselectiontool.cpp"

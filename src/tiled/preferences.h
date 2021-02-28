@@ -57,6 +57,7 @@ public:
     bool showTileAnimations() const;
     bool showTileCollisionShapes() const;
     bool showObjectReferences() const;
+    bool parallaxEnabled() const;
     bool snapToGrid() const;
     bool snapToFineGrid() const;
     bool snapToPixels() const;
@@ -130,19 +131,6 @@ public:
 
     void setObjectTypes(const ObjectTypes &objectTypes);
 
-    enum FileType {
-        ExportedFile,
-        ExternalTileset,
-        ImageFile,
-        ObjectTemplateFile,
-        ObjectTypesFile,
-        ProjectFile,
-        WorldFile,
-    };
-
-    QString lastPath(FileType fileType) const;
-    void setLastPath(FileType fileType, const QString &path);
-
     QString objectTypesFile() const;
     void setObjectTypesFile(const QString &filePath);
     void setObjectTypesFileLastSaved(const QDateTime &time);
@@ -158,10 +146,10 @@ public:
     void setDonationDialogReminder(const QDate &date);
 
     enum { MaxRecentFiles = 12 };
-    QString fileDialogStartLocation() const;
     void addRecentFile(const QString &fileName);
 
     QStringList recentProjects() const;
+    QString recentProjectPath() const;
     void addRecentProject(const QString &fileName);
 
     QString startupSession() const;
@@ -180,6 +168,7 @@ public:
     T get(const char *key, const T &defaultValue = T()) const
     { return value(QLatin1String(key), defaultValue).template value<T>(); }
 
+    static QString homeLocation();
     static QString dataLocation();
     static QString configLocation();
 
@@ -192,6 +181,7 @@ public slots:
     void setShowTileAnimations(bool enabled);
     void setShowTileCollisionShapes(bool enabled);
     void setShowObjectReferences(bool enabled);
+    void setParallaxEnabled(bool enabled);
     void setSnapToGrid(bool snapToGrid);
     void setSnapToFineGrid(bool snapToFineGrid);
     void setSnapToPixels(bool snapToPixels);
@@ -214,6 +204,7 @@ signals:
     void showTileAnimationsChanged(bool enabled);
     void showTileCollisionShapesChanged(bool enabled);
     void showObjectReferencesChanged(bool enabled);
+    void parallaxEnabledChanged(bool enabled);
     void snapToGridChanged(bool snapToGrid);
     void snapToFineGridChanged(bool snapToFineGrid);
     void snapToPixelsChanged(bool snapToPixels);

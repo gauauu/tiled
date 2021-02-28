@@ -58,11 +58,10 @@ std::unique_ptr<Tiled::Map> JsonMapFormat::read(const QString &fileName)
         return nullptr;
     }
 
-    JsonReader reader;
     QByteArray contents = file.readAll();
     if (mSubFormat == JavaScript && contents.size() > 0 && contents[0] != '{') {
         // Scan past JSONP prefix; look for an open curly at the start of the line
-        int i = contents.indexOf(QLatin1String("\n{"));
+        int i = contents.indexOf("\n{");
         if (i > 0) {
             contents.remove(0, i);
             contents = contents.trimmed(); // potential trailing whitespace
@@ -70,17 +69,17 @@ std::unique_ptr<Tiled::Map> JsonMapFormat::read(const QString &fileName)
             if (contents.endsWith(')')) contents.chop(1);
         }
     }
-    reader.parse(contents);
 
-    const QVariant variant = reader.result();
+    QJsonParseError error;
+    const QJsonDocument document = QJsonDocument::fromJson(contents, &error);
 
-    if (!variant.isValid()) {
-        mError = tr("Error parsing file.");
+    if (error.error != QJsonParseError::NoError) {
+        mError = tr("Error parsing file: %1").arg(error.errorString());
         return nullptr;
     }
 
     Tiled::VariantToMapConverter converter;
-    auto map = converter.toMap(variant, QFileInfo(fileName).dir());
+    auto map = converter.toMap(document.toVariant(), QFileInfo(fileName).dir());
 
     if (!map)
         mError = converter.errorString();
@@ -156,9 +155,9 @@ QString JsonMapFormat::nameFilter() const
 QString JsonMapFormat::shortName() const
 {
     if (mSubFormat == Json)
-        return QLatin1String("json1");
+        return QStringLiteral("json1");
     else
-        return QLatin1String("js1");
+        return QStringLiteral("js1");
 }
 
 bool JsonMapFormat::supportsFile(const QString &fileName) const
@@ -177,7 +176,7 @@ bool JsonMapFormat::supportsFile(const QString &fileName) const
 
         if (mSubFormat == JavaScript && contents.size() > 0 && contents[0] != '{') {
             // Scan past JSONP prefix; look for an open curly at the start of the line
-            int i = contents.indexOf(QLatin1String("\n{"));
+            int i = contents.indexOf("\n{");
             if (i > 0) {
                 contents.remove(0, i);
                 contents = contents.trimmed(); // potential trailing whitespace
@@ -220,18 +219,16 @@ Tiled::SharedTileset JsonTilesetFormat::read(const QString &fileName)
         return Tiled::SharedTileset();
     }
 
-    JsonReader reader;
-    reader.parse(file.readAll());
+    QJsonParseError error;
+    const QJsonDocument document = QJsonDocument::fromJson(file.readAll(), &error);
 
-    const QVariant variant = reader.result();
-
-    if (!variant.isValid()) {
-        mError = tr("Error parsing file.");
+    if (error.error != QJsonParseError::NoError) {
+        mError = tr("Error parsing file: %1").arg(error.errorString());
         return Tiled::SharedTileset();
     }
 
     Tiled::VariantToMapConverter converter;
-    Tiled::SharedTileset tileset = converter.toTileset(variant,
+    Tiled::SharedTileset tileset = converter.toTileset(document.toVariant(),
                                                        QFileInfo(fileName).dir());
 
     if (!tileset)
@@ -309,7 +306,7 @@ QString JsonTilesetFormat::nameFilter() const
 
 QString JsonTilesetFormat::shortName() const
 {
-    return QLatin1String("json1");
+    return QStringLiteral("json1");
 }
 
 QString JsonTilesetFormat::errorString() const
@@ -331,18 +328,16 @@ std::unique_ptr<Tiled::ObjectTemplate> JsonObjectTemplateFormat::read(const QStr
         return nullptr;
     }
 
-    JsonReader reader;
-    reader.parse(file.readAll());
+    QJsonParseError error;
+    const QJsonDocument document = QJsonDocument::fromJson(file.readAll(), &error);
 
-    const QVariant variant = reader.result();
-
-    if (!variant.isValid()) {
-        mError = tr("Error parsing file.");
+    if (error.error != QJsonParseError::NoError) {
+        mError = tr("Error parsing file: %1").arg(error.errorString());
         return nullptr;
     }
 
     Tiled::VariantToMapConverter converter;
-    auto objectTemplate = converter.toObjectTemplate(variant,
+    auto objectTemplate = converter.toObjectTemplate(document.toVariant(),
                                                      QFileInfo(fileName).dir());
 
     if (!objectTemplate)
@@ -413,7 +408,7 @@ QString JsonObjectTemplateFormat::nameFilter() const
 
 QString JsonObjectTemplateFormat::shortName() const
 {
-    return QLatin1String("json1");
+    return QStringLiteral("json1");
 }
 
 QString JsonObjectTemplateFormat::errorString() const

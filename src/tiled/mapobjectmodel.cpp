@@ -562,6 +562,7 @@ void MapObjectModel::documentChanged(const ChangeEvent &change)
         break;
     }
     case ChangeEvent::ObjectGroupChanged:
+    case ChangeEvent::WangSetChanged:
         break;
     }
 }
@@ -580,3 +581,5 @@ void MapObjectModel::emitDataChanged(const QList<MapObject *> &objects,
                          roles);
     }
 }
+
+#include "moc_mapobjectmodel.cpp"

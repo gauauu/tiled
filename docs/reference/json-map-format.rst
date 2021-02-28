@@ -20,6 +20,7 @@ Map
     :widths: 1, 1, 4
 
     backgroundcolor,  string,           "Hex-formatted color (#RRGGBB or #AARRGGBB) (optional)"
+    compressionlevel, int,              "The compression level to use for tile layer data (defaults to -1, which means to use the algorithm default)"
     height,           int,              "Number of tile rows"
     hexsidelength,    int,              "Length of the side of a hex tile in pixels (hexagonal maps only)"
     infinite,         bool,             "Whether the map has infinite dimensions"
@@ -28,7 +29,7 @@ Map
     nextobjectid,     int,              "Auto-increments for each placed object"
     orientation,      string,           "``orthogonal``, ``isometric``, ``staggered`` or ``hexagonal``"
     properties,       array,            "Array of :ref:`Properties <json-property>`"
-    renderorder,      string,           "``right-down`` (the default), ``right-up``, ``left-down`` or ``left-up`` (orthogonal maps only)"
+    renderorder,      string,           "``right-down`` (the default), ``right-up``, ``left-down`` or ``left-up`` (currently only supported for orthogonal maps)"
     staggeraxis,      string,           "``x`` or ``y`` (staggered / hexagonal maps only)"
     staggerindex,     string,           "``odd`` or ``even`` (staggered / hexagonal maps only)"
     tiledversion,     string,           "The Tiled version used to save the file"
@@ -80,12 +81,12 @@ Layer
     :widths: 1, 1, 4
 
     chunks,           array,            "Array of :ref:`chunks <json-chunk>` (optional). ``tilelayer`` only."
-    compression,      string,           "``zlib``, ``gzip`` or empty (default). ``tilelayer`` only."
+    compression,      string,           "``zlib``, ``gzip``, ``zstd`` (since Tiled 1.3) or empty (default). ``tilelayer`` only."
     data,             array or string,  "Array of ``unsigned int`` (GIDs) or base64-encoded data. ``tilelayer`` only."
     draworder,        string,           "``topdown`` (default) or ``index``. ``objectgroup`` only."
     encoding,         string,           "``csv`` (default) or ``base64``. ``tilelayer`` only."
     height,           int,              "Row count. Same as map height for fixed-size maps."
-    id,               int,              "Incremental id - unique across all layers"
+    id,               int,              "Incremental ID - unique across all layers"
     image,            string,           "Image used by this layer. ``imagelayer`` only."
     layers,           array,            "Array of :ref:`layers <json-layer>`. ``group`` only."
     name,             string,           "Name assigned to this layer"
@@ -93,9 +94,12 @@ Layer
     offsetx,          double,           "Horizontal layer offset in pixels (default: 0)"
     offsety,          double,           "Vertical layer offset in pixels (default: 0)"
     opacity,          double,           "Value between 0 and 1"
+    parallaxx,        double,           "Horizontal :ref:`parallax factor <parallax-factor>` for this layer (default: 1). (since Tiled 1.5)"
+    parallaxy,        double,           "Vertical :ref:`parallax factor <parallax-factor>` for this layer (default: 1). (since Tiled 1.5)"
     properties,       array,            "Array of :ref:`Properties <json-property>`"
     startx,           int,              "X coordinate where layer content starts (for infinite maps)"
     starty,           int,              "Y coordinate where layer content starts (for infinite maps)"
+    tintcolor,        string,           "Hex-formatted :ref:`tint color <tint-color>` (#RRGGBB or #AARRGGBB) that is multiplied with any graphics drawn by this layer or any child layers (optional)."
     transparentcolor, string,           "Hex-formatted color (#RRGGBB) (optional). ``imagelayer`` only."
     type,             string,           "``tilelayer``, ``objectgroup``, ``imagelayer`` or ``group``"
     visible,          bool,             "Whether layer is shown or hidden in editor"
@@ -193,7 +197,7 @@ Object
     ellipse,          bool,             "Used to mark an object as an ellipse"
     gid,              int,              "Global tile ID, only if object represents a tile"
     height,           double,           "Height in pixels."
-    id,               int,              "Incremental id, unique across all objects"
+    id,               int,              "Incremental ID, unique across all objects"
     name,             string,           "String assigned to name field in editor"
     point,            bool,             "Used to mark an object as a point"
     polygon,          array,            "Array of :ref:`Points <json-point>`, in case the object is a polygon"
@@ -439,6 +443,7 @@ Tileset
     tileoffset,       :ref:`json-tileset-tileoffset`, "(optional)"
     tiles,            array,            "Array of :ref:`Tiles <json-tile>` (optional)"
     tilewidth,        int,              "Maximum width of tiles in this set"
+    transformations,  :ref:`json-tileset-transformations`, "Allowed transformations (optional)"
     transparentcolor, string,           "Hex-formatted color (#RRGGBB) (optional)"
     type,             string,           "``tileset`` (for tileset files, since 1.0)"
     version,          number,           "The JSON format version"
@@ -480,6 +485,22 @@ See :ref:`tmx-tileoffset` in the TMX Map Format.
 
     x,                int,              "Horizontal offset in pixels"
     y,                int,              "Vertical offset in pixels (positive is down)"
+
+.. _json-tileset-transformations:
+
+Transformations
+~~~~~~~~~~~~~~~
+
+See :ref:`tmx-tileset-transformations` in the TMX Map Format.
+
+.. csv-table::
+    :header: Field, Type, Description
+    :widths: 1, 1, 4
+
+    hflip,            bool,             "Tiles can be flipped horizontally"
+    vflip,            bool,             "Tiles can be flipped vertically"
+    rotate,           bool,             "Tiles can be rotated in 90-degree increments"
+    preferuntransformed, bool,          "Whether untransformed tiles remain preferred, otherwise transformed tiles are used to produce more variations"
 
 Tileset Example
 ~~~~~~~~~~~~~~~
@@ -624,8 +645,7 @@ Wang Set
     :header: Field, Type, Description
     :widths: 1, 1, 4
 
-    cornercolors,     array,            "Array of :ref:`Wang colors <json-wangcolor>`"
-    edgecolors,       array,            "Array of :ref:`Wang colors <json-wangcolor>`"
+    colors,           array,            "Array of :ref:`Wang colors <json-wangcolor>`"
     name,             string,           "Name of the Wang set"
     properties,       array,            "Array of :ref:`Properties <json-property>`"
     tile,             int,              "Local ID of tile representing the Wang set"
@@ -643,6 +663,7 @@ Wang Color
     color,            string,           "Hex-formatted color (#RRGGBB or #AARRGGBB)"
     name,             string,           "Name of the Wang color"
     probability,      double,           "Probability used when randomizing"
+    properties,       array,            "Array of :ref:`Properties <json-property>`"
     tile,             int,              "Local ID of tile representing the Wang color"
 
 Example:
@@ -665,10 +686,7 @@ Wang Tile
     :header: Field, Type, Description
     :widths: 1, 1, 4
 
-    dflip,            bool,             "Tile is flipped diagonally (default: ``false``)"
-    hflip,            bool,             "Tile is flipped horizontally (default: ``false``)"
     tileid,           int,              "Local ID of tile"
-    vflip,            bool,             "Tile is flipped vertically (default: ``false``)"
     wangid,           array,            "Array of Wang color indexes (``uchar[8]``)"
 
 Example:
@@ -676,10 +694,7 @@ Example:
 .. code:: json
 
     {
-      "dflip": false,
-      "hflip": false,
       "tileid": 0,
-      "vflip": false,
       "wangid": [2, 0, 1, 0, 1, 0, 2, 0]
     }
 
@@ -729,10 +744,38 @@ A point on a polygon or a polyline, relative to the position of the object.
 Changelog
 ---------
 
+Tiled 1.5
+~~~~~~~~~
+
+* Unified ``cornercolors`` and ``edgecolors`` attributes of :ref:`json-wangset`
+  as the new ``colors`` property.
+
+* :ref:`json-wangcolor` can now store ``properties``.
+
+* Added ``transformations`` property to :ref:`json-tileset` (see
+  :ref:`json-tileset-transformations`).
+
+* Removed ``dflip``, ``hflip`` and ``vflip`` properties from
+  :ref:`json-wangtile` (no longer supported).
+
 Tiled 1.4
 ~~~~~~~~~
 
 * Added ``objectalignment`` to the :ref:`json-tileset` object.
+* Added ``tintcolor`` to the :ref:`json-layer` object.
+
+Tiled 1.3
+~~~~~~~~~
+
+* Added an ``editorsettings`` property to top-level :ref:`json-map` and
+  :ref:`json-tileset` objects, which is used to store editor specific settings
+  that are generally not relevant when loading a map or tileset.
+
+* Added support for Zstandard compression for tile layer data
+  (``"compression": "zstd"`` on :ref:`tile layer objects <json-layer>`).
+
+* Added the ``compressionlevel`` property to the :ref:`json-map` object,
+  which stores the compression level to use for compressed tile layer data.
 
 Tiled 1.2
 ~~~~~~~~~

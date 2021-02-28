@@ -69,19 +69,26 @@ In the executable, arguments and working directory fields, you can use
 the following variables:
 
 ``%mapfile``
-    the current maps full path.
+    the full path of the current file (either map or tileset).
 
 ``%mappath``
-    the full folder path in which the map is located. (since Tiled 0.18)
+    the path in which the current file is located.
+
+.. raw:: html
+
+   <div class="new">New in Tiled 1.4</div>
+
+``%projectpath``
+    the path in which the current project is located.
 
 ``%objecttype``
-    the type of the currently selected object, if any. (since Tiled 0.12)
+    the type of the currently selected object, if any.
 
 ``%objectid``
-    the ID of the currently selected object, if any. (since Tiled 0.17)
+    the ID of the currently selected object, if any.
 
 ``%layername``
-    the name of the currently selected layer. (since Tiled 0.17)
+    the name of the currently selected layer.
 
 For the working directory field, you can additionally use the following
 variable:

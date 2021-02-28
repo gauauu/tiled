@@ -29,6 +29,7 @@ game engine or graphics library.
 C
 ~
 
+-  `cute tiled <https://github.com/RandyGaul/cute_headers>`__ - JSON map loader with examples (zlib/Public Domain).
 -  `TMX <https://github.com/baylej/tmx/>`__ - TMX map loader
    with Allegro5 and SDL2 examples (BSD).
 
@@ -149,9 +150,9 @@ Python
 ~~~~~~
 
 -  `pytiled-parser <https://github.com/Beefy-Swain/pytiled_parser>`__: Python parser
-   for TMX maps
+   for JSON maps(No support for TMX format as of v1.0.0)
 -  `Arcade <http://arcade.academy>`__: 2D game library that uses pytiled-parser for 
-   easy loading of TMX maps into a game. `Arcade TMX Examples <http://arcade.academy/examples/index.html#tmx-files-tiled-map-editor>`_
+   easy loading of JSON maps into a game.(No support for TMX format as of v2.6.0) `Arcade Tiled Examples <http://arcade.academy/examples/index.html#tmx-files-tiled-map-editor>`_
 -  `pytmxlib <http://pytmxlib.readthedocs.org/en/latest/>`__: library
    for programmatic manipulation of TMX maps
 -  `python-tmx <http://python-tmx.nongnu.org>`__: a simple library for
@@ -243,6 +244,11 @@ Godot
 
 - `Tiled Map Importer <https://godotengine.org/asset-library/asset/25>`__ imports each map as Godot scene which can be instanced or inherited (`forum announcement <http://discourse.mapeditor.org/t/importer-plugin-for-godot-engine/1833/1>`__).
 - `Tiled To Godot Export <https://github.com/MikeMnD/tiled-to-godot-export>`__ is a Tiled :doc:`JavaScript extension </reference/scripting>` for exporting Tilemaps and Tilesets in Godot 3.2 format (`forum announcement <https://discourse.mapeditor.org/t/tiled-editor-map-and-tileset-integration-with-godot-3-2/4347>`__).
+
+Grid Engine
+~~~~~~~~~~~
+
+- Planimeter's `Grid Engine <https://www.planimeter.org/grid-sdk/>`__ supports Tiled Lua-exported maps.
 
 Haxe
 ~~~~
@@ -350,7 +356,7 @@ Orx Portable Game Engine
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
 -  `TMX to ORX
-   Converter <http://orx-project.org/wiki/tutorials/community/sausage/tmx_to_orx>`__
+   Converter <https://wiki.orx-project.org/en/tutorials/tools/tmx_to_orx>`__
    Tutorial and converter download for Orx.
 
 Pygame
@@ -454,6 +460,10 @@ Unity
    3D pipeline for Tiled maps. It uses prefabs as tiles, and can place
    decorations dynamically on tiles. Supports multiple layers (including
    object layers).
+-  `Tuesday <https://github.com/ShreveportArcade/Tuesday>`__: A generic
+   C# serializer and deserializer plus a set of Unity editor
+   scripts that allow you to drag and drop TMX files into your scene,
+   make edits, and save back out as TMX files. MIT license.
 -  `UniTiled <https://yjaffal.itch.io/unitiled>`__, a native TMX importer for Unity.
 -  `X-UniTMX <https://bitbucket.org/Chaoseiro/x-unitmx>`__ supports
    almost all Tiled 0.11 features. Imports TMX/XML files into Sprite

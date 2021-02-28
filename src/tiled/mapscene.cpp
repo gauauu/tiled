@@ -26,6 +26,7 @@
 #include "abstracttool.h"
 #include "addremovemapobject.h"
 #include "containerhelpers.h"
+#include "debugdrawitem.h"
 #include "documentmanager.h"
 #include "map.h"
 #include "mapobject.h"
@@ -70,6 +71,11 @@ MapScene::MapScene(QObject *parent)
     // Install an event filter so that we can get key events on behalf of the
     // active tool without having to have the current focus.
     qApp->installEventFilter(this);
+
+#ifdef QT_DEBUG
+    mDebugDrawItem = new DebugDrawItem;
+    addItem(mDebugDrawItem);
+#endif
 }
 
 MapScene::~MapScene()
@@ -112,6 +118,15 @@ void MapScene::setShowTileCollisionShapes(bool enabled)
         mapItem->setShowTileCollisionShapes(enabled);
 }
 
+void MapScene::setParallaxEnabled(bool enabled)
+{
+    if (mParallaxEnabled == enabled)
+        return;
+
+    mParallaxEnabled = enabled;
+    emit parallaxParametersChanged();
+}
+
 /**
  * Returns the bounding rect of the map. This can be different from the
  * sceneRect() when multiple maps are displayed.
@@ -150,6 +165,44 @@ void MapScene::setSelectedTool(AbstractTool *tool)
             mSelectedTool->mouseMoved(mLastMousePos, mCurrentModifiers);
         }
     }
+}
+
+/**
+ * Sets the area of the scene that is currently visible in the MapView.
+ */
+void MapScene::setViewRect(const QRectF &rect)
+{
+    if (mViewRect == rect)
+        return;
+
+    mViewRect = rect;
+
+    if (mParallaxEnabled)
+        emit parallaxParametersChanged();
+}
+
+/**
+ * Returns the position the given layer is supposed to have, taking into
+ * account its offset and the parallax factor along with the current view rect.
+ */
+QPointF MapScene::absolutePositionForLayer(const Layer &layer) const
+{
+    return layer.totalOffset() + parallaxOffset(layer);
+}
+
+/**
+ * Returns the parallax offset of the given layer, taking into account its
+ * parallax factor in combination with the current view rect.
+ */
+QPointF MapScene::parallaxOffset(const Layer &layer) const
+{
+    if (!mParallaxEnabled)
+        return {};
+
+    const QPointF parallaxFactor = layer.effectiveParallaxFactor();
+    const QPointF viewCenter = mViewRect.center();
+    return QPointF((1.0 - parallaxFactor.x()) * viewCenter.x(),
+                   (1.0 - parallaxFactor.y()) * viewCenter.y());
 }
 
 /**
@@ -239,6 +292,7 @@ MapItem *MapScene::takeOrCreateMapItem(const MapDocumentPtr &mapDocument, MapIte
         mapItem = new MapItem(mapDocument, displayMode);
         mapItem->setShowTileCollisionShapes(mShowTileCollisionShapes);
         connect(mapItem, &MapItem::boundingRectChanged, this, &MapScene::updateSceneRect);
+        connect(this, &MapScene::parallaxParametersChanged, mapItem, &MapItem::updateLayerPositions);
         addItem(mapItem);
     } else {
         mapItem->setDisplayMode(displayMode);
@@ -466,3 +520,5 @@ bool MapScene::eventFilter(QObject *, QEvent *event)
 
     return false;
 }
+
+#include "moc_mapscene.cpp"

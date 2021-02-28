@@ -44,7 +44,6 @@ public:
         MapObjectType,
         MapType,
         ObjectTemplateType,
-        TerrainType,
         TilesetType,
         TileType,
         WangSetType,
@@ -95,7 +94,8 @@ public:
     QVariant property(const QString &name) const
     { return mProperties.value(name); }
 
-    QVariant inheritedProperty(const QString &name) const;
+    QVariant resolvedProperty(const QString &name) const;
+    QVariantMap resolvedProperties() const;
 
     /**
      * Returns the value of the object's \a name property, as a string.
@@ -152,7 +152,6 @@ inline bool Object::isPartOfTileset() const
     switch (mTypeId) {
     case Object::TilesetType:
     case Object::TileType:
-    case Object::TerrainType:
     case Object::WangSetType:
     case Object::WangColorType:
         return true;
